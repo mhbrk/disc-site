@@ -1,9 +1,142 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15" version="26.2.9">
   <diagram name="Page-1" id="i4QZj-j1XmfnMuvRdO-Z">
-    <mxGraphModel>
+    <mxGraphModel dx="1236" dy="831" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-29" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="FjFT79DDUuCGxu6btRaJ-1" target="FjFT79DDUuCGxu6btRaJ-24">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="263" y="96" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="167" y="156" />
+              <mxPoint x="365" y="156" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-30" value="persist thread" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="FjFT79DDUuCGxu6btRaJ-29">
+          <mxGeometry x="-0.338" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-1" value="Chat Agent&lt;div&gt;messages: list[str]&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="107" y="199" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="FjFT79DDUuCGxu6btRaJ-2" target="FjFT79DDUuCGxu6btRaJ-24">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="375" y="115" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-2" value="Builder Agent&lt;div&gt;messages: list[str]&lt;/div&gt;&lt;div&gt;spec: str&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="305" y="199" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="FjFT79DDUuCGxu6btRaJ-3" target="FjFT79DDUuCGxu6btRaJ-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-3" value="Generator Agent&lt;div&gt;spec: str&lt;/div&gt;&lt;div&gt;genHTML: str&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="519" y="199" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=1;entryDx=0;entryDy=0;exitX=0.119;exitY=0.038;exitDx=0;exitDy=0;exitPerimeter=0;" edge="1" parent="1" source="FjFT79DDUuCGxu6btRaJ-4" target="FjFT79DDUuCGxu6btRaJ-1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="107" y="426" as="sourcePoint" />
+            <Array as="points">
+              <mxPoint x="107" y="477" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-20" value="Listen to Builder and&amp;nbsp;&lt;div&gt;generator requests&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="FjFT79DDUuCGxu6btRaJ-19">
+          <mxGeometry x="-0.1369" y="-2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="FjFT79DDUuCGxu6btRaJ-4" target="FjFT79DDUuCGxu6btRaJ-2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="305" y="422" />
+              <mxPoint x="305" y="422" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-23" value="Listen to messages&lt;div&gt;from Chat Agent&lt;/div&gt;&lt;div&gt;message: str&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="FjFT79DDUuCGxu6btRaJ-22">
+          <mxGeometry x="-0.3023" y="-1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-4" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="28" y="474" width="866" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-5" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;fillColor=#FF6A00;strokeColor=none;shape=mxgraph.alibaba_cloud.kafka;" vertex="1" parent="1">
+          <mxGeometry x="41.3" y="489" width="56.699999999999996" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-6" value="Kafka" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="38" y="524" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.212;entryY=0.05;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="FjFT79DDUuCGxu6btRaJ-1" target="FjFT79DDUuCGxu6btRaJ-4">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="213" y="463" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="213" y="441" />
+              <mxPoint x="212" y="441" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-12" value="Pass User messages&lt;div&gt;&amp;nbsp;to other agents&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="FjFT79DDUuCGxu6btRaJ-8">
+          <mxGeometry x="-0.2348" y="3" relative="1" as="geometry">
+            <mxPoint x="-10" y="-27" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="FjFT79DDUuCGxu6btRaJ-2" target="FjFT79DDUuCGxu6btRaJ-4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="419" y="424" />
+              <mxPoint x="419" y="424" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-13" value="Request more input&amp;nbsp;&lt;div&gt;from Chat agent&lt;/div&gt;&lt;div&gt;message: str&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="FjFT79DDUuCGxu6btRaJ-10">
+          <mxGeometry x="-0.1835" y="1" relative="1" as="geometry">
+            <mxPoint x="2" y="-43" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-14" value="Publish Updates&lt;div&gt;spec: str&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="FjFT79DDUuCGxu6btRaJ-10">
+          <mxGeometry x="0.2811" y="-4" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="FjFT79DDUuCGxu6btRaJ-3" target="FjFT79DDUuCGxu6btRaJ-4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="633" y="420" />
+              <mxPoint x="633" y="420" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-15" value="Publish generated HTML&lt;div&gt;genHTML: str&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="FjFT79DDUuCGxu6btRaJ-11">
+          <mxGeometry x="-0.0715" y="1" relative="1" as="geometry">
+            <mxPoint x="12" y="40" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.175;entryY=0.95;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" target="FjFT79DDUuCGxu6btRaJ-3">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="469" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-17" value="Listen for builder updates&lt;div&gt;spec: str&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="FjFT79DDUuCGxu6btRaJ-16">
+          <mxGeometry x="0.1076" y="3" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-24" value="Mongo Db" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+          <mxGeometry x="335" y="33" width="60" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-31" value="Image Generator Agent&lt;div&gt;spec: str&lt;/div&gt;&lt;div&gt;genHTML: str&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="744" y="199" width="120" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-32" value="Get Image Path" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=-0.025;entryY=0.405;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="FjFT79DDUuCGxu6btRaJ-3" target="FjFT79DDUuCGxu6btRaJ-31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FjFT79DDUuCGxu6btRaJ-33" value="Notify when image is generated" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.898;entryY=0.025;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="FjFT79DDUuCGxu6btRaJ-31" target="FjFT79DDUuCGxu6btRaJ-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
