@@ -38,8 +38,12 @@ async def ws_input(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            await websocket.send_text("<div class='text-muted'>System: Input stream alive...</div>")
-            await asyncio.sleep(10)
+            await websocket.send_text(
+                '<div id="chat-messages" hx-swap-oob="beforeend">'
+                "<div class='text-muted'>System: Input stream alive...</div>"
+                "</div>"
+            )
+            await asyncio.sleep(5)
     except WebSocketDisconnect:
         pass
 

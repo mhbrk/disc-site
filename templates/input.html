@@ -1,13 +1,13 @@
-<div id="chat-log">
-    {% for msg in messages %}
-        {{ msg | safe }}
-    {% endfor %}
+<div id="chat-log" hx-ext="ws" ws-connect="/ws/input">
+    <div id="chat-messages">
+        <!-- messages go here -->
+    </div>
 </div>
 
 <!-- Keep the form outside the updated target -->
 <form id="chat-form"
       hx-post="/message"
-      hx-target="#chat-log"
+      hx-target="#chat-messages"
       hx-swap="beforeend">
     <div class="input-group mt-3">
         <input type="text" name="message" class="form-control" placeholder="Type your message..." required>
