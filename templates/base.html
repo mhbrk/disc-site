@@ -8,7 +8,6 @@
             integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
             crossorigin="anonymous"></script>
     <script src="https://unpkg.com/htmx-ext-ws@2.0.2" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/htmx.org/dist/ext/morphdom-swap.js"></script>
     <style>
         .panel {
             border: 1px solid #ddd;
@@ -28,9 +27,7 @@
             </div>
         </div>
         <div class="col-md-4">
-            <div id="processing-panel" class="panel"
-                 hx-ext="ws"
-                 ws-connect="/ws/processing">
+            <div id="processing-panel" class="panel">
                 {% include "processing.html" %}
             </div>
         </div>

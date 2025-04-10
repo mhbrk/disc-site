@@ -2,3 +2,11 @@
           class="form-control"
           rows="30">
 </textarea>
+
+<script>
+    let ws = new WebSocket("ws://localhost:8000/ws/processing");
+    ws.onmessage = (event) => {
+        const textarea = document.getElementById("processing-log");
+        textarea.value = event.data;
+    };
+</script>

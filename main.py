@@ -56,27 +56,23 @@ async def ws_processing(websocket: WebSocket):
             i += 1
             # Simulate new log content (mocked)
             log_content = f"Step {i}...\nStep {i + 1}...\nStep {i + 2}..."
-            html = (
-                f'<textarea id="processing-log" '
-                f'class="form-control" rows="20" '
-                f'hx-swap-oob="morphdom">{log_content}</textarea>'
-            )
-            await websocket.send_text(html)
+            await websocket.send_text(log_content)
             await asyncio.sleep(2)
     except WebSocketDisconnect:
         pass
 
-@app.websocket("/ws/output")
-async def ws_output(websocket: WebSocket):
-    await websocket.accept()
-    try:
-        i = 0
-        while True:
-            i += 1
-            await websocket.send_text(f"<p>Generated section {i}: Lorem ipsum dolor sit amet...</p>")
-            await asyncio.sleep(4)
-    except WebSocketDisconnect:
-        pass
+@app.get("/preview", response_class=HTMLResponse)
+async def preview():
+    html = """
+    <html>
+    <head><style>body { font-family: sans-serif; }</style></head>
+    <body>
+        <h2>Report Preview</h2>
+        <p>This is a preview of the output HTML.</p>
+    </body>
+    </html>
+    """
+    return html
 
 
 if __name__ == "__main__":
