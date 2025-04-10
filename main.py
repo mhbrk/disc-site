@@ -54,7 +54,14 @@ async def ws_processing(websocket: WebSocket):
         i = 0
         while True:
             i += 1
-            await websocket.send_text(f"Processing step {i}...\n")
+            # Simulate new log content (mocked)
+            log_content = f"Step {i}...\nStep {i + 1}...\nStep {i + 2}..."
+            html = (
+                f'<textarea id="processing-log" '
+                f'class="form-control" rows="20" '
+                f'hx-swap-oob="morphdom">{log_content}</textarea>'
+            )
+            await websocket.send_text(html)
             await asyncio.sleep(2)
     except WebSocketDisconnect:
         pass
