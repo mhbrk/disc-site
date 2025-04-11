@@ -19,9 +19,11 @@ templates = Jinja2Templates(directory="templates")
 # In-memory message store for mocking
 dummy_chat_log: List[str] = []
 
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("base.html", {"request": request})
+
 
 @app.post("/message", response_class=HTMLResponse)
 async def post_message(request: Request, message: str = Form(...)):
@@ -47,6 +49,7 @@ async def ws_input(websocket: WebSocket):
     except WebSocketDisconnect:
         pass
 
+
 @app.websocket("/ws/processing")
 async def ws_processing(websocket: WebSocket):
     await websocket.accept()
@@ -61,20 +64,50 @@ async def ws_processing(websocket: WebSocket):
     except WebSocketDisconnect:
         pass
 
+@app.websocket("/ws/output")
+async def ws_output(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        i = 0
+        while True:
+            i += 1
+            await websocket.send_text(f"<p><strong>Section {i}</strong>: This is dynamic HTML content.</p>")
+            await asyncio.sleep(3)
+    except WebSocketDisconnect:
+        pass
+
+
 @app.get("/preview", response_class=HTMLResponse)
 async def preview():
     html = """
-    <html>
-    <head><style>body { font-family: sans-serif; }</style></head>
-    <body>
-        <h2>Report Preview</h2>
-        <p>This is a preview of the output HTML.</p>
-    </body>
-    </html>
+    <!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: sans-serif; padding: 1rem; }
+        #output-container { border: 1px dashed #ccc; padding: 1rem; }
+    </style>
+</head>
+<body>
+    <h3>Live HTML Preview</h3>
+    <div id="output-container"></div>
+
+    <script>
+    window.addEventListener("message", (event) => {
+        if (event.data.type === "append-html") {
+            const container = document.getElementById("output-container");
+            const fragment = document.createRange().createContextualFragment(event.data.html);
+            container.appendChild(fragment);
+        }
+    });
+    </script>
+</body>
+</html>
     """
     return html
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

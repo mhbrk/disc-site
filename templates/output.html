@@ -1,1 +1,17 @@
 <iframe id="output-frame" class="w-100" style="height: 85vh;" src="/preview" frameborder="0"></iframe>
+
+<script>
+const iframe = document.getElementById('output-frame');
+
+// Optional: wait until iframe is ready
+iframe.addEventListener('load', () => {
+    const ws = new WebSocket("ws://localhost:8000/ws/output");
+
+    ws.onmessage = (event) => {
+        iframe.contentWindow.postMessage({
+            type: 'append-html',
+            html: event.data
+        }, '*');  // You can use specific origin if needed
+    };
+});
+</script>
