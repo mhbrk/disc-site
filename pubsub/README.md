@@ -47,3 +47,15 @@ docker-compose up --build
       -p 8000:8000 \
       -e KAFKA_BROKER=kafka:9092 \
       pubsub
+   
+## Test payload
+
+```bash
+curl -X POST http://127.0.0.1:8000/subscribe \
+  -H "Content-Type: application/json" \
+  -d '{"topic": "my_topic", "endpoint": "http://localhost:8000/echo"}'
+
+curl -X POST http://127.0.0.1:8000/publish \
+  -H "Content-Type: application/json" \
+  -d '{"topic": "my_topic", "payload": {"message": "hello world"}}'
+```
