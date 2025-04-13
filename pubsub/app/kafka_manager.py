@@ -1,12 +1,13 @@
 import asyncio
 import json
+import os
 import threading
 from typing import Dict, List
 
-from kafka import KafkaConsumer, KafkaProducer
 import aiohttp
+from kafka import KafkaConsumer, KafkaProducer
 
-KAFKA_BROKER = 'localhost:9092'
+KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
 
 _topic_threads: Dict[str, threading.Thread] = {}
 _subscribers: Dict[str, List[str]] = {}
