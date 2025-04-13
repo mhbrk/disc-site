@@ -5,3 +5,10 @@ jinja2
 python-multipart
 python-dotenv
 uvicorn[standard]
+kafka-python
+aiohttp
+langchain_core
+langchain-openai
+langgraph
+langchain_community
+httpx
