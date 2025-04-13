@@ -5,4 +5,7 @@
 ![User interface](images/UI.png)
 
 ### Agent Architecture
-![User interface](images/architecture.png)
+![Agent Architecture](images/architecture.png)
+
+## Event Driven Architecture using Publish-Subscribe Pattern
+![PubSub](images/pubsub.png)
