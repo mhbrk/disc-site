@@ -1,8 +1,11 @@
+from datetime import datetime
 import os
 
 import httpx
 
 from dotenv import load_dotenv
+
+from models import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse
 
 load_dotenv()
 
@@ -17,23 +20,30 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
         content = chunk.get("content")
         if not content:
             continue
+
+        is_task_completed = chunk.get("is_task_complete")
+
+        if is_task_completed:
+            task_status = TaskStatus(state=TaskState.COMPLETED)
+        else:
+            message = Message(role="agent", parts=[TextPart(text="Streaming...")])
+            task_status = TaskStatus(message=message, state=TaskState.WORKING)
+
+        artifact = Artifact(parts=[TextPart(text=content)])
+
+        task = Task(
+            id=task_id,
+            sessionId=session_id,
+            status=task_status,
+            artifacts=[artifact],  # or keep None if artifacts are sent at the end
+            metadata={}
+        )
+
+        response = SendTaskResponse(id=task_id, result=task)
+
         payload = {
             "topic": PUBSUB_TOPIC,
-            "payload": {
-                "id": task_id,
-                "status": {
-                    "state": "working",
-                    "message": {
-                        "role": "agent",
-                        "parts": [{
-                            "type": "text",
-                            "text": content
-                        }]
-                    }
-                },
-                "final": chunk.get("is_task_complete", False),
-                "metadata": {}
-            }
+            "payload": response.model_dump(exclude_none=True)
         }
 
         async with httpx.AsyncClient() as client:

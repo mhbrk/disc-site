@@ -1,8 +1,9 @@
+from datetime import datetime
 from enum import Enum
 from typing import Any, Literal, List, Union, Annotated
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, TypeAdapter
+from pydantic import BaseModel, Field, TypeAdapter, field_serializer
 
 
 class TaskState(str, Enum):
@@ -64,6 +65,39 @@ class JSONRPCResponse(JSONRPCMessage):
 class SendTaskRequest(JSONRPCMessage):
     method: Literal["tasks/send"] = "tasks/send"
     params: TaskSendParams
+
+
+class TaskStatus(BaseModel):
+    state: TaskState
+    message: Message | None = None
+    timestamp: datetime = Field(default_factory=datetime.now)
+
+    @field_serializer("timestamp")
+    def serialize_dt(self, dt: datetime, _info):
+        return dt.isoformat()
+
+
+class Artifact(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    parts: List[TextPart]
+    metadata: dict[str, Any] | None = None
+    index: int = 0
+    append: bool | None = None
+    lastChunk: bool | None = None
+
+
+class Task(BaseModel):
+    id: str
+    sessionId: str | None = None
+    status: TaskStatus
+    artifacts: List[Artifact] | None = None
+    history: List[Message] | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class SendTaskResponse(JSONRPCResponse):
+    result: Task | None = None
 
 
 A2ARequest = TypeAdapter(

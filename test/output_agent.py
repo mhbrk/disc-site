@@ -1,4 +1,5 @@
 import asyncio
+import os
 from uuid import uuid4
 
 import httpx
@@ -13,7 +14,7 @@ OUTPUT_AGENT_TOPIC: str = "output_agent_topic"
 url = f"{PUBSUB_URL}/subscribe"
 
 
-async def send_task_to_agent_direct():
+async def send_task_to_agent_direct(session_id: str):
     client = A2AClient("http://localhost:8001")
 
     # Build structured message
@@ -27,7 +28,7 @@ async def send_task_to_agent_direct():
     # Wrap in TaskSendParams
     task_params = TaskSendParams(
         id=f"task-{uuid4().hex}",
-        sessionId=f"session-{uuid4().hex}",
+        sessionId=session_id,
         message=message
     )
 
@@ -52,4 +53,5 @@ def subscribe_to_agent():
     print(response.json())
 
 
-asyncio.run(send_task_to_agent_direct())
+session_id = os.environ.get("SESSION_ID")
+asyncio.run(send_task_to_agent_direct(session_id))

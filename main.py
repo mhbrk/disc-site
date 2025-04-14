@@ -1,11 +1,14 @@
 import asyncio
-from typing import List
+from typing import List, Annotated
+from uuid import uuid4
 
 import httpx
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Form, Body
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Form, Body, Cookie
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
+
 
 HOST = "localhost"
 PORT = 7999
@@ -17,6 +20,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SessionMiddleware, secret_key="my-super-secret-key")
 
 templates = Jinja2Templates(directory="templates")
 
@@ -27,6 +31,8 @@ SUBSCRIBE_URL: str = "http://127.0.0.1:8000/subscribe"
 PUSH_URL: str = "http://my-localhost:7999"
 OUTPUT_AGENT_TOPIC: str = "output_agent_topic"
 
+# Keeps track of the currently connected output sockets by sessionId
+connected_output_sockets: dict[str, WebSocket] = {}
 
 async def subscribe_to_agents():
     payload = {"topic": OUTPUT_AGENT_TOPIC, "endpoint": f"{PUSH_URL}/agent/output/push"}
@@ -38,6 +44,9 @@ async def subscribe_to_agents():
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
+    # TODO: nees to be done at login
+    request.session["sessionId"] = f"user-1-{uuid4().hex[:4]}"
+    print(request.session.get("sessionId"))
     await subscribe_to_agents()
     return templates.TemplateResponse("base.html", {"request": request, "socket_server": f"ws://{HOST}:{PORT}"})
 
@@ -92,11 +101,11 @@ async def ws_output(websocket: WebSocket):
             await websocket.send_text(f"<p><strong>Section {i}</strong>: This is dynamic HTML content.</p>")
             await asyncio.sleep(3)
     except WebSocketDisconnect:
-        pass
+        connected_output_sockets.pop(websocket.session["sessionId"], None)
 
 
 @app.post("/agent/output/push")
-async def echo(payload: dict = Body(...)):
+async def push_from_output_agent(payload: dict = Body(...)):
     print(payload)
     return {"status": "success"}
 
