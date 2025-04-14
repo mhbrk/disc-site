@@ -1,10 +1,17 @@
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Form
+from uuid import uuid4
+
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Form, Body
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 from typing import List
 
+from common.client import A2AClient
+from common.model import Message, TextPart, TaskSendParams
+
+HOST = "localhost"
+PORT = 7999
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -19,10 +26,34 @@ templates = Jinja2Templates(directory="templates")
 # In-memory message store for mocking
 dummy_chat_log: List[str] = []
 
+# async def subscribe_to_agents():
+#     client = A2AClient("http://localhost:8001")
+#
+#     # Build structured message
+#     message = Message(
+#         role="user",
+#         parts=[
+#             TextPart(text="Generate a very minimalistic hello world website")
+#         ]
+#     )
+#
+#     # Wrap in TaskSendParams
+#     task_params = TaskSendParams(
+#         id=f"task-{uuid4().hex}",
+#         sessionId=f"session-{uuid4().hex}",
+#         message=message
+#     )
+#
+#     # Send the task
+#     response = await client.send_task(task_params.model_dump(exclude_none=True))
+#
+#     # Print the structured response
+#     print(response.model_dump())
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("base.html", {"request": request})
+    # await subscribe_to_agents()
+    return templates.TemplateResponse("base.html", {"request": request, "socket_server": f"ws://{HOST}:{PORT}"})
 
 
 @app.post("/message", response_class=HTMLResponse)
@@ -76,6 +107,10 @@ async def ws_output(websocket: WebSocket):
     except WebSocketDisconnect:
         pass
 
+@app.post("/echo")
+async def echo(payload: dict = Body(...)):
+    print(payload)
+    return payload
 
 @app.get("/preview", response_class=HTMLResponse)
 async def preview():
@@ -110,4 +145,4 @@ async def preview():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host=HOST, port=PORT, reload=True)

@@ -4,7 +4,7 @@
 </textarea>
 
 <script>
-    let ws = new WebSocket("ws://localhost:8000/ws/processing");
+    let ws = new WebSocket("{{ socket_server }}/ws/processing");
     ws.onmessage = (event) => {
         const textarea = document.getElementById("processing-log");
         textarea.value = event.data;
