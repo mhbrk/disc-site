@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 
-from output_agent.app.models import TaskState, JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest
-from output_agent.app.task_manager import start_streaming_task
+from models import TaskState, JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest
+from task_manager import start_streaming_task
 
 load_dotenv()
 

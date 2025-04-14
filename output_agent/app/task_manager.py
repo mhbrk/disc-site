@@ -1,12 +1,14 @@
+import os
+
 import httpx
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from output_agent.app.agent import agent
+from agent import agent
 
-PUBSUB_URL = "http://localhost:8000/publish"
+PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
 PUBSUB_TOPIC = "output_agent_topic"
 
 
@@ -37,7 +39,7 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
         async with httpx.AsyncClient() as client:
             try:
                 print(f"[{task_id}] Publishing to pubsub: {payload}")
-                await client.post(PUBSUB_URL, json=payload)
+                await client.post(f"{PUBSUB_URL}/publish", json=payload)
             except Exception as e:
                 print(f"[{task_id}] Failed to publish to pubsub: {e}")
 
