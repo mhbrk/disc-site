@@ -1,15 +1,20 @@
 import os
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-import uvicorn
 
-from output_agent.app.models import TaskState, JSONRPCResponse, TaskSendParams, JSONRPCError, JSONRPCRequest, \
-    A2ARequest, SendTaskRequest
+import uvicorn
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request, BackgroundTasks, Body
+from fastapi.responses import JSONResponse
+
+from output_agent.app.models import TaskState, JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest
+from output_agent.app.task_manager import start_streaming_task
+
+load_dotenv()
 
 app = FastAPI()
 
 HOST = os.getenv("AGENT_HOST", "localhost")
-PORT = int(os.getenv("AGENT_PORT", 5005))
+PORT = int(os.getenv("AGENT_PORT", 8001))
+
 
 @app.get("/.well-known/agent.json")
 async def get_agent_card():
@@ -44,7 +49,7 @@ async def get_agent_card():
 
 
 @app.post("/")
-async def handle_jsonrpc(request: Request):
+async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
     body = await request.json()
 
     try:
@@ -60,36 +65,47 @@ async def handle_jsonrpc(request: Request):
 
     if isinstance(json_rpc_request, SendTaskRequest):
         params = json_rpc_request.params
+        query = params.message.parts[0].text
+        session_id = params.sessionId
+        task_id = params.id
+
+        # Start the streaming agent in the background
+        background_tasks.add_task(start_streaming_task, task_id, session_id, query)
+
         html_stub = f"<html><body><h1>HTML for: {params.message.parts[0].text}</h1></body></html>"
 
+        # Respond right away that the task was accepted
         return JSONResponse(
             JSONRPCResponse(
                 id=json_rpc_request.id,
                 result={
-                    "id": params.id,
-                    "sessionId": params.sessionId,
+                    "id": task_id,
+                    "sessionId": session_id,
                     "status": {
-                        "state": TaskState.COMPLETED
+                        "state": TaskState.SUBMITTED,
+                        "message": {
+                            "role": "agent",
+                            "parts": [{
+                                "type": "text",
+                                "text": "Streaming has started. You will receive updates shortly."
+                            }]
+                        }
                     },
-                    "artifacts": [{
-                        "name": "html-output",
-                        "parts": [{
-                            "type": "text",
-                            "text": html_stub
-                        }]
-                    }],
                     "metadata": {}
                 }
             ).model_dump(exclude_none=True)
         )
 
+@app.post("/echo")
+def echo(payload: dict = Body(..., embed=False)):
+    print(payload)
+    return payload
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host=HOST, port=PORT, reload=True)
 
-
 """
-curl -X POST http://localhost:5005/ \
+curl -X POST http://localhost:8001/ \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",

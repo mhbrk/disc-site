@@ -4,7 +4,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langchain_openai import ChatOpenAI
 
 from typing import Any, Dict, AsyncIterable, Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 memory = MemorySaver()
 
@@ -25,7 +25,7 @@ def generate_image(prompt: str):
 class ResponseFormat(BaseModel):
     """Respond to the user in this format."""
     status: Literal["input_required", "completed", "error"] = "input_required"
-    message: str
+    html_output: str = Field(description="The HTML content to be rendered as the final output.")
 
 
 class HTMLAgent:
@@ -86,7 +86,7 @@ class HTMLAgent:
                 return {
                     "is_task_complete": True,
                     "require_user_input": False,
-                    "content": structured_response.message
+                    "content": structured_response.html_output
                 }
 
         return {
