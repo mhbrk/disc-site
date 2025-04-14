@@ -66,6 +66,7 @@ class SendTaskRequest(JSONRPCMessage):
     method: Literal["tasks/send"] = "tasks/send"
     params: TaskSendParams
 
+
 class TaskStatus(BaseModel):
     state: TaskState
     message: Message | None = None
@@ -74,6 +75,7 @@ class TaskStatus(BaseModel):
     @field_serializer("timestamp")
     def serialize_dt(self, dt: datetime, _info):
         return dt.isoformat()
+
 
 class Artifact(BaseModel):
     name: str | None = None
@@ -93,8 +95,10 @@ class Task(BaseModel):
     history: List[Message] | None = None
     metadata: dict[str, Any] | None = None
 
+
 class SendTaskResponse(JSONRPCResponse):
     result: Task | None = None
+
 
 A2ARequest = TypeAdapter(
     Annotated[
