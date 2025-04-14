@@ -2,19 +2,31 @@ import asyncio
 import json
 import os
 import threading
+import time
 from typing import Dict, List
 
 import aiohttp
 from kafka import KafkaConsumer, KafkaProducer
+from kafka.errors import NoBrokersAvailable
 
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
 
 _topic_threads: Dict[str, threading.Thread] = {}
 _subscribers: Dict[str, List[str]] = {}
-_producer = KafkaProducer(
-    bootstrap_servers=KAFKA_BROKER,
-    value_serializer=lambda v: json.dumps(v).encode('utf-8')
-)
+_producer = None
+
+for _ in range(10):
+    try:
+        _producer = KafkaProducer(
+            bootstrap_servers=KAFKA_BROKER,
+            value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        )
+        break
+    except NoBrokersAvailable:
+        print("Kafka not available yet, retrying...")
+        time.sleep(1)
+else:
+    raise Exception("Kafka not reachable after multiple attempts")
 
 
 def subscribe(topic: str, endpoint: str):
