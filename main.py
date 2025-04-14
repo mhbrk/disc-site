@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
+from common.model import SendTaskResponse
 
 HOST = "localhost"
 PORT = 7999
@@ -45,7 +46,7 @@ async def subscribe_to_agents():
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     # TODO: nees to be done at login
-    request.session["sessionId"] = f"user-1-{uuid4().hex[:4]}"
+    request.session["sessionId"] = f"user-1-session-1"
     print(request.session.get("sessionId"))
     await subscribe_to_agents()
     return templates.TemplateResponse("base.html", {"request": request, "socket_server": f"ws://{HOST}:{PORT}"})
@@ -94,19 +95,30 @@ async def ws_processing(websocket: WebSocket):
 @app.websocket("/ws/output")
 async def ws_output(websocket: WebSocket):
     await websocket.accept()
+    session_id = websocket.session.get("sessionId", "anonymous")
+    connected_output_sockets[session_id] = websocket
     try:
         i = 0
         while True:
             i += 1
-            await websocket.send_text(f"<p><strong>Section {i}</strong>: This is dynamic HTML content.</p>")
-            await asyncio.sleep(3)
+            # TODO: Need to just check how to keep alive
+            await asyncio.sleep(20)
     except WebSocketDisconnect:
-        connected_output_sockets.pop(websocket.session["sessionId"], None)
+        connected_output_sockets.pop(session_id, None)
+        print(f"Disconnected session: {session_id}")
 
 
 @app.post("/agent/output/push")
 async def push_from_output_agent(payload: dict = Body(...)):
-    print(payload)
+    print(f"Received payload from output agent: {payload}")
+    task_response = SendTaskResponse.model_validate(payload)
+    session_id = task_response.result.sessionId
+    print(f"Received task session_id: {session_id}")
+    websocket = connected_output_sockets.get(session_id)
+    if websocket:
+        text = task_response.result.artifacts[0].parts[0].text
+        print(f"[{session_id}] Sending text: {text}")
+        await websocket.send_text(task_response.result.artifacts[0].parts[0].text)
     return {"status": "success"}
 
 
