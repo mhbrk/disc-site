@@ -1,3 +1,4 @@
+import asyncio
 from uuid import uuid4
 
 import httpx
@@ -10,6 +11,7 @@ PUSH_ENDPOINT: str = "http://my-localhost:7999/echo"
 OUTPUT_AGENT_TOPIC: str = "output_agent_topic"
 
 url = f"{PUBSUB_URL}/subscribe"
+
 
 async def send_task_to_agent_direct():
     client = A2AClient("http://localhost:8001")
@@ -35,14 +37,19 @@ async def send_task_to_agent_direct():
     # Print the structured response
     print(response.model_dump())
 
-payload = {
-    "topic": OUTPUT_AGENT_TOPIC,
-    "endpoint": PUSH_ENDPOINT
-}
 
-headers = {"Content-Type": "application/json"}
+def subscribe_to_agent():
+    payload = {
+        "topic": OUTPUT_AGENT_TOPIC,
+        "endpoint": PUSH_ENDPOINT
+    }
 
-response = httpx.post(url, json=payload, headers=headers)
+    headers = {"Content-Type": "application/json"}
 
-print(response.status_code)
-print(response.json())
+    response = httpx.post(url, json=payload, headers=headers)
+
+    print(response.status_code)
+    print(response.json())
+
+
+asyncio.run(send_task_to_agent_direct())

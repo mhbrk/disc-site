@@ -1,14 +1,11 @@
-from uuid import uuid4
-
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Form, Body
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 from typing import List
 
-from common.client import A2AClient
-from common.model import Message, TextPart, TaskSendParams
+import httpx
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Form, Body
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 HOST = "localhost"
 PORT = 7999
@@ -26,33 +23,22 @@ templates = Jinja2Templates(directory="templates")
 # In-memory message store for mocking
 dummy_chat_log: List[str] = []
 
-# async def subscribe_to_agents():
-#     client = A2AClient("http://localhost:8001")
-#
-#     # Build structured message
-#     message = Message(
-#         role="user",
-#         parts=[
-#             TextPart(text="Generate a very minimalistic hello world website")
-#         ]
-#     )
-#
-#     # Wrap in TaskSendParams
-#     task_params = TaskSendParams(
-#         id=f"task-{uuid4().hex}",
-#         sessionId=f"session-{uuid4().hex}",
-#         message=message
-#     )
-#
-#     # Send the task
-#     response = await client.send_task(task_params.model_dump(exclude_none=True))
-#
-#     # Print the structured response
-#     print(response.model_dump())
+SUBSCRIBE_URL: str = "http://127.0.0.1:8000/subscribe"
+PUSH_URL: str = "http://my-localhost:7999"
+OUTPUT_AGENT_TOPIC: str = "output_agent_topic"
+
+
+async def subscribe_to_agents():
+    payload = {"topic": OUTPUT_AGENT_TOPIC, "endpoint": f"{PUSH_URL}/agent/output/push"}
+    headers = {"Content-Type": "application/json"}
+    async with httpx.AsyncClient() as client:
+        response = await client.post(SUBSCRIBE_URL, json=payload, headers=headers)
+        response.raise_for_status()
+
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    # await subscribe_to_agents()
+    await subscribe_to_agents()
     return templates.TemplateResponse("base.html", {"request": request, "socket_server": f"ws://{HOST}:{PORT}"})
 
 
@@ -95,6 +81,7 @@ async def ws_processing(websocket: WebSocket):
     except WebSocketDisconnect:
         pass
 
+
 @app.websocket("/ws/output")
 async def ws_output(websocket: WebSocket):
     await websocket.accept()
@@ -107,10 +94,18 @@ async def ws_output(websocket: WebSocket):
     except WebSocketDisconnect:
         pass
 
+
+@app.post("/agent/output/push")
+async def echo(payload: dict = Body(...)):
+    print(payload)
+    return {"status": "success"}
+
+
 @app.post("/echo")
 async def echo(payload: dict = Body(...)):
     print(payload)
     return payload
+
 
 @app.get("/preview", response_class=HTMLResponse)
 async def preview():
