@@ -58,11 +58,12 @@ class HTMLAgent:
         config = {"configurable": {"thread_id": sessionId}}
 
         async for message_chunk, metadata in self.graph.astream(inputs, config, stream_mode="messages"):
-            yield {
-                "is_task_complete": False,
-                "require_user_input": False,
-                "content": message_chunk.content,
-            }
+            if metadata["langgraph_node"] == "agent" and message_chunk.content:
+                yield {
+                    "is_task_complete": False,
+                    "require_user_input": False,
+                    "content": message_chunk.content,
+                }
 
         yield self.get_agent_response(config)
 
