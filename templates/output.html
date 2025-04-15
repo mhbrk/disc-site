@@ -8,6 +8,10 @@ iframe.addEventListener('load', () => {
     const ws = new WebSocket("{{ socket_server }}/ws/output");
 
     ws.onmessage = (event) => {
+        if (event.data === "__ping__") {
+            ws.send("__pong__");
+            return;
+        }
         iframe.contentWindow.postMessage({
             type: 'append-html',
             html: event.data

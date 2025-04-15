@@ -103,11 +103,14 @@ async def ws_output(websocket: WebSocket):
     connected_output_sockets[session_id] = websocket
     logger.info(f"Connected output socket for session: {session_id}")
     try:
-        i = 0
         while True:
-            i += 1
-            # TODO: Need to just check how to keep alive
-            await asyncio.sleep(20)
+            await websocket.send_text("__ping__")
+            pong = await asyncio.wait_for(websocket.receive_text(), timeout=10.0)  # timeout in seconds
+            if pong != "__pong__":
+                raise WebSocketDisconnect(1006, f"Pong not received: {pong}")
+    except asyncio.TimeoutError:
+        await websocket.close()
+        logger.info(f"Disconnected output socket for session: {session_id}, due to timeout")
     except WebSocketDisconnect:
         connected_output_sockets.pop(session_id, None)
         logger.info(f"Disconnected output socket for session: {session_id}")
