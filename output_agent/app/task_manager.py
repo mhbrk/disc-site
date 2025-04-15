@@ -1,10 +1,9 @@
-from datetime import datetime
 import os
 
 import httpx
-
 from dotenv import load_dotenv
 
+from accumulator import TagAccumulator
 from models import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse
 
 load_dotenv()
@@ -16,6 +15,7 @@ PUBSUB_TOPIC = "output_agent_topic"
 
 
 async def start_streaming_task(task_id: str, session_id: str, query: str):
+    accumulator = TagAccumulator()
     async for chunk in agent.stream(query, session_id):
         content = chunk.get("content")
         if not content:
@@ -23,9 +23,14 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
 
         is_task_completed = chunk.get("is_task_complete")
 
+        # TODO: handle the case when input is required
         if is_task_completed:
             task_status = TaskStatus(state=TaskState.COMPLETED)
         else:
+            content = accumulator.append_and_return_html(content)
+            if not content:
+                # Accumulate more text before publishing chunk.
+                continue
             message = Message(role="agent", parts=[TextPart(text="Streaming...")])
             task_status = TaskStatus(message=message, state=TaskState.WORKING)
 
@@ -57,4 +62,4 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
 if __name__ == "__main__":
     import asyncio
 
-    asyncio.run(start_streaming_task("abc123", "def456", "generate a hello world site"))
+    asyncio.run(start_streaming_task("abc123", "user-1-session-1", "generate a simple hello world site"))

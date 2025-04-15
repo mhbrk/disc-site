@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from common.model import SendTaskResponse
+from common.model import SendTaskResponse, TaskState
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -105,7 +105,7 @@ async def ws_output(websocket: WebSocket):
     try:
         while True:
             await websocket.send_text("__ping__")
-            pong = await asyncio.wait_for(websocket.receive_text(), timeout=10.0)  # timeout in seconds
+            pong = await asyncio.wait_for(websocket.receive_text(), timeout=300.0)  # timeout in seconds
             if pong != "__pong__":
                 raise WebSocketDisconnect(1006, f"Pong not received: {pong}")
     except asyncio.TimeoutError:
@@ -123,7 +123,7 @@ async def push_from_output_agent(payload: dict = Body(...)):
     session_id = task_response.result.sessionId
     logger.info(f"Received task session_id: {session_id}")
     websocket = connected_output_sockets.get(session_id)
-    if websocket:
+    if websocket and task_response.result.status.state == TaskState.WORKING:
         text = task_response.result.artifacts[0].parts[0].text
         logger.info(f"[{session_id}] Sending text: {text}")
         await websocket.send_text(task_response.result.artifacts[0].parts[0].text)
