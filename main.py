@@ -1,15 +1,18 @@
 import asyncio
-from typing import List, Annotated
-from uuid import uuid4
+import logging
+from typing import List
 
 import httpx
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Form, Body, Cookie
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Form, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
 from common.model import SendTaskResponse
+
+logging.basicConfig(level=logging.INFO, )
+logger = logging.getLogger(__name__)
 
 HOST = "localhost"
 PORT = 7999
@@ -35,6 +38,7 @@ OUTPUT_AGENT_TOPIC: str = "output_agent_topic"
 # Keeps track of the currently connected output sockets by sessionId
 connected_output_sockets: dict[str, WebSocket] = {}
 
+
 async def subscribe_to_agents():
     payload = {"topic": OUTPUT_AGENT_TOPIC, "endpoint": f"{PUSH_URL}/agent/output/push"}
     headers = {"Content-Type": "application/json"}
@@ -47,7 +51,7 @@ async def subscribe_to_agents():
 async def index(request: Request):
     # TODO: nees to be done at login
     request.session["sessionId"] = f"user-1-session-1"
-    print(request.session.get("sessionId"))
+    logger.info(f"Session ID: {request.session.get('sessionId')}")
     await subscribe_to_agents()
     return templates.TemplateResponse("base.html", {"request": request, "socket_server": f"ws://{HOST}:{PORT}"})
 
@@ -97,6 +101,7 @@ async def ws_output(websocket: WebSocket):
     await websocket.accept()
     session_id = websocket.session.get("sessionId", "anonymous")
     connected_output_sockets[session_id] = websocket
+    logger.info(f"Connected output socket for session: {session_id}")
     try:
         i = 0
         while True:
@@ -105,26 +110,26 @@ async def ws_output(websocket: WebSocket):
             await asyncio.sleep(20)
     except WebSocketDisconnect:
         connected_output_sockets.pop(session_id, None)
-        print(f"Disconnected session: {session_id}")
+        logger.info(f"Disconnected output socket for session: {session_id}")
 
 
 @app.post("/agent/output/push")
 async def push_from_output_agent(payload: dict = Body(...)):
-    print(f"Received payload from output agent: {payload}")
+    logger.info(f"Received payload from output agent: {payload}")
     task_response = SendTaskResponse.model_validate(payload)
     session_id = task_response.result.sessionId
-    print(f"Received task session_id: {session_id}")
+    logger.info(f"Received task session_id: {session_id}")
     websocket = connected_output_sockets.get(session_id)
     if websocket:
         text = task_response.result.artifacts[0].parts[0].text
-        print(f"[{session_id}] Sending text: {text}")
+        logger.info(f"[{session_id}] Sending text: {text}")
         await websocket.send_text(task_response.result.artifacts[0].parts[0].text)
     return {"status": "success"}
 
 
 @app.post("/echo")
 async def echo(payload: dict = Body(...)):
-    print(payload)
+    logger.info(payload)
     return payload
 
 
