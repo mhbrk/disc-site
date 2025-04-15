@@ -1,21 +1,39 @@
-<iframe id="output-frame" class="w-100" style="height: 85vh;" src="/preview" frameborder="0"></iframe>
+<iframe id="output-frame" class="w-100" style="border: none; height: 85vh;"></iframe>
 
 <script>
-const iframe = document.getElementById('output-frame');
+    const iframe = document.getElementById('output-frame');
+    const output_ws = new WebSocket("{{ socket_server }}/ws/output");
 
-// Optional: wait until iframe is ready
-iframe.addEventListener('load', () => {
-    const ws = new WebSocket("{{ socket_server }}/ws/output");
+    let docOpened = false;
+    let doc;
 
-    ws.onmessage = (event) => {
+    output_ws.onopen = () => {
+        console.log("WebSocket connected");
+    };
+
+    output_ws.onmessage = async (event) => {
         if (event.data === "__ping__") {
             ws.send("__pong__");
             return;
         }
-        iframe.contentWindow.postMessage({
-            type: 'append-html',
-            html: event.data
-        }, '*');  // You can use specific origin if needed
+
+        if (event.data === "__completed__") {
+            if (docOpened) {
+                doc.close();
+                docOpened = false;
+            }
+            return;
+        }
+
+        if (!docOpened) {
+            // Initialize iframe content when first chunk arrives
+            const win = iframe.contentWindow;
+            doc = win.document;
+            doc.open();
+            docOpened = true;
+        }
+
+        console.log("chunk:" + event.data);
+        doc.write(event.data);
     };
-});
 </script>

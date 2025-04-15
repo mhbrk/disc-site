@@ -62,4 +62,4 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
 if __name__ == "__main__":
     import asyncio
 
-    asyncio.run(start_streaming_task("abc123", "user-1-session-1", "generate a simple hello world site"))
+    asyncio.run(start_streaming_task("abc123", "user-1-session-1", "Generate a site for my birthday. I'm turning 18. My birthday is on June 11 and the theme is 1990s."))

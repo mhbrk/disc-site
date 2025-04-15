@@ -21,7 +21,7 @@ async def send_task_to_agent_direct(session_id: str):
     message = Message(
         role="user",
         parts=[
-            TextPart(text="Generate a very minimalistic hello world website")
+            TextPart(text="Generate a site for my birthday. I'm turning 18. My birthday is on June 11 and the theme is 1990s.")
         ]
     )
 
