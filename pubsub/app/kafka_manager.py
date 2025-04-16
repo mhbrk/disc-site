@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import threading
 import time
@@ -8,6 +9,9 @@ from typing import Dict, List
 import aiohttp
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import NoBrokersAvailable
+
+logging.basicConfig(level=logging.INFO, )
+logger = logging.getLogger(__name__)
 
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
 
@@ -28,8 +32,8 @@ for _ in range(10):
 else:
     raise Exception("Kafka not reachable after multiple attempts")
 
-# TODO: provide unsubscribe mechanism
 
+# TODO: provide unsubscribe mechanism
 def subscribe(topic: str, endpoint: str):
     _subscribers.setdefault(topic, set()).add(endpoint)
 
@@ -70,6 +74,6 @@ async def _consume_topic(topic: str):
 async def _post(session: aiohttp.ClientSession, endpoint: str, data: dict):
     try:
         async with session.post(endpoint, json=data, timeout=30) as resp:
-            print(f"Posted to {endpoint}: {resp.status}")
+            logger.info(f"Posted to {endpoint}: {resp.status}")
     except Exception as e:
-        print(f"Failed posting to {endpoint}: {e}")
+        logger.error(f"Failed posting to {endpoint}: {e}")

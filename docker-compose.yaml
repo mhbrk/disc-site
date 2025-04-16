@@ -50,6 +50,8 @@ services:
       - ./output_agent/app/.env
     environment:
       PUBSUB_URL: http://pubsub:8000
+      AGENT_HOST: output_agent
+      AGENT_PORT: 8001
     extra_hosts:
       - "my-localhost:host-gateway"
     command: >

@@ -25,7 +25,7 @@ PORT = int(os.getenv("AGENT_PORT", 8001))
 PUBSUB_URL = os.getenv("PUBSUB_URL", "http://localhost:8000")
 
 # TODO: these need to come from env
-PUSH_URL: str = f"http://my-localhost:{PORT}"
+RECEIVE_URL: str = f"http://{HOST}:{PORT}"
 BUILDER_AGENT_TOPIC: str = "builder_agent_topic"
 
 
@@ -33,7 +33,7 @@ async def subscribe_to_agents():
     # Receives tasks at root url
     # TODO: check for pubsub being up instead of sleeping
     await asyncio.sleep(2)
-    payload = {"topic": BUILDER_AGENT_TOPIC, "endpoint": f"{PUSH_URL}/"}
+    payload = {"topic": BUILDER_AGENT_TOPIC, "endpoint": f"{RECEIVE_URL}/"}
     headers = {"Content-Type": "application/json"}
     async with httpx.AsyncClient() as client:
         response = await client.post(f"{PUBSUB_URL}/subscribe", json=payload, headers=headers)

@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Body
@@ -5,6 +6,8 @@ from pydantic import BaseModel
 
 import kafka_manager
 
+logging.basicConfig(level=logging.INFO, )
+logger = logging.getLogger(__name__)
 
 class SubscribeRequest(BaseModel):
     topic: str
