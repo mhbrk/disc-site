@@ -4,7 +4,7 @@ import httpx
 from dotenv import load_dotenv
 
 from accumulator import TagAccumulator
-from models import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse
+from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse
 
 load_dotenv()
 

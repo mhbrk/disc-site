@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 
-from models import TaskState, JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest
+from common.model import TaskState, JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest
 from task_manager import start_streaming_task
 
 logging.basicConfig(level=logging.INFO, )
