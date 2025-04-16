@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -11,6 +12,10 @@ from fastapi.responses import JSONResponse
 
 from models import TaskState, JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest
 from task_manager import start_streaming_task
+
+logging.basicConfig(level=logging.INFO, )
+logger = logging.getLogger(__name__)
+
 
 load_dotenv()
 
@@ -26,13 +31,14 @@ BUILDER_AGENT_TOPIC: str = "builder_agent_topic"
 
 async def subscribe_to_agents():
     # Receives tasks at root url
-    await asyncio.sleep(4)
+    # TODO: check for pubsub being up instead of sleeping
+    await asyncio.sleep(2)
     payload = {"topic": BUILDER_AGENT_TOPIC, "endpoint": f"{PUSH_URL}/"}
     headers = {"Content-Type": "application/json"}
     async with httpx.AsyncClient() as client:
         response = await client.post(f"{PUBSUB_URL}/subscribe", json=payload, headers=headers)
         response.raise_for_status()
-        print(f"Subscribed to: SUBSCRIBE_URL, payload: {json.dumps(payload)}")
+        logger.info(f"Subscribed to: SUBSCRIBE_URL, payload: {json.dumps(payload)}")
 
 
 @asynccontextmanager
