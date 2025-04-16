@@ -36,7 +36,7 @@ async def send_task_to_agent_direct(session_id: str):
 
     # Send the task
     # TODO: I don't think model_dump is needed here because it's a pydantic model and model dump occurs later inside the client
-    response = await client.send_task(task_params.model_dump(exclude_none=True))
+    response = await client.send_task(task_params)
 
     # Print the structured response
     print(response.model_dump())
@@ -92,5 +92,4 @@ def subscribe_to_agent():
     print(response.json())
 
 
-session_id = os.environ.get("SESSION_ID")
-asyncio.run(send_task_to_agent_indirect(session_id))
+asyncio.run(send_task_to_agent_direct(os.environ.get("SESSION_ID")))
