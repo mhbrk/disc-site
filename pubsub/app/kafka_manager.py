@@ -12,7 +12,7 @@ from kafka.errors import NoBrokersAvailable
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
 
 _topic_threads: Dict[str, threading.Thread] = {}
-_subscribers: Dict[str, List[str]] = {}
+_subscribers: Dict[str, set[str]] = {}
 _producer = None
 
 for _ in range(10):
@@ -31,8 +31,7 @@ else:
 # TODO: provide unsubscribe mechanism
 
 def subscribe(topic: str, endpoint: str):
-    # TODO: endpoint list should be a set. The same endpoint should not be added twice
-    _subscribers.setdefault(topic, []).append(endpoint)
+    _subscribers.setdefault(topic, set()).add(endpoint)
 
     if topic not in _topic_threads:
         t = threading.Thread(target=_run_topic_consumer, args=(topic,), daemon=True)

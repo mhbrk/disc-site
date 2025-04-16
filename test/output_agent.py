@@ -92,4 +92,4 @@ def subscribe_to_agent():
     print(response.json())
 
 
-asyncio.run(send_task_to_agent_direct(os.environ.get("SESSION_ID")))
+asyncio.run(send_task_to_agent_indirect(os.environ.get("SESSION_ID")))
