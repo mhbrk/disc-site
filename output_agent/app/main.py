@@ -1,5 +1,9 @@
+import asyncio
+import json
 import os
+from contextlib import asynccontextmanager
 
+import httpx
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks, Body
@@ -10,10 +14,35 @@ from task_manager import start_streaming_task
 
 load_dotenv()
 
-app = FastAPI()
 
 HOST = os.getenv("AGENT_HOST", "localhost")
 PORT = int(os.getenv("AGENT_PORT", 8001))
+PUBSUB_URL = os.getenv("PUBSUB_URL", "http://localhost:8000")
+
+# TODO: these need to come from env
+PUSH_URL: str = f"http://my-localhost:{PORT}"
+BUILDER_AGENT_TOPIC: str = "builder_agent_topic"
+
+
+async def subscribe_to_agents():
+    # Receives tasks at root url
+    await asyncio.sleep(4)
+    payload = {"topic": BUILDER_AGENT_TOPIC, "endpoint": f"{PUSH_URL}/"}
+    headers = {"Content-Type": "application/json"}
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{PUBSUB_URL}/subscribe", json=payload, headers=headers)
+        response.raise_for_status()
+        print(f"Subscribed to: SUBSCRIBE_URL, payload: {json.dumps(payload)}")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await subscribe_to_agents()
+    yield
+    # TODO: unsubscribe
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/.well-known/agent.json")
@@ -48,6 +77,39 @@ async def get_agent_card():
     })
 
 
+def execute_task(task_request: SendTaskRequest, background_tasks: BackgroundTasks):
+    params = task_request.params
+    query = params.message.parts[0].text
+    session_id = params.sessionId
+    task_id = params.id
+
+    # Start the streaming agent in the background
+    background_tasks.add_task(start_streaming_task, task_id, session_id, query)
+
+    # TODO: publish this to topic so that listener can know that the task was registered a new response is coming
+    # TODO: use SendTaskResponse type
+    return JSONResponse(
+        JSONRPCResponse(
+            id=task_request.id,
+            result={
+                "id": task_id,
+                "sessionId": session_id,
+                "status": {
+                    "state": TaskState.SUBMITTED,
+                    "message": {
+                        "role": "agent",
+                        "parts": [{
+                            "type": "text",
+                            "text": "Streaming has started. You will receive updates shortly."
+                        }]
+                    }
+                },
+                "metadata": {}
+            }
+        ).model_dump(exclude_none=True)
+    )
+
+
 @app.post("/")
 async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
     body = await request.json()
@@ -64,42 +126,14 @@ async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
         )
 
     if isinstance(json_rpc_request, SendTaskRequest):
-        params = json_rpc_request.params
-        query = params.message.parts[0].text
-        session_id = params.sessionId
-        task_id = params.id
+        return execute_task(json_rpc_request, background_tasks)
 
-        # Start the streaming agent in the background
-        background_tasks.add_task(start_streaming_task, task_id, session_id, query)
-
-        html_stub = f"<html><body><h1>HTML for: {params.message.parts[0].text}</h1></body></html>"
-
-        # Respond right away that the task was accepted
-        return JSONResponse(
-            JSONRPCResponse(
-                id=json_rpc_request.id,
-                result={
-                    "id": task_id,
-                    "sessionId": session_id,
-                    "status": {
-                        "state": TaskState.SUBMITTED,
-                        "message": {
-                            "role": "agent",
-                            "parts": [{
-                                "type": "text",
-                                "text": "Streaming has started. You will receive updates shortly."
-                            }]
-                        }
-                    },
-                    "metadata": {}
-                }
-            ).model_dump(exclude_none=True)
-        )
 
 @app.post("/echo")
 def echo(payload: dict = Body(..., embed=False)):
     print(payload)
     return payload
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host=HOST, port=PORT, reload=True)

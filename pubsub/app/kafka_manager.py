@@ -28,8 +28,10 @@ for _ in range(10):
 else:
     raise Exception("Kafka not reachable after multiple attempts")
 
+# TODO: provide unsubscribe mechanism
 
 def subscribe(topic: str, endpoint: str):
+    # TODO: endpoint list should be a set. The same endpoint should not be added twice
     _subscribers.setdefault(topic, []).append(endpoint)
 
     if topic not in _topic_threads:
