@@ -100,6 +100,46 @@ class SendTaskResponse(JSONRPCResponse):
     result: Task | None = None
 
 
+class AgentProvider(BaseModel):
+    organization: str
+    url: str | None = None
+
+
+class AgentCapabilities(BaseModel):
+    streaming: bool = False
+    pushNotifications: bool = False
+    stateTransitionHistory: bool = False
+
+
+class AgentAuthentication(BaseModel):
+    schemes: List[str]
+    credentials: str | None = None
+
+
+class AgentSkill(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    tags: List[str] | None = None
+    examples: List[str] | None = None
+    inputModes: List[str] | None = None
+    outputModes: List[str] | None = None
+
+
+class AgentCard(BaseModel):
+    name: str
+    description: str | None = None
+    url: str
+    provider: AgentProvider | None = None
+    version: str
+    documentationUrl: str | None = None
+    capabilities: AgentCapabilities
+    authentication: AgentAuthentication | None = None
+    defaultInputModes: List[str] = ["text"]
+    defaultOutputModes: List[str] = ["text"]
+    skills: List[AgentSkill]
+
+
 A2ARequest = TypeAdapter(
     Annotated[
         Union[
