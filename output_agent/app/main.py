@@ -24,7 +24,6 @@ HOST = os.getenv("AGENT_HOST", "localhost")
 PORT = int(os.getenv("AGENT_PORT", 8001))
 PUBSUB_URL = os.getenv("PUBSUB_URL", "http://localhost:8000")
 
-# TODO: these need to come from env
 RECEIVE_URL: str = f"http://{HOST}:{PORT}"
 BUILDER_AGENT_TOPIC: str = "builder_agent_topic"
 
