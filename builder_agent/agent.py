@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import NotRequired
 
@@ -69,9 +70,9 @@ class BuilderAgent:
             prompt = split_message[1]
         return {"prompt": prompt}
 
-    def agent(self, state: State) -> State:
+    async def agent(self, state: State) -> State:
         system_message = SystemMessage(content=self.system_prompt)
-        response = self.model.invoke([system_message] + state["messages"])
+        response = await self.model.ainvoke([system_message] + state["messages"])
         return {"messages": [response]}
 
     def visualize(self):
@@ -86,15 +87,15 @@ class BuilderAgent:
             event['messages'][-1].pretty_print()
             self.final_state = event
 
-    def invoke(self, session_id: str, user_input: str):
+    async def invoke(self, session_id: str, user_input: str):
         config = RunnableConfig(recursion_limit=50, configurable={"thread_id": session_id})
         # if the agent is waiting for user input
         if self.is_waiting_for_user_input(config):
-            self.app.invoke(Command(resume=user_input), config)
+            await self.app.ainvoke(Command(resume=user_input), config)
         else:
             # This happens in only with the first task request, if task is being continued this will not work
             prompt = get_instructions("builder_agent_user_prompt", prompt=user_input)
-            self.app.invoke({"messages": [{"role": "user", "content": prompt}]}, config)
+            await self.app.ainvoke({"messages": [{"role": "user", "content": prompt}]}, config)
         return self.get_agent_response(config)
 
     def is_waiting_for_user_input(self, config: dict):
@@ -106,6 +107,7 @@ class BuilderAgent:
         return False
 
     def get_agent_response(self, config):
+        # TODO: use aget_state
         current_state = self.app.get_state(config)
         # check if an interrupt was triggered by get_user_input node
         if self.is_waiting_for_user_input(config):
@@ -138,13 +140,16 @@ agent = BuilderAgent()
 if __name__ == "__main__":
     load_dotenv()
 
-    agent.invoke("user-1-session-1",
-                 "Create a website for my 18th birthday party")
+    async def run_agent():
+        await agent.invoke("user-1-session-1",
+                     "Create a website for my 18th birthday party")
 
-    while True:
-        agent_response = agent.invoke("user-1-session-1",
-                                      "Just do what you think is best.")
-        if not agent.is_waiting_for_user_input({"configurable": {"thread_id": "user-1-session-1"}}):
-            break
+        while True:
+            agent_response = await agent.invoke("user-1-session-1",
+                                          "Just do what you think is best.")
+            if not agent.is_waiting_for_user_input({"configurable": {"thread_id": "user-1-session-1"}}):
+                break
 
-    print(agent_response["content"])
+        print(agent_response["content"])
+
+    asyncio.run(run_agent())
