@@ -2,11 +2,13 @@ import os
 from typing import NotRequired
 
 from dotenv import load_dotenv
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.constants import START, END
 from langgraph.graph import StateGraph, MessagesState
+from langgraph.types import interrupt, Command
 
 from instruction_reader import get_instructions
 
@@ -24,6 +26,8 @@ class BuilderAgent:
         # Initialize model with tools
         self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
 
+        checkpointer = MemorySaver()
+
         # Create a state graph
         graph = StateGraph(state_schema=State)
 
@@ -39,7 +43,7 @@ class BuilderAgent:
         graph.add_edge("extract_prompt", END)
 
         self.graph = graph
-        self.app = graph.compile()
+        self.app = graph.compile(checkpointer=checkpointer)
 
         self.final_state: State | None = None
 
@@ -54,7 +58,7 @@ class BuilderAgent:
 
     def get_user_input(self, state: State) -> State:
         question = state["messages"][-1].content
-        answer = input(question)
+        answer = interrupt(question)
         return {"messages": [HumanMessage(content=answer)]}
 
     def extract_prompt(self, state: State) -> State:
@@ -66,32 +70,62 @@ class BuilderAgent:
         return {"prompt": prompt}
 
     def agent(self, state: State) -> State:
-        response = self.model.invoke(state["messages"])
+        system_message = SystemMessage(content=self.system_prompt)
+        response = self.model.invoke([system_message] + state["messages"])
         return {"messages": [response]}
 
     def visualize(self):
-        with open("build_agent.png", "wb") as file:
+        with open("builder_agent.png", "wb") as file:
             file.write(self.app.get_graph().draw_mermaid_png())
 
     def stream(self, session_id: str, user_input: str):
         config = RunnableConfig(recursion_limit=50, configurable={"thread_id": session_id})
         prompt = get_instructions("builder_agent_user_prompt", prompt=user_input)
-        for event in self.app.stream(
-                {
-                    "messages": [{"role": "system", "content": self.system_prompt},
-                                 {"role": "user", "content": prompt}]
-                },
-                config, stream_mode="values"):
+        for event in self.app.stream({"messages": [{"role": "user", "content": prompt}]},
+                                     config, stream_mode="values"):
             event['messages'][-1].pretty_print()
             self.final_state = event
 
-    def invoke(self, session_id: str, user_input: str) -> State:
+    def invoke(self, session_id: str, user_input: str):
         config = RunnableConfig(recursion_limit=50, configurable={"thread_id": session_id})
-        prompt = get_instructions("build_agent_user_prompt", prompt=user_input)
-        return self.app.invoke({
-            "messages": [{"role": "system", "content": self.system_prompt},
-                         {"role": "user", "content": prompt}]
-        }, config)
+        # if the agent is waiting for user input
+        if self.is_waiting_for_user_input(config):
+            self.app.invoke(Command(resume=user_input), config)
+        else:
+            # This happens in only with the first task request, if task is being continued this will not work
+            prompt = get_instructions("builder_agent_user_prompt", prompt=user_input)
+            self.app.invoke({"messages": [{"role": "user", "content": prompt}]}, config)
+        return self.get_agent_response(config)
+
+    def is_waiting_for_user_input(self, config: dict):
+        state_snapshot = self.app.get_state(config)
+        next_node_tuple = state_snapshot.next
+
+        if len(next_node_tuple) > 0:
+            return next_node_tuple[0] == "get_user_input"
+        return False
+
+    def get_agent_response(self, config):
+        current_state = self.app.get_state(config)
+        # check if an interrupt was triggered by get_user_input node
+        if self.is_waiting_for_user_input(config):
+            return {
+                "is_task_complete": False,
+                "require_user_input": True,
+                "content": current_state.values["messages"][-1].content
+            }
+        elif current_state.values["prompt"]:
+            return {
+                "is_task_complete": True,
+                "require_user_input": False,
+                "content": current_state.values["prompt"]
+            }
+
+        return {
+            "is_task_complete": False,
+            "require_user_input": True,
+            "content": "We are unable to process your request at the moment. Please try again.",
+        }
 
     SUPPORTED_CONTENT_TYPES = ["text", "text/plain"]
 
@@ -104,6 +138,13 @@ agent = BuilderAgent()
 if __name__ == "__main__":
     load_dotenv()
 
-    agent.stream("user-1-session-1",
+    agent.invoke("user-1-session-1",
                  "Create a website for my 18th birthday party")
-    print(agent.final_state["prompt"])
+
+    while True:
+        agent_response = agent.invoke("user-1-session-1",
+                                      "Just do what you think is best.")
+        if not agent.is_waiting_for_user_input({"configurable": {"thread_id": "user-1-session-1"}}):
+            break
+
+    print(agent_response["content"])
