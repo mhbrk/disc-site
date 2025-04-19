@@ -55,5 +55,20 @@ services:
       AGENT_PORT: 8001
     extra_hosts:
       - "my-localhost:host-gateway"
-#    command: >
-#      uvicorn main:app --host 0.0.0.0 --port 8001
+  builder_agent:
+      build:
+        context: .
+        dockerfile: builder_agent.Dockerfile
+      container_name: builder_agent
+      ports:
+        - "8002:8002"
+      depends_on:
+        - pubsub
+      env_file:
+        - ./builder_agent/.env
+      environment:
+        PUBSUB_URL: http://pubsub:8000
+        AGENT_HOST: builder_agent
+        AGENT_PORT: 8002
+      extra_hosts:
+        - "my-localhost:host-gateway"
