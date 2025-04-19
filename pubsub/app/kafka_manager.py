@@ -74,7 +74,8 @@ async def _consume_topic(topic: str):
 
 async def _post(session: aiohttp.ClientSession, endpoint: str, data: dict):
     try:
-        async with session.post(endpoint, json=data, timeout=30) as resp:
+        timeout = aiohttp.ClientTimeout(total=30)
+        async with session.post(endpoint, json=data, timeout=timeout) as resp:
             text = await resp.text()
             logger.info(f"Posted to {endpoint}: {resp.status} - {text}\n {data}")
     except aiohttp.ClientError as e:

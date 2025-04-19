@@ -81,6 +81,8 @@ async def get_agent_card():
 async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
     body = await request.json()
 
+    logger.info(f"Received request: {body}")
+
     try:
         json_rpc_request = A2ARequest.validate_python(body)
     except Exception as e:
