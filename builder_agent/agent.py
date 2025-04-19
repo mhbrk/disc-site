@@ -3,7 +3,7 @@ import os
 from typing import NotRequired
 
 from dotenv import load_dotenv
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
@@ -11,6 +11,7 @@ from langgraph.constants import START, END
 from langgraph.graph import StateGraph, MessagesState
 from langgraph.types import interrupt, Command
 
+from common.model import Message
 from instruction_reader import get_instructions
 
 
@@ -59,8 +60,8 @@ class BuilderAgent:
 
     def get_user_input(self, state: State) -> State:
         question = state["messages"][-1].content
-        answer = interrupt(question)
-        return {"messages": [HumanMessage(content=answer)]}
+        answer: Message = interrupt(question)
+        return {"messages": [{"role": answer.role, "content": answer.parts[0].text}]}
 
     def extract_prompt(self, state: State) -> State:
         message = state["messages"][-1].content
@@ -140,16 +141,18 @@ agent = BuilderAgent()
 if __name__ == "__main__":
     load_dotenv()
 
+
     async def run_agent():
         await agent.invoke("user-1-session-1",
-                     "Create a website for my 18th birthday party")
+                           "Create a website for my 18th birthday party")
 
         while True:
             agent_response = await agent.invoke("user-1-session-1",
-                                          "Just do what you think is best.")
+                                                "Just do what you think is best.")
             if not agent.is_waiting_for_user_input({"configurable": {"thread_id": "user-1-session-1"}}):
                 break
 
         print(agent_response["content"])
+
 
     asyncio.run(run_agent())
