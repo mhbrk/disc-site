@@ -103,8 +103,9 @@ app = FastAPI(lifespan=lifespan)
 
 
 @app.post("/echo")
-def echo(payload: dict = Body(..., embed=False)):
+async def echo(payload: dict = Body(..., embed=False)):
     global builder_response
+    print(f"Echo received payload: {payload}")
     builder_response = payload
     return payload
 
