@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 
@@ -7,9 +8,13 @@ from dotenv import load_dotenv
 from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse, SendTaskRequest, \
     TaskSendParams
 
+# Needs to happen before agent
 load_dotenv()
 
 from agent import agent
+
+logging.basicConfig(level=logging.INFO, )
+logger = logging.getLogger(__name__)
 
 PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
 PUBSUB_BUILDER_TOPIC = "builder_agent_topic"
@@ -18,6 +23,7 @@ PUBSUB_BUILDER_TOPIC = "builder_agent_topic"
 class AgentTaskManager:
 
     async def on_send_task(self, request: SendTaskRequest):
+        logger.info(f"[{request.params.id}] Received task: {request.params.message}")
         agent_response = await agent.invoke(request.params.sessionId, request.params.message)
         content = agent_response.get("content")
         is_task_completed = agent_response.get("is_task_complete")
@@ -52,10 +58,10 @@ class AgentTaskManager:
 
         async with httpx.AsyncClient() as client:
             try:
-                print(f"[{task_id}] Publishing to pubsub: {payload}")
+                logger.info(f"[{task_id}] Publishing to pubsub: {payload}")
                 await client.post(f"{PUBSUB_URL}/publish", json=payload)
             except Exception as e:
-                print(f"[{task_id}] Failed to publish to pubsub: {e}")
+                logger.error(f"[{task_id}] Failed to publish to pubsub: {e}")
 
 
 if __name__ == "__main__":

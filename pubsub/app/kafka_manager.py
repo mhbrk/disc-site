@@ -68,12 +68,16 @@ async def _consume_topic(topic: str):
     async with aiohttp.ClientSession() as session:
         for msg in consumer:
             for endpoint in _subscribers.get(topic, []):
+                logger.debug(f"Pushing message to {endpoint} for topic {topic}: {msg.value}")
                 await _post(session, endpoint, msg.value)
 
 
 async def _post(session: aiohttp.ClientSession, endpoint: str, data: dict):
     try:
         async with session.post(endpoint, json=data, timeout=30) as resp:
-            logger.info(f"Posted to {endpoint}: {resp.status}")
+            text = await resp.text()
+            logger.info(f"Posted to {endpoint}: {resp.status} - {text}\n {data}")
+    except aiohttp.ClientError as e:
+        logger.error(f"[aiohttp.ClientError] Failed posting to {endpoint}: {e}")
     except Exception as e:
-        logger.error(f"Failed posting to {endpoint}: {e}")
+        logger.exception(f"[General Exception] Failed posting to {endpoint}: {e}")
