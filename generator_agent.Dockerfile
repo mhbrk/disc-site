@@ -5,10 +5,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY /output_agent ./output_agent
+COPY /generator_agent ./generator_agent
 COPY /common ./common
 
-WORKDIR /app/output_agent/app
+WORKDIR /app/generator_agent/app
 
 ENV PYTHONPATH=/app
 

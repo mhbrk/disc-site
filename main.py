@@ -33,14 +33,14 @@ dummy_chat_log: List[str] = []
 
 SUBSCRIBE_URL: str = "http://127.0.0.1:8000/subscribe"
 PUSH_URL: str = "http://my-localhost:7999"
-OUTPUT_AGENT_TOPIC: str = "output_agent_topic"
+GENERATOR_AGENT_TOPIC: str = "generator_agent_topic"
 
-# Keeps track of the currently connected output sockets by sessionId
-connected_output_sockets: dict[str, WebSocket] = {}
+# Keeps track of the currently connected generator sockets by sessionId
+connected_generator_sockets: dict[str, WebSocket] = {}
 
 
 async def subscribe_to_agents():
-    payload = {"topic": OUTPUT_AGENT_TOPIC, "endpoint": f"{PUSH_URL}/agent/output/push"}
+    payload = {"topic": GENERATOR_AGENT_TOPIC, "endpoint": f"{PUSH_URL}/agent/generator/push"}
     headers = {"Content-Type": "application/json"}
     async with httpx.AsyncClient() as client:
         response = await client.post(SUBSCRIBE_URL, json=payload, headers=headers)
@@ -96,12 +96,12 @@ async def ws_processing(websocket: WebSocket):
         pass
 
 
-@app.websocket("/ws/output")
-async def ws_output(websocket: WebSocket):
+@app.websocket("/ws/generator")
+async def ws_generator(websocket: WebSocket):
     await websocket.accept()
     session_id = websocket.session.get("sessionId", "anonymous")
-    connected_output_sockets[session_id] = websocket
-    logger.info(f"Connected output socket for session: {session_id}")
+    connected_generator_sockets[session_id] = websocket
+    logger.info(f"Connected generator socket for session: {session_id}")
     try:
         while True:
             await websocket.send_text("__ping__")
@@ -110,19 +110,19 @@ async def ws_output(websocket: WebSocket):
                 raise WebSocketDisconnect(1006, f"Pong not received: {pong}")
     except asyncio.TimeoutError:
         await websocket.close()
-        logger.info(f"Disconnected output socket for session: {session_id}, due to timeout")
+        logger.info(f"Disconnected generator socket for session: {session_id}, due to timeout")
     except WebSocketDisconnect:
-        connected_output_sockets.pop(session_id, None)
-        logger.info(f"Disconnected output socket for session: {session_id}")
+        connected_generator_sockets.pop(session_id, None)
+        logger.info(f"Disconnected generator socket for session: {session_id}")
 
 
-@app.post("/agent/output/push")
-async def push_from_output_agent(payload: dict = Body(...)):
-    logger.info(f"Received payload from output agent: {payload}")
+@app.post("/agent/generator/push")
+async def push_from_generator_agent(payload: dict = Body(...)):
+    logger.info(f"Received payload from generator agent: {payload}")
     task_response = SendTaskResponse.model_validate(payload)
     session_id = task_response.result.sessionId
     logger.info(f"Received task session_id: {session_id}")
-    websocket = connected_output_sockets.get(session_id)
+    websocket = connected_generator_sockets.get(session_id)
     if websocket:
         if task_response.result.status.state == TaskState.WORKING:
             text = task_response.result.artifacts[0].parts[0].text
@@ -131,7 +131,7 @@ async def push_from_output_agent(payload: dict = Body(...)):
         if task_response.result.status.state == TaskState.COMPLETED:
             await websocket.send_text("__completed__")
     else:
-        logger.warning(f"No connected output socket found for session: {session_id}")
+        logger.warning(f"No connected generator socket found for session: {session_id}")
     return {"status": "success"}
 
 

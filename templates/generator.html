@@ -1,17 +1,17 @@
-<iframe id="output-frame" class="w-100" style="border: none; height: 85vh;"></iframe>
+<iframe id="generator-frame" class="w-100" style="border: none; height: 85vh;"></iframe>
 
 <script>
-    const iframe = document.getElementById('output-frame');
-    const output_ws = new WebSocket("{{ socket_server }}/ws/output");
+    const iframe = document.getElementById('generator-frame');
+    const generator_ws = new WebSocket("{{ socket_server }}/ws/generator");
 
     let docOpened = false;
     let doc;
 
-    output_ws.onopen = () => {
+    generator_ws.onopen = () => {
         console.log("WebSocket connected");
     };
 
-    output_ws.onmessage = async (event) => {
+    generator_ws.onmessage = async (event) => {
         if (event.data === "__ping__") {
             ws.send("__pong__");
             return;

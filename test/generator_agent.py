@@ -10,7 +10,7 @@ from common.model import TaskSendParams, TextPart, Message, SendTaskRequest
 
 PUBSUB_URL: str = "http://127.0.0.1:8000"
 PUSH_ENDPOINT: str = "http://my-localhost:7999/echo"
-OUTPUT_AGENT_TOPIC: str = "output_agent_topic"
+GENERATOR_AGENT_TOPIC: str = "generator_agent_topic"
 
 url = f"{PUBSUB_URL}/subscribe"
 
@@ -80,7 +80,7 @@ async def send_task_to_agent_indirect(session_id: str):
 
 def subscribe_to_agent():
     payload = {
-        "topic": OUTPUT_AGENT_TOPIC,
+        "topic": GENERATOR_AGENT_TOPIC,
         "endpoint": PUSH_ENDPOINT
     }
 

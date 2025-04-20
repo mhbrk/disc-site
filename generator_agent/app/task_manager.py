@@ -11,7 +11,7 @@ load_dotenv()
 from agent import agent
 
 PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
-PUBSUB_TOPIC = "output_agent_topic"
+PUBSUB_TOPIC = "generator_agent_topic"
 
 
 async def start_streaming_task(task_id: str, session_id: str, query: str):
