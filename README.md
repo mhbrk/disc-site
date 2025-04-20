@@ -9,3 +9,6 @@
 
 ## Event Driven Architecture using Publish-Subscribe Pattern
 ![PubSub](images/pubsub.png)
+
+## Communication Scheme
+![Communication Scheme](images/communication.png)
