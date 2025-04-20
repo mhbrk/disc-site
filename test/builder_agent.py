@@ -11,8 +11,9 @@ from common.client import A2AClient
 from common.model import TaskSendParams, TextPart, Message, SendTaskRequest, SendTaskResponse, TaskState
 
 PUBSUB_URL: str = "http://127.0.0.1:8000"
-PUSH_ENDPOINT: str = "http://my-localhost:7998/echo"
+ASK_CHAT_AGENT_URL: str = "http://my-localhost:7998/echo"
 BUILDER_AGENT_TOPIC: str = "builder_agent_topic"
+ASK_CHAT_AGENT_TOPIC: str = "ask_chat_agent_topic"
 CHAT_AGENT_TOPIC: str = "chat_agent_topic"
 
 url = f"{PUBSUB_URL}/subscribe"
@@ -46,6 +47,10 @@ async def send_task_to_agent_direct(session_id: str):
 
 
 async def send_task_to_builder_indirect(session_id: str, task_id: str, response: str):
+    """
+    Publish to chat agent topic.
+    Builder should be listening and picking up tasks from this topic
+    """
     message = Message(
         role="user",
         parts=[TextPart(text=response)])
@@ -63,7 +68,7 @@ async def send_task_to_builder_indirect(session_id: str, task_id: str, response:
     )
 
     payload = {
-        "topic": "chat_agent_topic",
+        "topic": CHAT_AGENT_TOPIC,
         "payload": request.model_dump(exclude_none=True)
     }
 
@@ -94,7 +99,7 @@ builder_response: SendTaskResponse | None = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    subscribe_to_agent(BUILDER_AGENT_TOPIC, PUSH_ENDPOINT)
+    subscribe_to_agent(ASK_CHAT_AGENT_TOPIC, ASK_CHAT_AGENT_URL)
     yield
     # TODO: unsubscribe
 

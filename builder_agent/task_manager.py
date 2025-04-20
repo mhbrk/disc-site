@@ -17,33 +17,57 @@ logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
 
 PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
-PUBSUB_BUILDER_TOPIC = "builder_agent_topic"
+BUILDER_TASK_REQUEST_TOPIC = "builder_agent_topic"
+ASK_CHAT_AGENT_TOPIC: str = "ask_chat_agent_topic"
 
 
 class AgentTaskManager:
+    async def publish_task_request(self, task_id: str, session_id: str, message: str):
+        message = Message(role="user", parts=[TextPart(text=message)])
 
-    async def on_send_task(self, request: SendTaskRequest):
-        logger.info(f"[{request.params.id}] Received task: {request.params.message}")
-        agent_response = await agent.invoke(request.params.sessionId, request.params.message)
-        content = agent_response.get("content")
-        is_task_completed = agent_response.get("is_task_complete")
+        # Wrap in TaskSendParams
+        task_params = TaskSendParams(
+            id=task_id,
+            sessionId=session_id,
+            message=message
+        )
 
-        if is_task_completed:
-            task_status = TaskStatus(state=TaskState.COMPLETED)
+        request = SendTaskRequest(
+            params=task_params,
+            id=str(uuid.uuid4())  # or pass your own
+        )
+
+        payload = {
+            "topic": BUILDER_TASK_REQUEST_TOPIC,
+            "payload": request.model_dump(exclude_none=True)
+        }
+
+        async with httpx.AsyncClient() as client:
+            try:
+                print(f"[{task_id}] Publishing to pubsub: {payload}")
+                await client.post(f"{PUBSUB_URL}/publish", json=payload)
+            except Exception as e:
+                print(f"[{task_id}] Failed to publish to pubsub: {e}")
+
+    async def publish_task_response(self, task_id: str, session_id: str, content: str, task_state: TaskState):
+        # When we are invoking the agent, if task is not complete, we assume it is waiting for user input
+        # Even if there is an error, the only resolution that is possible, is another message from client
+        if task_state == TaskState.INPUT_REQUIRED:
+            # If input required, we want to have status text, but not artifact text
+            status_text = content
+            artifact_text = ""
         else:
-            # When we are invoking the agent, if task is not complete, we assume it is waiting for user input
-            # Even if there is an error, the only resolution that is possible, is another message from client
-            message = Message(role="agent", parts=[TextPart(text=content)])
-            task_status = TaskStatus(message=message, state=TaskState.INPUT_REQUIRED)
-            # Clear content, because we don't have an artifact, instead we are looking for an answer
-            content = ""
+            status_text = ""
+            artifact_text = content
 
-        artifact = Artifact(parts=[TextPart(text=content)])
+        message = Message(role="agent", parts=[TextPart(text=status_text)])
+        task_status = TaskStatus(message=message, state=task_state)
 
-        task_id = request.params.id
+        artifact = Artifact(parts=[TextPart(text=artifact_text)])
+
         task = Task(
             id=task_id,
-            sessionId=request.params.sessionId,
+            sessionId=session_id,
             status=task_status,
             artifacts=[artifact],  # or keep None if artifacts are sent at the end
             metadata={}
@@ -52,7 +76,7 @@ class AgentTaskManager:
         response = SendTaskResponse(id=task_id, result=task)
 
         payload = {
-            "topic": PUBSUB_BUILDER_TOPIC,
+            "topic": ASK_CHAT_AGENT_TOPIC,
             "payload": response.model_dump(exclude_none=True)
         }
 
@@ -62,6 +86,24 @@ class AgentTaskManager:
                 await client.post(f"{PUBSUB_URL}/publish", json=payload)
             except Exception as e:
                 logger.error(f"[{task_id}] Failed to publish to pubsub: {e}")
+
+    async def on_send_task(self, request: SendTaskRequest):
+        logger.info(f"[{request.params.id}] Received task: {request.params.message}")
+        agent_response = await agent.invoke(request.params.sessionId, request.params.message)
+        content = agent_response.get("content")
+        is_task_completed = agent_response.get("is_task_complete")
+
+        if is_task_completed:
+            await self.publish_task_request(request.params.id, request.params.sessionId, content)
+            # Publish to ask chat agent topic, so that it knows that task is complete. Ideally, this topic should
+            # come from task request
+            await self.publish_task_response(request.params.id, request.params.sessionId, content,
+                                             TaskState.COMPLETED)
+        else:
+            # When we are invoking the agent, if task is not complete, we assume it is waiting for user input
+            # Even if there is an error, the only resolution that is possible, is another message from client
+            await self.publish_task_response(request.params.id, request.params.sessionId, content,
+                                             TaskState.INPUT_REQUIRED)
 
 
 if __name__ == "__main__":
