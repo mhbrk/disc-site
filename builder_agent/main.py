@@ -24,8 +24,7 @@ HOST = os.getenv("AGENT_HOST", "localhost")
 PORT = int(os.getenv("AGENT_PORT", 8002))
 PUBSUB_URL = os.getenv("PUBSUB_URL", "http://localhost:8000")
 
-# TODO: get from env
-RECEIVE_URL: str = f"http://my-localhost:{PORT}"
+RECEIVE_URL: str = f"http://{HOST}:{PORT}"
 CHAT_AGENT_TOPIC: str = "chat_agent_topic"
 
 task_manager = AgentTaskManager()
