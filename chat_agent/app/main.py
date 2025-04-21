@@ -14,4 +14,4 @@ mount_chainlit(app=app, target="my_cl_app.py", path="/chainlit")
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="127.0.0.1", port=7000, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8003, reload=True)

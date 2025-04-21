@@ -72,3 +72,20 @@ services:
         AGENT_PORT: 8002
       extra_hosts:
         - "my-localhost:host-gateway"
+  chat_agent:
+    build:
+      context: .
+      dockerfile: chat_agent.Dockerfile
+    container_name: chat_agent
+    ports:
+      - "8003:8003"
+    depends_on:
+      - pubsub
+    env_file:
+      - ./chat_agent/app/.env
+    environment:
+      PUBSUB_URL: http://pubsub:8000
+      AGENT_HOST: chat_agent
+      AGENT_PORT: 8003
+    extra_hosts:
+      - "my-localhost:host-gateway"
