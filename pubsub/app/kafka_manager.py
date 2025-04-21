@@ -4,7 +4,7 @@ import logging
 import os
 import threading
 import time
-from typing import Dict, List
+from typing import Dict
 
 import aiohttp
 from kafka import KafkaConsumer, KafkaProducer
@@ -72,13 +72,19 @@ async def _consume_topic(topic: str):
                 await _post(session, endpoint, msg.value)
 
 
-async def _post(session: aiohttp.ClientSession, endpoint: str, data: dict):
-    try:
-        timeout = aiohttp.ClientTimeout(total=30)
-        async with session.post(endpoint, json=data, timeout=timeout) as resp:
-            text = await resp.text()
-            logger.info(f"Posted to {endpoint}: {resp.status} - {text}\n {data}")
-    except aiohttp.ClientError as e:
-        logger.error(f"[aiohttp.ClientError] Failed posting to {endpoint}: {e}")
-    except Exception as e:
-        logger.exception(f"[General Exception] Failed posting to {endpoint}: {e}")
+async def _post(session: aiohttp.ClientSession, endpoint: str, data: dict, retries: int = 2):
+    for attempt in range(1, retries + 1):
+        try:
+            timeout = aiohttp.ClientTimeout(total=30)
+            async with session.post(endpoint, json=data, timeout=timeout) as resp:
+                text = await resp.text()
+                logger.info(f"Posted to {endpoint}: {resp.status} - {text}\n {data}")
+                return
+        except aiohttp.ClientError as e:
+            logger.warning(f"[Attempt {attempt}] ClientError posting to {endpoint}: {e}")
+        except asyncio.TimeoutError:
+            logger.warning(f"[Attempt {attempt}] Timeout posting to {endpoint}")
+        except Exception as e:
+            logger.exception(f"[Attempt {attempt}] Unexpected error posting to {endpoint}: {e}")
+
+        await asyncio.sleep(0.5 * attempt)  # exponential-ish backoff
