@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from common.model import SendTaskResponse, TaskState
+from common.model import SendTaskResponse, TaskState, SendTaskRequest
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -33,10 +33,12 @@ PUSH_URL: str = "http://my-localhost:7999"
 GENERATOR_AGENT_TOPIC: str = "generator_agent_topic"
 ASK_CHAT_AGENT_TOPIC: str = "ask_chat_agent_topic"
 CHAT_AGENT_TOPIC: str = "chat_agent_topic"
+BUILDER_AGENT_TOPIC: str = "builder_agent_topic"
 
 # Keeps track of the currently connected generator sockets by sessionId
 connected_generator_sockets: dict[str, WebSocket] = {}
 connected_input_sockets: dict[str, WebSocket] = {}
+connected_processing_sockets: dict[str, WebSocket] = {}
 
 
 async def subscribe_to_agents():
@@ -47,6 +49,11 @@ async def subscribe_to_agents():
         response.raise_for_status()
 
     payload = {"topic": ASK_CHAT_AGENT_TOPIC, "endpoint": f"{PUSH_URL}/agent/chat/push"}
+    async with httpx.AsyncClient() as client:
+        response = await client.post(SUBSCRIBE_URL, json=payload, headers=headers)
+        response.raise_for_status()
+
+    payload = {"topic": BUILDER_AGENT_TOPIC, "endpoint": f"{PUSH_URL}/agent/builder/push"}
     async with httpx.AsyncClient() as client:
         response = await client.post(SUBSCRIBE_URL, json=payload, headers=headers)
         response.raise_for_status()
@@ -93,21 +100,6 @@ async def ws_input(websocket: WebSocket):
     await handle_socket_connection(websocket, connected_input_sockets)
 
 
-@app.websocket("/ws/processing")
-async def ws_processing(websocket: WebSocket):
-    await websocket.accept()
-    try:
-        i = 0
-        while True:
-            i += 1
-            # Simulate new log content (mocked)
-            log_content = f"Step {i}...\nStep {i + 1}...\nStep {i + 2}..."
-            await websocket.send_text(log_content)
-            await asyncio.sleep(2)
-    except WebSocketDisconnect:
-        pass
-
-
 @app.post("/agent/chat/push")
 async def push_to_chat_agent(payload: dict = Body(...)):
     logger.info(f"Received payload for chat agent: {payload}")
@@ -122,6 +114,25 @@ async def push_to_chat_agent(payload: dict = Body(...)):
             await websocket.send_text("Client: " + text)
     else:
         logger.warning(f"No connected input socket found for session: {session_id}")
+    return {"status": "success"}
+
+
+@app.websocket("/ws/processing")
+async def ws_processing(websocket: WebSocket):
+    await handle_socket_connection(websocket, connected_processing_sockets)
+
+
+@app.post("/agent/builder/push")
+async def push_from_builder_agent(payload: dict = Body(...)):
+    logger.info(f"Received payload from builder agent: {payload}")
+    task_request = SendTaskRequest.model_validate(payload)
+    session_id = task_request.params.sessionId
+    logger.info(f"Received task session_id: {session_id}")
+    websocket = connected_processing_sockets.get(session_id)
+    if websocket:
+        await websocket.send_text(task_request.params.message.parts[0].text)
+    else:
+        logger.warning(f"No connected generator socket found for session: {session_id}")
     return {"status": "success"}
 
 
