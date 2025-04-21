@@ -43,7 +43,7 @@
     <div class="row g-3">
         <div class="col-md-4">
             <div id="input-panel" class="panel">
-                <iframe src="http://127.0.0.1:7000/chainlit"></iframe>
+                {% include "input.html" %}
             </div>
         </div>
         <div class="col-md-4">
@@ -58,5 +58,9 @@
         </div>
     </div>
 </div>
+<script>
+    const chat_iframe = document.getElementById('chainlit');
+    chat_iframe.contentWindow.postMessage('Client: Hello from parent window', '*');
+</script>
 </body>
 </html>

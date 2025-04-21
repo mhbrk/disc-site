@@ -1,16 +1,11 @@
-<div id="chat-log" hx-ext="ws" ws-connect="/ws/input">
-    <div id="chat-messages">
-        <!-- messages go here -->
-    </div>
-</div>
+<iframe id="chainlit" src="http://127.0.0.1:7000/chainlit"></iframe>
 
-<!-- Keep the form outside the updated target -->
-<form id="chat-form"
-      hx-post="/message"
-      hx-target="#chat-messages"
-      hx-swap="beforeend">
-    <div class="input-group mt-3">
-        <input type="text" name="message" class="form-control" placeholder="Type your message..." required>
-        <button class="btn btn-primary" type="submit">Send</button>
-    </div>
-</form>
+<script>
+    const chat_iframe = document.getElementById('chainlit');
+
+    let ws = new WebSocket("{{ socket_server }}/ws/input");
+    console.log("Input WebSocket connected:" + ws);
+    ws.onmessage = (event) => {
+        chat_iframe.contentWindow.postMessage(event.data, '*');
+    };
+</script>

@@ -1,8 +1,15 @@
 import chainlit as cl
 
+
 @cl.on_chat_start
 async def main():
     await cl.Message(content="Hello World").send()
+
+
+@cl.on_window_message
+async def window_message(message: str):
+    if message.startswith("Client: "):
+        await cl.Message(content=f"Window message received: {message}").send()
 
 
 @cl.on_message
