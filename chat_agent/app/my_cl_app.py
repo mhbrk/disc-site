@@ -58,8 +58,7 @@ async def main():
 
 @cl.on_window_message
 async def window_message(message: str):
-    if message.startswith("Client: "):
-        await cl.Message(content=f"Window message received: {message}").send()
+    await cl.Message(content=message).send()
 
 
 @cl.on_message

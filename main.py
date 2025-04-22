@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+# from starlette.staticfiles import StaticFiles
 
 from common.model import SendTaskResponse, TaskState, SendTaskRequest
 
@@ -24,6 +25,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(SessionMiddleware, secret_key="my-super-secret-key")
+
+# app.mount("/images", StaticFiles(directory="/Users/yason/hackathon/azure-test/images"), name="images")
 
 templates = Jinja2Templates(directory="templates")
 
@@ -110,8 +113,7 @@ async def push_to_chat_agent(payload: dict = Body(...)):
     if websocket:
         task = task_response.result
         if task.status.state == TaskState.INPUT_REQUIRED:
-            text = task.status.message.parts[0].text
-            await websocket.send_text("Client: " + text)
+            await websocket.send_text(task.status.message.parts[0].text)
     else:
         logger.warning(f"No connected input socket found for session: {session_id}")
     return {"status": "success"}
