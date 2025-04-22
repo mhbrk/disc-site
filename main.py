@@ -166,36 +166,6 @@ async def echo(payload: dict = Body(...)):
     return payload
 
 
-@app.get("/preview", response_class=HTMLResponse)
-async def preview():
-    html = """
-    <!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body { font-family: sans-serif; padding: 1rem; }
-        #output-container { border: 1px dashed #ccc; padding: 1rem; }
-    </style>
-</head>
-<body>
-    <h3>Live HTML Preview</h3>
-    <div id="output-container"></div>
-
-    <script>
-    window.addEventListener("message", (event) => {
-        if (event.data.type === "append-html") {
-            const container = document.getElementById("output-container");
-            const fragment = document.createRange().createContextualFragment(event.data.html);
-            container.appendChild(fragment);
-        }
-    });
-    </script>
-</body>
-</html>
-    """
-    return html
-
-
 if __name__ == "__main__":
     import uvicorn
 
