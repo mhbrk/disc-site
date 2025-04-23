@@ -41,7 +41,7 @@ class HTMLAgent:
             include_images=True,
         )
 
-        self.model = ChatOpenAI(model="gpt-4o", temperature=0)
+        self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
         self.tools = [generate_image, search_tool]
 
         self.graph = create_react_agent(
