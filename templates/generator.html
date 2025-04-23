@@ -1,17 +1,30 @@
 <iframe id="generator-frame" class="w-100" style="border: none; height: 85vh;"></iframe>
 
 <script>
+    function reload() {
+        const currentContent = doc.documentElement.outerHTML;
+        const pNode = iframe.parentNode
+        pNode.removeChild(iframe);
+        pNode.appendChild(iframe);
+        doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(currentContent);
+        doc.close();
+    }
+
     const iframe = document.getElementById('generator-frame');
     const generator_ws = new WebSocket("{{ socket_server }}/ws/generator");
 
     let docOpened = false;
-    let doc;
+    let doc = iframe.contentWindow.document;
 
     generator_ws.onopen = () => {
         console.log("WebSocket connected");
     };
 
     generator_ws.onmessage = async (event) => {
+        console.log("chunk:" + event.data);
+
         if (event.data === "__ping__") {
             ws.send("__pong__");
             return;
@@ -21,19 +34,29 @@
             if (docOpened) {
                 doc.close();
                 docOpened = false;
+                reload();
+            }
+            return;
+        }
+
+
+        if (event.data === "__reload__") {
+            // if document is opened the doc.close() will make image render
+            // if document is closed, we need to manually re-render
+            // for the iframe images to be fetched again, need to re-create the iframe
+            if (!docOpened) {
+                reload();
             }
             return;
         }
 
         if (!docOpened) {
             // Initialize iframe content when first chunk arrives
-            const win = iframe.contentWindow;
-            doc = win.document;
             doc.open();
             docOpened = true;
         }
 
-        console.log("chunk:" + event.data);
+
         doc.write(event.data);
     };
 </script>

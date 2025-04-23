@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Body
@@ -7,9 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
-# from starlette.staticfiles import StaticFiles
+from starlette.staticfiles import StaticFiles
 
-from common.model import SendTaskResponse, TaskState, SendTaskRequest
+from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ app.add_middleware(
 )
 app.add_middleware(SessionMiddleware, secret_key="my-super-secret-key")
 
-# app.mount("/images", StaticFiles(directory="/Users/yason/hackathon/azure-test/images"), name="images")
+app.mount("/images", StaticFiles(directory="./images"), name="images")
 
 templates = Jinja2Templates(directory="templates")
 
@@ -151,12 +152,25 @@ async def push_from_generator_agent(payload: dict = Body(...)):
     logger.info(f"Received task session_id: {session_id}")
     websocket = connected_generator_sockets.get(session_id)
     if websocket:
-        if task_response.result.status.state == TaskState.WORKING:
-            text = task_response.result.artifacts[0].parts[0].text
-            logger.info(f"[{session_id}] Sending text: {text}")
-            await websocket.send_text(task_response.result.artifacts[0].parts[0].text)
-        if task_response.result.status.state == TaskState.COMPLETED:
-            await websocket.send_text("__completed__")
+        main_part = task_response.result.artifacts[0].parts[0]
+        if isinstance(main_part, FilePart):
+            # If we received a file, we want to save it and reload the page
+            response = await httpx.AsyncClient().get(main_part.file.uri)
+            image = response.content
+            images_dir = Path("images")
+            images_dir.mkdir(parents=True, exist_ok=True)
+            image_path = images_dir / main_part.file.name
+            image_path.write_bytes(image)
+            await websocket.send_text("__reload__")
+        elif isinstance(main_part, TextPart):
+            if task_response.result.status.state == TaskState.WORKING:
+                text = main_part.text
+                logger.info(f"[{session_id}] Sending text: {text}")
+                await websocket.send_text(task_response.result.artifacts[0].parts[0].text)
+            if task_response.result.status.state == TaskState.COMPLETED:
+                await websocket.send_text("__completed__")
+        else:
+            logger.error(f"Unhandled part type: {type(main_part)} - {main_part}")
     else:
         logger.warning(f"No connected generator socket found for session: {session_id}")
     return {"status": "success"}
