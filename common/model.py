@@ -1,9 +1,9 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any, Literal, List, Union, Annotated
+from typing import Any, Literal, List, Union, Annotated, Self
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, TypeAdapter, field_serializer
+from pydantic import BaseModel, Field, TypeAdapter, field_serializer, model_validator
 
 
 class TaskState(str, Enum):
@@ -22,9 +22,35 @@ class TextPart(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
+class FileContent(BaseModel):
+    name: str | None = None
+    mimeType: str | None = None
+    bytes: str | None = None
+    uri: str | None = None
+
+    @model_validator(mode="after")
+    def check_content(self) -> Self:
+        if not (self.bytes or self.uri):
+            raise ValueError("Either 'bytes' or 'uri' must be present in the file data")
+        if self.bytes and self.uri:
+            raise ValueError(
+                "Only one of 'bytes' or 'uri' can be present in the file data"
+            )
+        return self
+
+
+class FilePart(BaseModel):
+    type: Literal["file"] = "file"
+    file: FileContent
+    metadata: dict[str, Any] | None = None
+
+
+Part = Annotated[Union[TextPart, FilePart], Field(discriminator="type")]
+
+
 class Message(BaseModel):
     role: Literal["user", "agent"]
-    parts: List[TextPart]
+    parts: List[Part]
     metadata: dict[str, Any] | None = None
 
 
@@ -80,7 +106,7 @@ class TaskStatus(BaseModel):
 class Artifact(BaseModel):
     name: str | None = None
     description: str | None = None
-    parts: List[TextPart]
+    parts: List[Part]
     metadata: dict[str, Any] | None = None
     index: int = 0
     append: bool | None = None
