@@ -62,8 +62,43 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
 if __name__ == "__main__":
     import asyncio
 
-    # This needs a sleep call or some way to make sure that tasks created
-    # inside streaming task have a chance to complete
-    asyncio.run(start_streaming_task(
-        "abc123", "user-1-session-1",
-        "Generate a site for my birthday. I'm turning 18. My birthday is on June 11 and the theme is 1990s. I want festive balloons in the background"))
+    query = """
+        
+    HTML Site for 3-Day Weather Forecast
+
+    Visual layout:
+    - The site should have a clear title or header indicating "3-Day Weather Forecast for Redmond, WA".
+    - The forecast should be displayed in a simple, clean layout that works well on both desktop and mobile devices.
+
+    Forecast display:
+    - For each of the next 3 days, show:
+      - The date of the forecast in bold, using the format "Month Day" (e.g., "October 12").
+      - An image representing the weather for that day (e.g., sun, clouds, rain).
+      - The high and low temperatures in Fahrenheit.
+      - The chance of precipitation (as a percentage).
+
+    Data source:
+    - Include a link to the exact source page for the Redmond, WA weather forecast at the bottom of the page.
+    - If an exact source link for Redmond, WA is not available, do not display the forecast and instead show the following error message: "Weather forecast is currently unavailable because a direct source link for Redmond, WA could not be found."
+
+    Behavior:
+    - The forecast should load automatically when the page is opened (no refresh or update button needed).
+
+    Styling:
+    - Use a simple, default design that is easy to read and visually clear.
+    - Display the date for each day in bold.
+    """
+
+    async def main():
+        asyncio.create_task(start_streaming_task( "abc123", "user-1-session-1", query))
+        await asyncio.sleep(1)  # wait for the task to start
+        current = asyncio.current_task()
+        tasks = [t for t in asyncio.all_tasks() if t is not current]
+
+        if tasks:
+            print(f"Waiting for {len(tasks)} tasks...")
+            await asyncio.gather(*tasks)
+
+
+    asyncio.run(main())
+

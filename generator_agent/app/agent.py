@@ -1,3 +1,6 @@
+import logging
+
+from langchain_community.tools import TavilySearchResults
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
@@ -7,6 +10,9 @@ from typing import Any, Dict, AsyncIterable, Literal
 from pydantic import BaseModel, Field
 
 from generator_agent.app.generate_image import generate_image
+
+logging.basicConfig(level=logging.INFO, )
+logger = logging.getLogger(__name__)
 
 memory = MemorySaver()
 
@@ -28,8 +34,15 @@ class HTMLAgent:
     )
 
     def __init__(self):
+        search_tool = TavilySearchResults(
+            max_results=5,
+            include_answer=True,
+            include_raw_content=True,
+            include_images=True,
+        )
+
         self.model = ChatOpenAI(model="gpt-4o", temperature=0)
-        self.tools = [generate_image]
+        self.tools = [generate_image, search_tool]
 
         self.graph = create_react_agent(
             self.model, tools=self.tools, checkpointer=memory, prompt=self.SYSTEM_INSTRUCTION,
@@ -48,13 +61,17 @@ class HTMLAgent:
 
         config = {"configurable": {"thread_id": session_id}}
 
-        async for message_chunk, metadata in self.graph.astream(inputs, config, stream_mode="messages"):
-            if metadata["langgraph_node"] == "agent" and message_chunk.content:
-                yield {
-                    "is_task_complete": False,
-                    "require_user_input": False,
-                    "content": message_chunk.content,
-                }
+        async for mode, data  in self.graph.astream(inputs, config, stream_mode=["messages", "values"]):
+            if mode == "messages":
+                chunk, metadata = data
+                if metadata["langgraph_node"] == "agent" and chunk.content:
+                    yield {
+                        "is_task_complete": False,
+                        "require_user_input": False,
+                        "content": chunk.content,
+                    }
+            if mode == "values":
+                logger.info(data["messages"][-1].pretty_repr())
 
         yield self.get_agent_response(config)
 
