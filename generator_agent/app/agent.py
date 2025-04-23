@@ -6,21 +6,9 @@ from langchain_openai import ChatOpenAI
 from typing import Any, Dict, AsyncIterable, Literal
 from pydantic import BaseModel, Field
 
+from generator_agent.app.generate_image import generate_image
+
 memory = MemorySaver()
-
-
-@tool
-def generate_image(prompt: str):
-    """This tool starts to generate images. It will return image path, and then start to generate the image.
-
-    Args:
-        prompt: The prompt to generate the image.
-
-    Returns:
-        The image path.
-    """
-    return "https://en.wikipedia.org/wiki/Image#/media/File:Image_created_with_a_mobile_phone.png"
-
 
 class ResponseFormat(BaseModel):
     """Respond to the user in this format."""
@@ -53,9 +41,12 @@ class HTMLAgent:
         self.graph.invoke({"messages": [("user", query)]}, config)
         return self.get_agent_response(config)
 
-    async def stream(self, query, sessionId) -> AsyncIterable[Dict[str, Any]]:
-        inputs = {"messages": [("user", query)]}
-        config = {"configurable": {"thread_id": sessionId}}
+    async def stream(self, query: str, session_id: str, task_id: str) -> AsyncIterable[Dict[str, Any]]:
+        inputs = {"messages": [("user", f"Your session id is: {session_id}."),
+                               ("user", f"Your task id is: {task_id}."),
+                               ("user", query)]}
+
+        config = {"configurable": {"thread_id": session_id}}
 
         async for message_chunk, metadata in self.graph.astream(inputs, config, stream_mode="messages"):
             if metadata["langgraph_node"] == "agent" and message_chunk.content:

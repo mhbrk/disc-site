@@ -16,7 +16,7 @@ PUBSUB_TOPIC = "generator_agent_topic"
 
 async def start_streaming_task(task_id: str, session_id: str, query: str):
     accumulator = TagAccumulator()
-    async for chunk in agent.stream(query, session_id):
+    async for chunk in agent.stream(query, session_id, task_id):
         content = chunk.get("content")
         if not content:
             continue
@@ -62,4 +62,8 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
 if __name__ == "__main__":
     import asyncio
 
-    asyncio.run(start_streaming_task("abc123", "user-1-session-1", "Generate a site for my birthday. I'm turning 18. My birthday is on June 11 and the theme is 1990s."))
+    # This needs a sleep call or some way to make sure that tasks created
+    # inside streaming task have a chance to complete
+    asyncio.run(start_streaming_task(
+        "abc123", "user-1-session-1",
+        "Generate a site for my birthday. I'm turning 18. My birthday is on June 11 and the theme is 1990s. I want festive balloons in the background"))
