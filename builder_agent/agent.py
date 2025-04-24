@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 from typing import NotRequired
 
@@ -18,6 +19,10 @@ from instruction_reader import get_instructions
 # Define the structure of our state
 class State(MessagesState):
     prompt: NotRequired[str]
+
+
+logging.basicConfig(level=logging.INFO, )
+logger = logging.getLogger(__name__)
 
 
 class BuilderAgent:
@@ -80,23 +85,24 @@ class BuilderAgent:
         with open("builder_agent.png", "wb") as file:
             file.write(self.app.get_graph().draw_mermaid_png())
 
-    def stream(self, session_id: str, user_input: str):
-        config = RunnableConfig(recursion_limit=50, configurable={"thread_id": session_id})
-        prompt = get_instructions("builder_agent_user_prompt", prompt=user_input)
-        for event in self.app.stream({"messages": [{"role": "user", "content": prompt}]},
+    def stream(self, session_id: str, user_input: Message):
+        config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id})
+        logger.info(f"Streaming builder agent with user input: {user_input}")
+        for event in self.app.stream({"messages": [{"role": user_input.role, "content": user_input.parts[0].text}]},
                                      config, stream_mode="values"):
             event['messages'][-1].pretty_print()
             self.final_state = event
 
-    async def invoke(self, session_id: str, user_input: str):
-        config = RunnableConfig(recursion_limit=50, configurable={"thread_id": session_id})
+    async def invoke(self, session_id: str, user_input: Message):
+        config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id})
         # if the agent is waiting for user input
         if self.is_waiting_for_user_input(config):
             await self.app.ainvoke(Command(resume=user_input), config)
         else:
             # This happens in only with the first task request, if task is being continued this will not work
-            prompt = get_instructions("builder_agent_user_prompt", prompt=user_input)
-            await self.app.ainvoke({"messages": [{"role": "user", "content": prompt}]}, config)
+            logger.info(f"Invoking builder agent with user input: {user_input}")
+            await self.app.ainvoke({"messages": [{"role": user_input.role, "content": user_input.parts[0].text}]},
+                                   config)
         return self.get_agent_response(config)
 
     def is_waiting_for_user_input(self, config: dict):
