@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import uuid
 from pathlib import Path
 
 import httpx
@@ -11,6 +12,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 
 from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart
+from common.utils import send_task_to_builder_indirect
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -123,6 +125,15 @@ async def push_to_chat_agent(payload: dict = Body(...)):
 @app.websocket("/ws/processing")
 async def ws_processing(websocket: WebSocket):
     await handle_socket_connection(websocket, connected_processing_sockets)
+
+
+@app.post("/agent/builder/run")
+async def send_spec_to_builder(spec: dict = Body(...)):
+    logger.info(f"Received spec from user: {spec}")
+    task_id = f"task-{uuid.uuid4().hex}"
+    prompt = f"This is the final prompt. Just process it. I will not answer any questiosn: {spec['body']}"
+    await send_task_to_builder_indirect("user-1-session-1", task_id, prompt)
+    return {"status": "success", "taskId": task_id}
 
 
 @app.post("/agent/builder/push")
