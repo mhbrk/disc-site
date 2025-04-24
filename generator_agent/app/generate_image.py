@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import uuid
 
@@ -9,6 +10,8 @@ from langchain_core.tools import tool
 from openai import AsyncAzureOpenAI
 
 from common.model import Artifact, Task, TaskState, TaskStatus, SendTaskResponse, FilePart, FileContent
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -23,6 +26,7 @@ client = AsyncAzureOpenAI(
 
 
 async def send_task_response(task_id: str, session_id: str, image_name: str, image_location: str):
+    logger.info(f"[{task_id}] Sending task response: {image_name}, {image_location}")
     file_content: FileContent = FileContent(name=image_name, uri=image_location, mimeType="image/png")
     artifact = Artifact(parts=[FilePart(file=file_content)])
 
@@ -44,10 +48,10 @@ async def send_task_response(task_id: str, session_id: str, image_name: str, ima
 
     async with httpx.AsyncClient() as client:
         try:
-            print(f"[{task_id}] Publishing to pubsub: {payload}")
+            logger.info(f"[{task_id}] Publishing to pubsub: {payload}")
             await client.post(f"{PUBSUB_URL}/publish", json=payload)
         except Exception as e:
-            print(f"[{task_id}] Failed to publish to pubsub: {e}")
+            logger.error(f"[{task_id}] Failed to publish to pubsub: {e}")
 
 
 async def _generate_and_send_image(session_id: str, task_id: str, prompt: str, image_name: str):
@@ -68,7 +72,7 @@ async def _generate_and_send_image(session_id: str, task_id: str, prompt: str, i
         await send_task_response(task_id, session_id, image_name, image_url)
 
     except Exception as e:
-        print(f"[{task_id}] Error generating or sending image: {e}")
+        logger.error(f"[{task_id}] Error generating or sending image: {e}")
 
 
 @tool
