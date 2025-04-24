@@ -53,7 +53,9 @@ task_id: str | None = None
 async def main():
     global task_id
     task_id = f"task-{uuid.uuid4().hex}"
-    await cl.Message(content="Hello World").send()
+    await cl.Message(
+        content="Hello, I'm here to assist you with building your website. We can build it together one step at a time,"
+                " or you can give me the full specification, and I will have it built.").send()
 
 
 @cl.on_window_message
