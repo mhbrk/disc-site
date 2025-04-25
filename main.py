@@ -136,6 +136,16 @@ async def send_spec_to_builder(spec: dict = Body(...)):
     return {"status": "success", "taskId": task_id}
 
 
+@app.post("/agent/builder/inline-comment")
+async def send_spec_to_builder(data: dict = Body(...)):
+    logger.info(f"Received spec from user: {data}")
+    task_id = f"task-{uuid.uuid4().hex}"
+    prompt = (f"Given the generated HTML page, the user selected the following text: {data["selection"]}. "
+              f"The user comment regarding this text is:  {data["query"]}. Do not ask questions, just do it.")
+    await send_task_to_builder_indirect("user-1-session-1", task_id, prompt)
+    return {"status": "success", "taskId": task_id}
+
+
 @app.post("/agent/builder/push")
 async def push_from_builder_agent(payload: dict = Body(...)):
     logger.info(f"Received payload from builder agent: {payload}")

@@ -1,4 +1,16 @@
-<iframe id="generator-frame" class="w-100 h-100 d-block" ></iframe>
+<div id="popup"
+     style="display:none; position:absolute; z-index:1000; background:white;
+            border:1px solid #ccc; padding:10px; border-radius:8px;
+            width:600px; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+    <div style="display:flex; gap:5px;">
+        <input type="text" id="popup-input"
+               placeholder="Type your request. e.g. Explain"
+               class="form-control"/>
+        <button id="popup-submit" class="btn btn-sm btn-primary">→</button>
+    </div>
+</div>
+
+<iframe id="generator-frame" class="w-100 h-100 d-block"></iframe>
 
 <script>
     function reload() {
@@ -59,4 +71,109 @@
 
         doc.write(event.data);
     };
+
+    const popup = document.getElementById('popup');
+    const input = document.getElementById('popup-input');
+    const submit = document.getElementById('popup-submit');
+    let suppressNextMouseup = false;
+
+    function hidePopup() {
+        popup.style.display = 'none';
+        delete popup.dataset.selection;
+    }
+
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+            e.preventDefault();  // prevent any default form behavior
+            submit.click();      // trigger your submit‐button handler
+        }
+    });
+
+    // 1) Inject listener into iframe on load
+    iframe.addEventListener('load', () => {
+        const win = iframe.contentWindow;
+        const doc = win.document;
+
+        doc.addEventListener('mouseup', () => {
+            if (suppressNextMouseup) {
+                // clear the flag and bail out once
+                suppressNextMouseup = false;
+                return;
+            }
+            const sel = win.getSelection().toString().trim();
+            if (!sel) return;
+
+            popup.style.visibility = 'hidden';
+            popup.style.display = 'block';
+
+            // get the bounding rect of the selection
+            const range = win.getSelection().getRangeAt(0);
+            const r = range.getBoundingClientRect();
+            const fRect = iframe.getBoundingClientRect();
+
+            // ideal absolute coords
+            const absLeft = window.scrollX + fRect.left + r.left;
+            const absTop = window.scrollY + fRect.top + r.bottom + 5;
+
+            // clamp into viewport
+            const margin = 8;
+            const vpW = document.documentElement.clientWidth;
+            const vpH = document.documentElement.clientHeight;
+            const popW = popup.offsetWidth;
+            const popH = popup.offsetHeight;
+
+            const left = Math.min(
+                Math.max(absLeft, margin),
+                vpW - popW - margin
+            );
+            const top = Math.min(
+                Math.max(absTop, margin),
+                vpH - popH - margin
+            );
+
+            // position & show
+            popup.style.left = `${left}px`;
+            popup.style.top = `${top}px`;
+            popup.dataset.selection = sel;
+
+            popup.style.visibility = 'visible';
+            input.value = '';
+            input.focus();
+        });
+
+        doc.addEventListener('mousedown', () => {
+            if (popup.style.display === 'block') {
+                // we were visible → hide & suppress the very next mouseup
+                hidePopup();
+                suppressNextMouseup = true;
+            } else {
+                // already hidden → don’t suppress mouseup
+                suppressNextMouseup = false;
+            }
+        });
+    });
+
+    // 3) Submit handler: fire request, then hide popup
+    submit.addEventListener('click', async () => {
+        const query = input.value.trim();
+        const selection = popup.dataset.selection;
+        if (!query) return;
+
+        // fire your explain endpoint
+        fetch('/agent/builder/inline-comment', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query, selection})
+        }).catch(console.error);
+
+        // immediately hide
+        popup.style.display = 'none';
+    });
+
+    // 4) Click outside to cancel
+    document.addEventListener('mousedown', e => {
+        if (!popup.contains(e.target)) {
+            popup.style.display = 'none';
+        }
+    });
 </script>
