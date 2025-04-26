@@ -1,13 +1,29 @@
-<div class="position-relative">
-  <textarea id="processing-log"
-            class="form-control"
-            rows="30"></textarea>
+<div class="d-flex flex-column" style="height: 100%;">
+    <!-- Textarea section -->
+    <div class="position-relative flex-grow-1" style="flex-basis: 70%;">
+    <textarea id="processing-log"
+              class="form-control h-100"
+              style="resize: none;"></textarea>
 
-    <button id="run-button"
-            class="btn btn-primary"
-            style="position: absolute; top: 8px; right: 8px; display: none;">
-        Run
-    </button>
+        <button id="run-button"
+                class="btn btn-primary"
+                style="position: absolute; top: 8px; right: 8px; display: none;">
+            Run
+        </button>
+    </div>
+
+    <!-- Updates section -->
+    <div class="card flex-grow-1" style="flex-basis: 30%; overflow: hidden;">
+        <div class="card-header">Status Updates</div>
+        <div class="card-body" style="overflow-y: auto;">
+            <ul id="updates-list" class="list-unstyled mb-0">
+                <li><strong>builder:</strong> Started task 1</li>
+                <li><strong>generator:</strong> received task 1</li>
+                <li><strong>generator:</strong> completed task 1</li>
+                <li><strong>builder:</strong> Started task 1</li>
+            </ul>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -24,7 +40,7 @@
         }
     }
 
-    // 1) Wire up your WebSocket
+    // WebSocket for builder text
     let processing_ws = new WebSocket("{{ socket_server }}/ws/processing");
     processing_ws.onmessage = (event) => {
         lastServerContent = event.data;
@@ -32,12 +48,12 @@
         updateRunButtonVisibility();   // hide, since in-sync
     };
 
-    // 2) Detect user edits
+    // Detect user edits
     textarea.addEventListener("input", updateRunButtonVisibility);
 
-    // 3) On “Run”, POST the current text
+    // On “Run”, POST the current text to builder
     runButton.addEventListener("click", () => {
-        fetch("/agent/builder/run", {              // <-- singular “agent”, to match your decorator
+        fetch("/agent/builder/run", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({body: textarea.value})
