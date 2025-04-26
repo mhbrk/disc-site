@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 
+from common.constants import CHAT_AGENT_TOPIC, ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
 from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart
 from common.utils import send_task_to_builder_indirect, subscribe_to_agent
 
@@ -33,11 +34,7 @@ app.mount("/images", StaticFiles(directory="./images"), name="images")
 
 templates = Jinja2Templates(directory="templates")
 
-PUSH_URL: str = "http://my-localhost:7999"
-GENERATOR_AGENT_TOPIC: str = "generator_agent_topic"
-ASK_CHAT_AGENT_TOPIC: str = "ask_chat_agent_topic"
-CHAT_AGENT_TOPIC: str = "chat_agent_topic"
-BUILDER_AGENT_TOPIC: str = "builder_agent_topic"
+RECEIVE_URL: str = "http://my-localhost:7999"
 
 # Keeps track of the currently connected generator sockets by sessionId
 connected_generator_sockets: dict[str, WebSocket] = {}
@@ -51,10 +48,10 @@ async def subscribe_to_agents():
     Subscribe to all the agents for the application
     """
     await asyncio.gather(
-        asyncio.create_task(subscribe_to_agent(CHAT_AGENT_TOPIC, f"{PUSH_URL}/agent/chat/push")),
-        asyncio.create_task(subscribe_to_agent(ASK_CHAT_AGENT_TOPIC, f"{PUSH_URL}/agent/chat/ask")),
-        asyncio.create_task(subscribe_to_agent(BUILDER_AGENT_TOPIC, f"{PUSH_URL}/agent/builder/push")),
-        asyncio.create_task(subscribe_to_agent(GENERATOR_AGENT_TOPIC, f"{PUSH_URL}/agent/generator/push")),
+        asyncio.create_task(subscribe_to_agent(CHAT_AGENT_TOPIC, f"{RECEIVE_URL}/agent/chat/push")),
+        asyncio.create_task(subscribe_to_agent(ASK_CHAT_AGENT_TOPIC, f"{RECEIVE_URL}/agent/chat/ask")),
+        asyncio.create_task(subscribe_to_agent(BUILDER_AGENT_TOPIC, f"{RECEIVE_URL}/agent/builder/push")),
+        asyncio.create_task(subscribe_to_agent(GENERATOR_AGENT_TOPIC, f"{RECEIVE_URL}/agent/generator/push")),
     )
 
 

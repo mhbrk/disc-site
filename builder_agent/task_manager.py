@@ -5,6 +5,7 @@ import uuid
 import httpx
 from dotenv import load_dotenv
 
+from common.constants import ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC
 from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse, SendTaskRequest, \
     TaskSendParams
 
@@ -17,8 +18,6 @@ logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
 
 PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
-BUILDER_TASK_REQUEST_TOPIC = "builder_agent_topic"
-ASK_CHAT_AGENT_TOPIC: str = "ask_chat_agent_topic"
 
 
 class AgentTaskManager:
@@ -38,7 +37,7 @@ class AgentTaskManager:
         )
 
         payload = {
-            "topic": BUILDER_TASK_REQUEST_TOPIC,
+            "topic": BUILDER_AGENT_TOPIC,
             "payload": request.model_dump(exclude_none=True)
         }
 

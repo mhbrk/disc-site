@@ -9,6 +9,7 @@ from fastapi import FastAPI, Request, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 
 from builder_agent.agent import BuilderAgent
+from common.constants import CHAT_AGENT_TOPIC
 from common.model import JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest, AgentCard, AgentSkill, \
     AgentCapabilities
 from common.utils import subscribe_to_agent
@@ -23,7 +24,6 @@ HOST = os.getenv("AGENT_HOST", "localhost")
 PORT = int(os.getenv("AGENT_PORT", 8002))
 
 RECEIVE_URL: str = f"http://{HOST}:{PORT}"
-CHAT_AGENT_TOPIC: str = "chat_agent_topic"
 
 task_manager = AgentTaskManager()
 

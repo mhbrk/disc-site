@@ -6,12 +6,11 @@ import uuid
 import httpx
 
 import common
+from common.constants import CHAT_AGENT_TOPIC
 from common.model import TextPart, TaskSendParams, SendTaskRequest
 
 PUBSUB_URL = os.getenv("PUBSUB_URL", "http://localhost:8000")
 SUBSCRIBE_URL: str = f"{PUBSUB_URL}/subscribe"
-
-CHAT_AGENT_TOPIC: str = "chat_agent_topic"
 
 logger = logging.getLogger(__name__)
 

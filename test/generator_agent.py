@@ -6,10 +6,10 @@ from uuid import uuid4
 import httpx
 
 from common.client import A2AClient
+from common.constants import BUILDER_AGENT_TOPIC
 from common.model import TaskSendParams, TextPart, Message, SendTaskRequest
 
 PUBSUB_URL: str = "http://127.0.0.1:8000"
-GENERATOR_AGENT_TOPIC: str = "generator_agent_topic"
 
 
 async def send_task_to_agent_direct(session_id: str):
@@ -62,7 +62,7 @@ async def send_task_to_agent_indirect(session_id: str):
     )
 
     payload = {
-        "topic": "builder_agent_topic",
+        "topic": BUILDER_AGENT_TOPIC,
         "payload": request.model_dump(exclude_none=True)
     }
 

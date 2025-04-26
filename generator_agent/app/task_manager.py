@@ -4,6 +4,7 @@ import httpx
 from dotenv import load_dotenv
 
 from accumulator import TagAccumulator
+from common.constants import GENERATOR_AGENT_TOPIC
 from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse
 
 load_dotenv()
@@ -11,7 +12,6 @@ load_dotenv()
 from agent import agent
 
 PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
-PUBSUB_TOPIC = "generator_agent_topic"
 
 
 async def start_streaming_task(task_id: str, session_id: str, query: str):
@@ -47,7 +47,7 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
         response = SendTaskResponse(id=task_id, result=task)
 
         payload = {
-            "topic": PUBSUB_TOPIC,
+            "topic": GENERATOR_AGENT_TOPIC,
             "payload": response.model_dump(exclude_none=True)
         }
 

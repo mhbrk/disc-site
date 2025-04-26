@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from langchain_core.tools import tool
 from openai import AsyncAzureOpenAI
 
+from common.constants import GENERATOR_AGENT_TOPIC
 from common.model import Artifact, Task, TaskState, TaskStatus, SendTaskResponse, FilePart, FileContent
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
-PUBSUB_TOPIC = "generator_agent_topic"
+
 
 client = AsyncAzureOpenAI(
     api_version="2024-02-01",
@@ -42,7 +43,7 @@ async def send_task_response(task_id: str, session_id: str, image_name: str, ima
     response = SendTaskResponse(id=task_id, result=task)
 
     payload = {
-        "topic": PUBSUB_TOPIC,
+        "topic": GENERATOR_AGENT_TOPIC,
         "payload": response.model_dump(exclude_none=True)
     }
 

@@ -8,14 +8,12 @@ from fastapi import FastAPI, Body
 from uvicorn import Server, Config
 
 from common.client import A2AClient
+from common.constants import ASK_CHAT_AGENT_TOPIC, CHAT_AGENT_TOPIC
 from common.model import TaskSendParams, TextPart, Message, SendTaskRequest, SendTaskResponse, TaskState
 from common.utils import subscribe_to_agent
 
 PUBSUB_URL: str = "http://127.0.0.1:8000"
 ASK_CHAT_AGENT_URL: str = "http://my-localhost:7998/echo"
-BUILDER_AGENT_TOPIC: str = "builder_agent_topic"
-ASK_CHAT_AGENT_TOPIC: str = "ask_chat_agent_topic"
-CHAT_AGENT_TOPIC: str = "chat_agent_topic"
 
 
 async def send_task_to_agent_direct(session_id: str):

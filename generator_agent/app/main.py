@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 
+from common.constants import BUILDER_AGENT_TOPIC
 from common.model import TaskState, JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest
 from common.utils import subscribe_to_agent
 from task_manager import start_streaming_task
@@ -21,7 +22,6 @@ HOST = os.getenv("AGENT_HOST", "localhost")
 PORT = int(os.getenv("AGENT_PORT", 8001))
 
 RECEIVE_URL: str = f"http://{HOST}:{PORT}"
-BUILDER_AGENT_TOPIC: str = "builder_agent_topic"
 
 
 async def subscribe_to_agents():
