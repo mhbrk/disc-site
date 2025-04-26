@@ -46,10 +46,14 @@ connected_processing_sockets: dict[str, WebSocket] = {}
 
 
 async def subscribe_to_agents():
-    # TODO: gather, but need to make sure pubsub can handle concurrent requests
-    await subscribe_to_agent(GENERATOR_AGENT_TOPIC, f"{PUSH_URL}/agent/generator/push")
-    await subscribe_to_agent(ASK_CHAT_AGENT_TOPIC, f"{PUSH_URL}/agent/chat/push")
-    await subscribe_to_agent(BUILDER_AGENT_TOPIC, f"{PUSH_URL}/agent/builder/push")
+    """
+    Subscribe to all the agents for the application
+    """
+    await asyncio.gather(
+        asyncio.create_task(subscribe_to_agent(CHAT_AGENT_TOPIC, f"{PUSH_URL}/agent/chat/push")),
+        asyncio.create_task(subscribe_to_agent(BUILDER_AGENT_TOPIC, f"{PUSH_URL}/agent/builder/push")),
+        asyncio.create_task(subscribe_to_agent(GENERATOR_AGENT_TOPIC, f"{PUSH_URL}/agent/generator/push")),
+    )
 
 
 async def handle_socket_connection(

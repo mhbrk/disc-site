@@ -48,6 +48,12 @@ async def send_task_to_builder_indirect(session_id: str, task_id: str, response:
 
 
 async def subscribe_to_agent(topic, endpoint):
+    """
+    Helper function to subscribe to a pubsub topic. Should ideally be inside pubsub SDK.
+    :param topic: topic name to listen to
+    :param endpoint: endpoint to which pubsub will push data to
+    :return: coroutine
+    """
     payload = {"topic": topic, "endpoint": endpoint}
     headers = {"Content-Type": "application/json"}
     async with httpx.AsyncClient() as client:
