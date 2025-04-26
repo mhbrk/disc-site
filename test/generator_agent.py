@@ -9,10 +9,7 @@ from common.client import A2AClient
 from common.model import TaskSendParams, TextPart, Message, SendTaskRequest
 
 PUBSUB_URL: str = "http://127.0.0.1:8000"
-PUSH_ENDPOINT: str = "http://my-localhost:7999/echo"
 GENERATOR_AGENT_TOPIC: str = "generator_agent_topic"
-
-url = f"{PUBSUB_URL}/subscribe"
 
 
 async def send_task_to_agent_direct(session_id: str):
@@ -64,7 +61,6 @@ async def send_task_to_agent_indirect(session_id: str):
         id=str(uuid.uuid4())  # or pass your own
     )
 
-
     payload = {
         "topic": "builder_agent_topic",
         "payload": request.model_dump(exclude_none=True)
@@ -76,20 +72,6 @@ async def send_task_to_agent_indirect(session_id: str):
             await client.post(f"{PUBSUB_URL}/publish", json=payload)
         except Exception as e:
             print(f"[{task_id}] Failed to publish to pubsub: {e}")
-
-
-def subscribe_to_agent():
-    payload = {
-        "topic": GENERATOR_AGENT_TOPIC,
-        "endpoint": PUSH_ENDPOINT
-    }
-
-    headers = {"Content-Type": "application/json"}
-
-    response = httpx.post(url, json=payload, headers=headers)
-
-    print(response.status_code)
-    print(response.json())
 
 
 asyncio.run(send_task_to_agent_indirect(os.environ.get("SESSION_ID")))

@@ -1,10 +1,8 @@
 import asyncio
-import json
 import logging
 import os
 from contextlib import asynccontextmanager
 
-import httpx
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks, Body
@@ -13,6 +11,7 @@ from fastapi.responses import JSONResponse
 from builder_agent.agent import BuilderAgent
 from common.model import JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest, AgentCard, AgentSkill, \
     AgentCapabilities
+from common.utils import subscribe_to_agent
 from task_manager import AgentTaskManager
 
 logging.basicConfig(level=logging.INFO, )
@@ -22,7 +21,6 @@ load_dotenv()
 
 HOST = os.getenv("AGENT_HOST", "localhost")
 PORT = int(os.getenv("AGENT_PORT", 8002))
-PUBSUB_URL = os.getenv("PUBSUB_URL", "http://localhost:8000")
 
 RECEIVE_URL: str = f"http://{HOST}:{PORT}"
 CHAT_AGENT_TOPIC: str = "chat_agent_topic"
@@ -34,12 +32,7 @@ async def subscribe_to_agents():
     # Receives tasks at root url
     # TODO: check for pubsub being up instead of sleeping
     await asyncio.sleep(2)
-    payload = {"topic": CHAT_AGENT_TOPIC, "endpoint": f"{RECEIVE_URL}/"}
-    headers = {"Content-Type": "application/json"}
-    async with httpx.AsyncClient() as client:
-        response = await client.post(f"{PUBSUB_URL}/subscribe", json=payload, headers=headers)
-        response.raise_for_status()
-        logger.info(f"Subscribed to: SUBSCRIBE_URL, payload: {json.dumps(payload)}")
+    await subscribe_to_agent(CHAT_AGENT_TOPIC, RECEIVE_URL)
 
 
 @asynccontextmanager

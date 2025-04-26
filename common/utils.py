@@ -1,3 +1,5 @@
+import json
+import logging
 import os
 import uuid
 
@@ -10,6 +12,8 @@ PUBSUB_URL = os.getenv("PUBSUB_URL", "http://localhost:8000")
 SUBSCRIBE_URL: str = f"{PUBSUB_URL}/subscribe"
 
 CHAT_AGENT_TOPIC: str = "chat_agent_topic"
+
+logger = logging.getLogger(__name__)
 
 
 async def send_task_to_builder_indirect(session_id: str, task_id: str, response: str):
@@ -46,7 +50,6 @@ async def send_task_to_builder_indirect(session_id: str, task_id: str, response:
             print(f"[{task_id}] Failed to publish to pubsub: {e}")
 
 
-
 async def subscribe_to_agent(topic, endpoint):
     """
     Helper function to subscribe to a pubsub topic. Should ideally be inside pubsub SDK.
@@ -59,3 +62,4 @@ async def subscribe_to_agent(topic, endpoint):
     async with httpx.AsyncClient() as client:
         response = await client.post(SUBSCRIBE_URL, json=payload, headers=headers)
         response.raise_for_status()
+        logger.info(f"Subscribed to: {SUBSCRIBE_URL}, payload: {json.dumps(payload)}")

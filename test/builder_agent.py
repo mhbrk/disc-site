@@ -9,14 +9,13 @@ from uvicorn import Server, Config
 
 from common.client import A2AClient
 from common.model import TaskSendParams, TextPart, Message, SendTaskRequest, SendTaskResponse, TaskState
+from common.utils import subscribe_to_agent
 
 PUBSUB_URL: str = "http://127.0.0.1:8000"
 ASK_CHAT_AGENT_URL: str = "http://my-localhost:7998/echo"
 BUILDER_AGENT_TOPIC: str = "builder_agent_topic"
 ASK_CHAT_AGENT_TOPIC: str = "ask_chat_agent_topic"
 CHAT_AGENT_TOPIC: str = "chat_agent_topic"
-
-url = f"{PUBSUB_URL}/subscribe"
 
 
 async def send_task_to_agent_direct(session_id: str):
@@ -80,26 +79,12 @@ async def send_task_to_builder_indirect(session_id: str, task_id: str, response:
             print(f"[{task_id}] Failed to publish to pubsub: {e}")
 
 
-def subscribe_to_agent(topic, endpoint):
-    payload = {
-        "topic": topic,
-        "endpoint": endpoint
-    }
-
-    headers = {"Content-Type": "application/json"}
-
-    response = httpx.post(f"{PUBSUB_URL}/subscribe", json=payload, headers=headers)
-
-    print(response.status_code)
-    print(response.json())
-
-
 builder_response: SendTaskResponse | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    subscribe_to_agent(ASK_CHAT_AGENT_TOPIC, ASK_CHAT_AGENT_URL)
+    await subscribe_to_agent(ASK_CHAT_AGENT_TOPIC, ASK_CHAT_AGENT_URL)
     yield
     # TODO: unsubscribe
 

@@ -1,28 +1,24 @@
 import asyncio
-import json
 import logging
 import os
 from contextlib import asynccontextmanager
 
-import httpx
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 
 from common.model import TaskState, JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest
+from common.utils import subscribe_to_agent
 from task_manager import start_streaming_task
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
 
-
 load_dotenv()
-
 
 HOST = os.getenv("AGENT_HOST", "localhost")
 PORT = int(os.getenv("AGENT_PORT", 8001))
-PUBSUB_URL = os.getenv("PUBSUB_URL", "http://localhost:8000")
 
 RECEIVE_URL: str = f"http://{HOST}:{PORT}"
 BUILDER_AGENT_TOPIC: str = "builder_agent_topic"
@@ -32,12 +28,7 @@ async def subscribe_to_agents():
     # Receives tasks at root url
     # TODO: check for pubsub being up instead of sleeping
     await asyncio.sleep(2)
-    payload = {"topic": BUILDER_AGENT_TOPIC, "endpoint": f"{RECEIVE_URL}/"}
-    headers = {"Content-Type": "application/json"}
-    async with httpx.AsyncClient() as client:
-        response = await client.post(f"{PUBSUB_URL}/subscribe", json=payload, headers=headers)
-        response.raise_for_status()
-        logger.info(f"Subscribed to: SUBSCRIBE_URL, payload: {json.dumps(payload)}")
+    await subscribe_to_agent(BUILDER_AGENT_TOPIC, RECEIVE_URL)
 
 
 @asynccontextmanager
