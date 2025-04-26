@@ -17,10 +17,6 @@
         <div class="card-header">Status Updates</div>
         <div class="card-body" style="overflow-y: auto;">
             <ul id="updates-list" class="list-unstyled mb-0">
-                <li><strong>builder:</strong> Started task 1</li>
-                <li><strong>generator:</strong> received task 1</li>
-                <li><strong>generator:</strong> completed task 1</li>
-                <li><strong>builder:</strong> Started task 1</li>
             </ul>
         </div>
     </div>
@@ -39,6 +35,32 @@
             runButton.style.display = "none";
         }
     }
+
+    // WebSocket for status updates
+    let status_ws = new WebSocket("{{ socket_server }}/ws/status");
+    status_ws.onmessage = (event) => {
+        console.log("Received status update:", event.data);
+        const updatesList = document.getElementById("updates-list");
+
+        try {
+            const data = JSON.parse(event.data);  // Parse incoming JSON
+            const who = data.source || "unknown";
+            const message = data.message || "";
+
+            // Create new list item
+            const li = document.createElement("li");
+            li.innerHTML = `<strong>${who}:</strong> ${message}`;
+
+            // Append to list
+            updatesList.appendChild(li);
+
+            // Scroll to bottom of updates panel
+            updatesList.parentElement.scrollTop = updatesList.parentElement.scrollHeight;
+
+        } catch (e) {
+            console.error("Invalid status update:", event.data);
+        }
+    };
 
     // WebSocket for builder text
     let processing_ws = new WebSocket("{{ socket_server }}/ws/processing");

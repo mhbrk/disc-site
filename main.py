@@ -43,6 +43,7 @@ BUILDER_AGENT_TOPIC: str = "builder_agent_topic"
 connected_generator_sockets: dict[str, WebSocket] = {}
 connected_input_sockets: dict[str, WebSocket] = {}
 connected_processing_sockets: dict[str, WebSocket] = {}
+connected_status_sockets: dict[str, WebSocket] = {}
 
 
 async def subscribe_to_agents():
@@ -62,6 +63,13 @@ async def handle_socket_connection(
         session_key: str = "sessionId",
         ping_interval: float = 300.0,
 ):
+    """
+    Helps manage socket connections for each session connected to this server
+    :param websocket: new websocket connection
+    :param socket_registry: map of session_id to WebSocket
+    :param session_key: session id key where session id is stored inside the session object
+    :param ping_interval: ping interval to see if connection is still alive (unused for now)
+    """
     await websocket.accept()
     session_id = websocket.session.get(session_key, "anonymous")
     socket_registry[session_id] = websocket
@@ -85,11 +93,24 @@ async def handle_socket_connection(
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    # TODO: nees to be done at login
+    # Hardcode to simulate a user logging in
     request.session["sessionId"] = f"user-1-session-1"
     logger.info(f"Session ID: {request.session.get('sessionId')}")
     await subscribe_to_agents()
     return templates.TemplateResponse("base.html", {"request": request, "socket_server": f"ws://{HOST}:{PORT}"})
+
+
+# TODO: source should be part of the model
+async def update_status(session_id, source, model):
+    # TODO: needs better pattern than if else
+    if isinstance(model, SendTaskRequest):
+        status = {"source": source, "message": f"Requested task: {model.params.id}"}
+        await connected_status_sockets.get(session_id).send_json(status)
+
+
+@app.websocket("/ws/status")
+async def ws_processing(websocket: WebSocket):
+    await handle_socket_connection(websocket, connected_status_sockets)
 
 
 @app.websocket("/ws/input")
@@ -144,6 +165,7 @@ async def push_from_builder_agent(payload: dict = Body(...)):
     session_id = task_request.params.sessionId
     logger.info(f"Received task session_id: {session_id}")
     websocket = connected_processing_sockets.get(session_id)
+    await update_status(session_id, "builder", task_request)
     if websocket:
         await websocket.send_text(task_request.params.message.parts[0].text)
     else:
