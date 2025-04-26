@@ -7,6 +7,8 @@ import common
 from common.model import TextPart, TaskSendParams, SendTaskRequest
 
 PUBSUB_URL = os.getenv("PUBSUB_URL", "http://localhost:8000")
+SUBSCRIBE_URL: str = f"{PUBSUB_URL}/subscribe"
+
 CHAT_AGENT_TOPIC: str = "chat_agent_topic"
 
 
@@ -42,3 +44,12 @@ async def send_task_to_builder_indirect(session_id: str, task_id: str, response:
             await client.post(f"{PUBSUB_URL}/publish", json=payload)
         except Exception as e:
             print(f"[{task_id}] Failed to publish to pubsub: {e}")
+
+
+
+async def subscribe_to_agent(topic, endpoint):
+    payload = {"topic": topic, "endpoint": endpoint}
+    headers = {"Content-Type": "application/json"}
+    async with httpx.AsyncClient() as client:
+        response = await client.post(SUBSCRIBE_URL, json=payload, headers=headers)
+        response.raise_for_status()

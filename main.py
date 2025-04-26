@@ -12,7 +12,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 
 from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart
-from common.utils import send_task_to_builder_indirect
+from common.utils import send_task_to_builder_indirect, subscribe_to_agent
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -33,8 +33,6 @@ app.mount("/images", StaticFiles(directory="./images"), name="images")
 
 templates = Jinja2Templates(directory="templates")
 
-PUBSUB_URL: str = "http://127.0.0.1:8000"
-SUBSCRIBE_URL: str = f"{PUBSUB_URL}/subscribe"
 PUSH_URL: str = "http://my-localhost:7999"
 GENERATOR_AGENT_TOPIC: str = "generator_agent_topic"
 ASK_CHAT_AGENT_TOPIC: str = "ask_chat_agent_topic"
@@ -48,21 +46,10 @@ connected_processing_sockets: dict[str, WebSocket] = {}
 
 
 async def subscribe_to_agents():
-    payload = {"topic": GENERATOR_AGENT_TOPIC, "endpoint": f"{PUSH_URL}/agent/generator/push"}
-    headers = {"Content-Type": "application/json"}
-    async with httpx.AsyncClient() as client:
-        response = await client.post(SUBSCRIBE_URL, json=payload, headers=headers)
-        response.raise_for_status()
-
-    payload = {"topic": ASK_CHAT_AGENT_TOPIC, "endpoint": f"{PUSH_URL}/agent/chat/push"}
-    async with httpx.AsyncClient() as client:
-        response = await client.post(SUBSCRIBE_URL, json=payload, headers=headers)
-        response.raise_for_status()
-
-    payload = {"topic": BUILDER_AGENT_TOPIC, "endpoint": f"{PUSH_URL}/agent/builder/push"}
-    async with httpx.AsyncClient() as client:
-        response = await client.post(SUBSCRIBE_URL, json=payload, headers=headers)
-        response.raise_for_status()
+    # TODO: gather, but need to make sure pubsub can handle concurrent requests
+    await subscribe_to_agent(GENERATOR_AGENT_TOPIC, f"{PUSH_URL}/agent/generator/push")
+    await subscribe_to_agent(ASK_CHAT_AGENT_TOPIC, f"{PUSH_URL}/agent/chat/push")
+    await subscribe_to_agent(BUILDER_AGENT_TOPIC, f"{PUSH_URL}/agent/builder/push")
 
 
 async def handle_socket_connection(
