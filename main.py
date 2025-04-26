@@ -52,6 +52,7 @@ async def subscribe_to_agents():
     """
     await asyncio.gather(
         asyncio.create_task(subscribe_to_agent(CHAT_AGENT_TOPIC, f"{PUSH_URL}/agent/chat/push")),
+        asyncio.create_task(subscribe_to_agent(ASK_CHAT_AGENT_TOPIC, f"{PUSH_URL}/agent/chat/ask")),
         asyncio.create_task(subscribe_to_agent(BUILDER_AGENT_TOPIC, f"{PUSH_URL}/agent/builder/push")),
         asyncio.create_task(subscribe_to_agent(GENERATOR_AGENT_TOPIC, f"{PUSH_URL}/agent/generator/push")),
     )
@@ -119,6 +120,11 @@ async def ws_input(websocket: WebSocket):
 
 
 @app.post("/agent/chat/push")
+async def push_to_chat_agent(payload: dict = Body(...)):
+    logger.info(f"Received payload from chat agent: {payload}")
+
+
+@app.post("/agent/chat/ask")
 async def push_to_chat_agent(payload: dict = Body(...)):
     logger.info(f"Received payload for chat agent: {payload}")
     task_response = SendTaskResponse.model_validate(payload)
