@@ -30,7 +30,7 @@ async def send_task_response(task_id: str, session_id: str, image_name: str, ima
     file_content: FileContent = FileContent(name=image_name, uri=image_location, mimeType="image/png")
     artifact = Artifact(parts=[FilePart(file=file_content)])
 
-    task_status = TaskStatus(state=TaskState.WORKING)
+    task_status = TaskStatus(state=TaskState.COMPLETED)
     task = Task(
         id=task_id,
         sessionId=session_id,

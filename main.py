@@ -104,9 +104,18 @@ async def index(request: Request):
 # TODO: source should be part of the model
 async def update_status(session_id, source, model):
     # TODO: needs better pattern than if else
-    if isinstance(model, SendTaskRequest):
-        status = {"source": source, "message": f"Requested task: {model.params.id}"}
-        await connected_status_sockets.get(session_id).send_json(status)
+    socket = connected_status_sockets.get(session_id)
+    if socket:
+        if isinstance(model, SendTaskRequest):
+            status = {"source": source, "message": f"Requested task: {model.params.id}"}
+            await connected_status_sockets.get(session_id).send_json(status)
+        if isinstance(model, SendTaskResponse):
+            # No need to produce update for streaming events (TODO: fix this by using status manager or better status conventions)
+            if model.result.status.state != TaskState.WORKING:
+                status = {"source": source, "message": f"[{model.result.id}] {model.result.status.state}"}
+                await connected_status_sockets.get(session_id).send_json(status)
+    else:
+        logger.error(f"No connected status socket found for session: {session_id}")
 
 
 @app.websocket("/ws/status")
@@ -120,8 +129,11 @@ async def ws_input(websocket: WebSocket):
 
 
 @app.post("/agent/chat/push")
-async def push_to_chat_agent(payload: dict = Body(...)):
+async def message_from_chat_agent(payload: dict = Body(...)):
     logger.info(f"Received payload from chat agent: {payload}")
+    # TODO: handle validation errors
+    task = SendTaskRequest.model_validate(payload)
+    await update_status(task.params.sessionId, "chat", task)
 
 
 @app.post("/agent/chat/ask")
@@ -130,6 +142,8 @@ async def push_to_chat_agent(payload: dict = Body(...)):
     task_response = SendTaskResponse.model_validate(payload)
     session_id = task_response.result.sessionId
     logger.info(f"Chat agent received task for session_id: {session_id}")
+    # TODO: again this we need to add source of the model
+    await update_status(session_id, "to_chat", task_response)
     websocket = connected_input_sockets.get(session_id)
     if websocket:
         task = task_response.result
@@ -190,6 +204,7 @@ async def push_from_generator_agent(payload: dict = Body(...)):
     task_response = SendTaskResponse.model_validate(payload)
     session_id = task_response.result.sessionId
     logger.info(f"Received task session_id: {session_id}")
+    await update_status(session_id, "generator", task_response)
     websocket = connected_generator_sockets.get(session_id)
     if websocket:
         main_part = task_response.result.artifacts[0].parts[0]
