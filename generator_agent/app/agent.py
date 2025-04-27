@@ -8,6 +8,7 @@ from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel, Field
 
 from generator_agent.app.generate_image import generate_image
+from instruction_reader import get_instructions
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -21,15 +22,7 @@ class ResponseFormat(BaseModel):
 
 
 class HTMLAgent:
-    SYSTEM_INSTRUCTION = (
-        "You are a web server, serving HTML web pages. Do not use markdown for formatting. "
-        "All output must be in HTML format and will be displayed to an end user. "
-        "You need to start with doctype and html tags and provide the entire page."
-        "Do not attempt to answer unrelated questions or use tools for other purposes."
-        "Set response status to input_required if the user needs to provide more information."
-        "Set response status to error if there is an error while processing the request."
-        "Set response status to completed if the request is complete."
-    )
+    SYSTEM_INSTRUCTION = get_instructions("generator_system_prompt")
 
     def __init__(self):
         search_tool = TavilySearchResults(

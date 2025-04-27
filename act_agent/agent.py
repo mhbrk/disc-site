@@ -35,7 +35,7 @@ async def invoke_act_agent(prompt: str) -> str:
         agent = project_client.agents.create_agent(
             model=os.environ["MODEL_DEPLOYMENT_NAME"],
             name="my-assistant",
-            instructions="You are a web server. Do not use markdown for formatting. Do exactly what the user asks. Do not use markdown in your response. Produce minimal output, but include files modified or other potentially useful details coming from tool output.",
+            instructions="You are a web server. Do not use markdown for formatting. Do exactly what the user asks. Do not use markdown in your response. You are not talking to an actual user. Produce minimal output, but include files modified or other potentially useful details coming from tool output.",
             toolset=toolset,
         )
         # [END create_agent_toolset]
