@@ -10,8 +10,9 @@
     <script src="https://unpkg.com/htmx-ext-ws@2.0.2" crossorigin="anonymous"></script>
     <style>
         html, body {
-            height: 100%;
+            height: 100vh;
             margin: 0;
+            overflow: hidden; /* Prevent body scroll */
         }
 
         .container-fluid, .row {
@@ -20,6 +21,7 @@
 
         .row {
             display: flex;
+            overflow: hidden; /* Prevent row from overflowing */
         }
 
         .col-md-4 {
@@ -31,8 +33,10 @@
             flex-grow: 1;
             border: 1px solid #ccc;
             border-radius: 0.5rem;
-            overflow: hidden;
-            padding: 0 0 2rem;
+            overflow-y: auto; /* Scroll inside panel */
+            padding: 0;
+            padding-bottom: 2rem;
+            box-sizing: border-box;
         }
 
         #input-panel iframe {
@@ -41,6 +45,7 @@
             border: none;
         }
     </style>
+
 </head>
 <body style="background-color: #c8c9ca;">
 <div class="container-fluid mt-3">
