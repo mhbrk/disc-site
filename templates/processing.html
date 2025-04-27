@@ -1,10 +1,9 @@
 <div class="d-flex flex-column" style="height: 100%;">
     <!-- Textarea section -->
-    <div class="position-relative flex-grow-1" style="flex-basis: 70%;">
-    <textarea id="processing-log"
-              class="form-control h-100"
-              style="resize: none;"></textarea>
-
+    <div style="flex: 0 0 70%; position: relative;">
+        <textarea id="processing-log"
+                  class="form-control h-100"
+                  style="resize: none;"></textarea>
         <button id="run-button"
                 class="btn btn-primary"
                 style="position: absolute; top: 8px; right: 8px; display: none;">
@@ -13,11 +12,10 @@
     </div>
 
     <!-- Updates section -->
-    <div class="card flex-grow-1" style="flex-basis: 30%; overflow: hidden;">
+    <div class="card" style="flex: 0 0 30%; overflow: hidden;">
         <div class="card-header">Status Updates</div>
         <div class="card-body" style="overflow-y: auto;">
-            <ul id="updates-list" class="list-unstyled mb-0">
-            </ul>
+            <ul id="updates-list" class="list-unstyled mb-0"></ul>
         </div>
     </div>
 </div>

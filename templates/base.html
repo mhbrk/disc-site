@@ -12,7 +12,7 @@
         html, body {
             height: 100vh;
             margin: 0;
-            overflow: hidden; /* Prevent body scroll */
+            overflow: hidden; /* Prevent outer scrollbars */
         }
 
         .container-fluid, .row {
@@ -21,37 +21,51 @@
 
         .row {
             display: flex;
-            overflow: hidden; /* Prevent row from overflowing */
+            overflow: hidden; /* Prevent row overflow */
         }
 
-        .col-md-4 {
+        /* Left panel: Chainlit */
+        .input-panel {
+            height: 97vh; /* Fixed height */
+            border: 1px solid #ccc;
+            border-radius: 0.5rem;
+            padding: 0;
+            overflow-y: auto; /* Internal scroll */
+            box-sizing: border-box;
+        }
+
+        /* Middle and Right panels: Flexbox */
+        .col-md-4:not(:first-child) { /* Targets middle and right panels */
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         .panel {
             flex-grow: 1;
             border: 1px solid #ccc;
             border-radius: 0.5rem;
-            overflow-y: auto; /* Scroll inside panel */
+            overflow-y: auto; /* Internal scroll */
             padding: 0;
             padding-bottom: 2rem;
             box-sizing: border-box;
         }
 
-        #input-panel iframe {
+        .input-panel iframe,
+        .panel iframe {
             width: 100%;
             height: 100%;
             border: none;
         }
     </style>
 
+
 </head>
 <body style="background-color: #c8c9ca;">
 <div class="container-fluid mt-3">
     <div class="row g-3">
         <div class="col-md-4">
-            <div id="input-panel" class="panel">
+            <div id="input-panel" class="input-panel">
                 {% include "input.html" %}
             </div>
         </div>
