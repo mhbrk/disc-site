@@ -50,7 +50,6 @@ async def get_agent_card():
         "version": "0.1.0",
         "capabilities": {
             "streaming": True,
-            "pushNotifications": True,
             "stateTransitionHistory": False
         },
         "authentication": {

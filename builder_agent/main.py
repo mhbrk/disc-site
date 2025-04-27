@@ -47,7 +47,7 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/.well-known/agent.json")
 async def get_agent_card():
-    capabilities = AgentCapabilities(streaming=True, pushNotifications=True)
+    capabilities = AgentCapabilities(streaming=True)
     skill = AgentSkill(
         id="builder_prompt",
         name="Builder Prompt for Website Generator",

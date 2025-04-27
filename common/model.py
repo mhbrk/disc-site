@@ -54,15 +54,11 @@ class Message(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
-class PushNotificationConfig(BaseModel):
-    url: str
-
 
 class TaskSendParams(BaseModel):
     id: str
     sessionId: str = Field(default_factory=lambda: uuid4().hex)
     message: Message
-    pushNotification: PushNotificationConfig | None = None
     historyLength: int | None = None
     metadata: dict[str, Any] | None = None
 
@@ -133,7 +129,6 @@ class AgentProvider(BaseModel):
 
 class AgentCapabilities(BaseModel):
     streaming: bool = False
-    pushNotifications: bool = False
     stateTransitionHistory: bool = False
 
 
