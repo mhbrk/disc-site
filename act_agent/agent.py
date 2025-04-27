@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-project_client = AIProjectClient.from_connection_string(
-    credential=DefaultAzureCredential(),
-    conn_str=os.environ["PROJECT_CONNECTION_STRING"],
-)
-
 async def invoke_act_agent(prompt: str) -> str:
+    project_client = AIProjectClient.from_connection_string(
+        credential=DefaultAzureCredential(),
+        conn_str=os.environ["PROJECT_CONNECTION_STRING"],
+    )
+
     with project_client:
         # Initialize agent toolset with user functions and code interpreter
         # [START create_agent_toolset]
