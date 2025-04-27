@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from typing import Any, Callable, Set, Optional
 
 
@@ -7,13 +8,17 @@ def save_data(data: Optional[str] = None) -> str:
     Saves data to a file. Use this when the user wants to save some information.
 
     :param data (Optional[str]): The data to save
-    :return: A JSON string indicating success or failure.
+    :return: A message indicating success or failure. If success, will contain the path to the saved file.
     :rtype: str
     """
     if data:
-        with open("data.txt", "w") as f:
+        file_path = Path("data.txt")
+        with file_path.open("a") as f:  # Open in append mode
             f.write(data)
-    return json.dumps({"success": True})
+            f.write("\n")
+        return f"Data saved to {file_path.resolve()}."
+    else:
+        return "Error: No data provided."
 
 
 def send_email(recipient: str, subject: str, body: str) -> str:

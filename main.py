@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import uuid
+
 from pathlib import Path
 
 import httpx
@@ -11,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 
+from act_agent.agent import invoke_act_agent
 from common.constants import CHAT_AGENT_TOPIC, ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
 from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart
 from common.utils import send_task_to_builder_indirect, subscribe_to_agent
@@ -228,8 +230,17 @@ async def push_from_generator_agent(payload: dict = Body(...)):
     return {"status": "success"}
 
 
+@app.post("/act")
+async def act(payload: str = Body(...)):
+    logger.info(payload)
+    response = await invoke_act_agent(payload)
+    return response
+
 @app.post("/echo")
 async def echo(payload: dict = Body(...)):
+    """
+    Used for testing
+    """
     logger.info(payload)
     return payload
 

@@ -6,7 +6,7 @@ from azure.identity import DefaultAzureCredential
 from azure.ai.projects.models import FunctionTool, ToolSet, CodeInterpreterTool
 from dotenv import load_dotenv
 
-from user_functions import user_functions
+from .user_functions import user_functions
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ project_client = AIProjectClient.from_connection_string(
     conn_str=os.environ["PROJECT_CONNECTION_STRING"],
 )
 
-async def invoke(prompt: str) -> str:
+async def invoke_act_agent(prompt: str) -> str:
     with project_client:
         # Initialize agent toolset with user functions and code interpreter
         # [START create_agent_toolset]
@@ -71,5 +71,5 @@ async def invoke(prompt: str) -> str:
         return messages.data[0].content[0].text.value
 
 if __name__ == "__main__":
-    result = asyncio.run(invoke("Save the following data: {\"name\": \"John\", \"age\": 30}"))
+    result = asyncio.run(invoke_act_agent("Save the following data: {\"name\": \"John\", \"age\": 30}"))
     print(result)
