@@ -9,26 +9,30 @@
             crossorigin="anonymous"></script>
     <script src="https://unpkg.com/htmx-ext-ws@2.0.2" crossorigin="anonymous"></script>
     <style>
-        .panel {
-            border: 1px solid #ddd;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            height: 90vh;
-            overflow-y: auto;
-        }
-    </style>
-
-    <style>
         html, body {
             height: 100%;
             margin: 0;
         }
 
+        .container-fluid, .row {
+            height: 100%;
+        }
+
+        .row {
+            display: flex;
+        }
+
+        .col-md-4 {
+            display: flex;
+            flex-direction: column;
+        }
+
         .panel {
-            height: 80vh;
-            padding: 0;
+            flex-grow: 1;
             border: 1px solid #ccc;
+            border-radius: 0.5rem;
             overflow: hidden;
+            padding: 0 0 2rem;
         }
 
         #input-panel iframe {
