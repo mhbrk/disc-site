@@ -18,7 +18,6 @@ load_dotenv()
 
 PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
 
-
 client = AsyncAzureOpenAI(
     api_version="2024-02-01",
     api_key=os.environ["AZURE_OPENAI_API_KEY"],
@@ -78,16 +77,19 @@ async def _generate_and_send_image(session_id: str, task_id: str, prompt: str, i
 
 @tool
 async def generate_image(session_id: str, task_id: str, prompt: str) -> str:
-    """This tool starts to generate images. It will return image path, and then start to generate the image.
+    """
+    This tool starts to generate images. It will return image path, and then start to generate the image.
+    For better outcomes provide some context regarding where and how the image will be used.
 
         Args:
             session_id: The session id
             task_id: The task id
-            prompt: The prompt to generate the image.
+            prompt: The prompt to generate the image. For better outcomes provide some context regarding where and how the image will be used.
 
         Returns:
             The image file name.
         """
+    logger.info(f"[{task_id}] Generating image for prompt: {prompt}")
     image_name = f"{task_id}{uuid.uuid4().hex}.png"
 
     # Kick off background image generation + response sending
