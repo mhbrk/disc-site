@@ -2,12 +2,12 @@ import logging
 import os
 import uuid
 
-import httpx
 from dotenv import load_dotenv
 
 from common.constants import ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC
 from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse, SendTaskRequest, \
     TaskSendParams
+from common.utils import publish_to_topic
 
 # Needs to happen before agent
 load_dotenv()
@@ -24,29 +24,14 @@ class AgentTaskManager:
     async def publish_task_request(self, task_id: str, session_id: str, message: str):
         message = Message(role="user", parts=[TextPart(text=message)])
 
-        # Wrap in TaskSendParams
         task_params = TaskSendParams(
             id=task_id,
             sessionId=session_id,
             message=message
         )
+        request = SendTaskRequest(params=task_params)
 
-        request = SendTaskRequest(
-            params=task_params,
-            id=str(uuid.uuid4())  # or pass your own
-        )
-
-        payload = {
-            "topic": BUILDER_AGENT_TOPIC,
-            "payload": request.model_dump(exclude_none=True)
-        }
-
-        async with httpx.AsyncClient() as client:
-            try:
-                print(f"[{task_id}] Publishing to pubsub: {payload}")
-                await client.post(f"{PUBSUB_URL}/publish", json=payload)
-            except Exception as e:
-                print(f"[{task_id}] Failed to publish to pubsub: {e}")
+        await publish_to_topic(BUILDER_AGENT_TOPIC, request.model_dump(exclude_none=True), task_id)
 
     async def publish_task_response(self, task_id: str, session_id: str, content: str, task_state: TaskState):
         # When we are invoking the agent, if task is not complete, we assume it is waiting for user input
@@ -72,19 +57,9 @@ class AgentTaskManager:
             metadata={}
         )
 
-        response = SendTaskResponse(id=task_id, result=task)
+        response = SendTaskResponse(result=task)
 
-        payload = {
-            "topic": ASK_CHAT_AGENT_TOPIC,
-            "payload": response.model_dump(exclude_none=True)
-        }
-
-        async with httpx.AsyncClient() as client:
-            try:
-                logger.info(f"[{task_id}] Publishing to pubsub: {payload}")
-                await client.post(f"{PUBSUB_URL}/publish", json=payload)
-            except Exception as e:
-                logger.error(f"[{task_id}] Failed to publish to pubsub: {e}")
+        await publish_to_topic(ASK_CHAT_AGENT_TOPIC, response.model_dump(exclude_none=True), task_id)
 
     async def on_send_task(self, request: SendTaskRequest):
         logger.info(f"[{request.params.id}] Received task: {request.params.message}")

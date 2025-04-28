@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import uuid
+from typing import Any
 
 import httpx
 
@@ -62,3 +63,20 @@ async def subscribe_to_agent(topic, endpoint):
         response = await client.post(SUBSCRIBE_URL, json=payload, headers=headers)
         response.raise_for_status()
         logger.info(f"Subscribed to: {SUBSCRIBE_URL}, payload: {json.dumps(payload)}")
+
+
+async def publish_to_topic(topic: str, payload: dict[str, Any], task_id: str):
+    """
+    Helper for publishing to pubsub topic. Should ideally be inside pubsub SDK
+    :param topic: topic to  publish to
+    :param payload: teh payload to publish to the topic
+    :param task_id: for logging
+    """
+    payload = {"topic": topic, "payload": payload}
+
+    async with httpx.AsyncClient() as client:
+        try:
+            logger.info(f"[{task_id}] Publishing to pubsub: {payload}")
+            await client.post(f"{PUBSUB_URL}/publish", json=payload)
+        except Exception as e:
+            logger.error(f"[{task_id}] Failed to publish to pubsub: {e}")
