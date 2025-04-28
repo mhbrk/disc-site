@@ -16,7 +16,7 @@ class A2AClient:
     async def send_task(self, payload: TaskSendParams) -> SendTaskResponse:
         request = SendTaskRequest(
             params=payload,
-            id=str(uuid.uuid4())  # or pass your own
+            id=str(uuid.uuid4())
         )
         response_data = await self._send_request(request)
         return SendTaskResponse(**response_data)

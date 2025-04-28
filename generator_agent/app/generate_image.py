@@ -4,13 +4,13 @@ import logging
 import os
 import uuid
 
-import httpx
 from dotenv import load_dotenv
 from langchain_core.tools import tool
 from openai import AsyncAzureOpenAI
 
 from common.constants import GENERATOR_AGENT_TOPIC
 from common.model import Artifact, Task, TaskState, TaskStatus, SendTaskResponse, FilePart, FileContent
+from common.utils import publish_to_topic
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,8 @@ client = AsyncAzureOpenAI(
 )
 
 
+# TODO: this is a task manager responsibility, but need to properly engineer task manager to move it there
+#  This is currently a hack
 async def send_task_response(task_id: str, session_id: str, image_name: str, image_location: str):
     logger.info(f"[{task_id}] Sending task response: {image_name}, {image_location}")
     file_content: FileContent = FileContent(name=image_name, uri=image_location, mimeType="image/png")
@@ -39,19 +41,9 @@ async def send_task_response(task_id: str, session_id: str, image_name: str, ima
         metadata={}
     )
 
-    response = SendTaskResponse(id=task_id, result=task)
+    response = SendTaskResponse(result=task)
 
-    payload = {
-        "topic": GENERATOR_AGENT_TOPIC,
-        "payload": response.model_dump(exclude_none=True)
-    }
-
-    async with httpx.AsyncClient() as client:
-        try:
-            logger.info(f"[{task_id}] Publishing to pubsub: {payload}")
-            await client.post(f"{PUBSUB_URL}/publish", json=payload)
-        except Exception as e:
-            logger.error(f"[{task_id}] Failed to publish to pubsub: {e}")
+    await publish_to_topic(GENERATOR_AGENT_TOPIC, response.model_dump(exclude_none=True), task_id)
 
 
 async def _generate_and_send_image(session_id: str, task_id: str, prompt: str, image_name: str):

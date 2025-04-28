@@ -1,11 +1,11 @@
 import os
 
-import httpx
 from dotenv import load_dotenv
 
 from accumulator import TagAccumulator
 from common.constants import GENERATOR_AGENT_TOPIC
 from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse
+from common.utils import publish_to_topic
 
 load_dotenv()
 
@@ -44,19 +44,9 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
             metadata={}
         )
 
-        response = SendTaskResponse(id=task_id, result=task)
+        response = SendTaskResponse(result=task)
 
-        payload = {
-            "topic": GENERATOR_AGENT_TOPIC,
-            "payload": response.model_dump(exclude_none=True)
-        }
-
-        async with httpx.AsyncClient() as client:
-            try:
-                print(f"[{task_id}] Publishing to pubsub: {payload}")
-                await client.post(f"{PUBSUB_URL}/publish", json=payload)
-            except Exception as e:
-                print(f"[{task_id}] Failed to publish to pubsub: {e}")
+        await publish_to_topic(GENERATOR_AGENT_TOPIC, response.model_dump(exclude_none=True), task_id)
 
 
 if __name__ == "__main__":
@@ -89,8 +79,9 @@ if __name__ == "__main__":
     - Display the date for each day in bold.
     """
 
+
     async def main():
-        asyncio.create_task(start_streaming_task( "abc123", "user-1-session-1", query))
+        asyncio.create_task(start_streaming_task("abc123", "user-1-session-1", query))
         await asyncio.sleep(1)  # wait for the task to start
         current = asyncio.current_task()
         tasks = [t for t in asyncio.all_tasks() if t is not current]
@@ -101,4 +92,3 @@ if __name__ == "__main__":
 
 
     asyncio.run(main())
-

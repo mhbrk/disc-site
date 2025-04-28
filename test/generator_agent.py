@@ -3,11 +3,10 @@ import os
 import uuid
 from uuid import uuid4
 
-import httpx
-
 from common.client import A2AClient
 from common.constants import BUILDER_AGENT_TOPIC
 from common.model import TaskSendParams, TextPart, Message, SendTaskRequest
+from common.utils import publish_to_topic
 
 PUBSUB_URL: str = "http://127.0.0.1:8000"
 
@@ -61,17 +60,7 @@ async def send_task_to_agent_indirect(session_id: str):
         id=str(uuid.uuid4())  # or pass your own
     )
 
-    payload = {
-        "topic": BUILDER_AGENT_TOPIC,
-        "payload": request.model_dump(exclude_none=True)
-    }
-
-    async with httpx.AsyncClient() as client:
-        try:
-            print(f"[{task_id}] Publishing to pubsub: {payload}")
-            await client.post(f"{PUBSUB_URL}/publish", json=payload)
-        except Exception as e:
-            print(f"[{task_id}] Failed to publish to pubsub: {e}")
+    await publish_to_topic(BUILDER_AGENT_TOPIC, request.model_dump(exclude_none=True), task_id)
 
 
 asyncio.run(send_task_to_agent_indirect(os.environ.get("SESSION_ID")))

@@ -3,14 +3,13 @@ import uuid
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
-import httpx
 from fastapi import FastAPI, Body
 from uvicorn import Server, Config
 
 from common.client import A2AClient
 from common.constants import ASK_CHAT_AGENT_TOPIC, CHAT_AGENT_TOPIC
 from common.model import TaskSendParams, TextPart, Message, SendTaskRequest, SendTaskResponse, TaskState
-from common.utils import subscribe_to_agent
+from common.utils import subscribe_to_agent, publish_to_topic
 
 PUBSUB_URL: str = "http://127.0.0.1:8000"
 ASK_CHAT_AGENT_URL: str = "http://my-localhost:7998/echo"
@@ -35,11 +34,9 @@ async def send_task_to_agent_direct(session_id: str):
         message=message
     )
 
-    # Send the task
     # TODO: I don't think model_dump is needed here because it's a pydantic model and model dump occurs later inside the client
     response = await client.send_task(task_params)
 
-    # Print the structured response
     print(response.model_dump())
 
 
@@ -64,17 +61,7 @@ async def send_task_to_builder_indirect(session_id: str, task_id: str, response:
         id=str(uuid.uuid4())  # or pass your own
     )
 
-    payload = {
-        "topic": CHAT_AGENT_TOPIC,
-        "payload": request.model_dump(exclude_none=True)
-    }
-
-    async with httpx.AsyncClient() as client:
-        try:
-            print(f"[{task_id}] Publishing to pubsub: {payload}")
-            await client.post(f"{PUBSUB_URL}/publish", json=payload)
-        except Exception as e:
-            print(f"[{task_id}] Failed to publish to pubsub: {e}")
+    await publish_to_topic(CHAT_AGENT_TOPIC, request.model_dump(exclude_none=True), task_id)
 
 
 builder_response: SendTaskResponse | None = None
@@ -127,14 +114,11 @@ async def run_test():
 
 
 async def main():
-    # Run the server in the background
     server_task = asyncio.create_task(start_uvicorn())
     await asyncio.sleep(2)
 
-    # Run your test
     await run_test()
 
-    # Optionally: cancel server after test
     server_task.cancel()
     try:
         await server_task
