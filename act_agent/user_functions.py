@@ -1,7 +1,9 @@
 import json
+import logging
 from pathlib import Path
 from typing import Any, Callable, Set, Optional
 
+logger = logging.getLogger(__name__)
 
 def save_data(data: Optional[str] = None) -> str:
     """
@@ -11,10 +13,11 @@ def save_data(data: Optional[str] = None) -> str:
     :return: A message indicating success or failure. If success, will contain the path to the saved file.
     :rtype: str
     """
+    logger.info(f"Saving data: {data}")
     if data:
         file_path = Path("data.txt")
         with file_path.open("a") as f:  # Open in append mode
-            f.write(data)
+            f.write(data.replace("\n", ""))
             f.write("\n")
         return f"Data saved to {file_path.resolve()}."
     else:
