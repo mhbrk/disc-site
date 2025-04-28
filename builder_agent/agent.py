@@ -18,7 +18,7 @@ from instruction_reader import get_instructions
 
 # Define the structure of our state
 class State(MessagesState):
-    prompt: NotRequired[str]
+    prompt: str | None
 
 
 logging.basicConfig(level=logging.INFO, )

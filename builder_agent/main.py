@@ -47,6 +47,9 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/.well-known/agent.json")
 async def get_agent_card():
+    """
+    Returns the agent card for discoverability. Not used yet
+    """
     capabilities = AgentCapabilities(streaming=True)
     skill = AgentSkill(
         id="builder_prompt",
@@ -72,6 +75,11 @@ async def get_agent_card():
 
 @app.post("/")
 async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
+    """
+    Handles Incoming requests. Currently, supports only SendTaskRequest
+    :param request: The request to process
+    :param background_tasks: used for async tasks (not used yet)
+    """
     body = await request.json()
 
     logger.info(f"Received request: {body}")
