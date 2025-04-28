@@ -38,3 +38,5 @@ Don't forget to provide your OPEN_AI_KEY in .env file.
 ## Testing and Debugging
 
 `main.py`, `task_manager.py`, and `agent.py` have entry points defined for testing and debugging. 
+
+Find `builder_agent.Dockerfile` somewhere in the repo for more details.
