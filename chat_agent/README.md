@@ -42,4 +42,5 @@ Don't forget to provide your OPEN_AI_KEY in .env file.
 
 ## Testing and Debugging
 Run the app with `python main.py` to test it.
+
 Find `chat_agent.Dockerfile` somewhere in the repo for more details
