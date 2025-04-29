@@ -37,17 +37,7 @@ async def send_task_to_builder_indirect(session_id: str, task_id: str, response:
         id=str(uuid.uuid4())  # or pass your own
     )
 
-    payload = {
-        "topic": CHAT_AGENT_TOPIC,
-        "payload": request.model_dump(exclude_none=True)
-    }
-
-    async with httpx.AsyncClient() as client:
-        try:
-            print(f"[{task_id}] Publishing to pubsub: {payload}")
-            await client.post(f"{PUBSUB_URL}/publish", json=payload)
-        except Exception as e:
-            print(f"[{task_id}] Failed to publish to pubsub: {e}")
+    await publish_to_topic(CHAT_AGENT_TOPIC, request.model_dump(exclude_none=True), task_id)
 
 
 async def subscribe_to_agent(topic, endpoint):
