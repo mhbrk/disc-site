@@ -24,7 +24,7 @@ All of that makes users exposed to suboptimal, impersonal, and in some cases har
 What if you could build software by typing up the requirements without writing any code? What if you could build your own website that contains all the information you need without ads and distractions?
 
 
-With the advent of useful LLMs and using Event Driven Agentic Architectures, `disc-site` will allow every human to build their own sites by simply typing in their own native language.  
+With the advent of useful LLMs and using Event Driven Agentic Architectures, `disc-site` will allow every human to build their own sites by simply typing in their own native language.
 
 ## Implementation
 ### User Interface
@@ -35,6 +35,7 @@ With the advent of useful LLMs and using Event Driven Agentic Architectures, `di
 * The user can also directly edit the spec created by the builder and send it to the generator
 * Highlighting elements inside the generated site allows to provide inline requests to the builder
 * Interactive sites can be generated and post requests from those go the Act Agent who can execute them
+* Deployment of the static site is not yet implemented
 
 ### Agent Architecture
 ![Agent Architecture](images/architecture.png)
@@ -209,5 +210,49 @@ For more information see [PubSub README.md](pubsub/README.md)
 ## Demo
 View a quick demo here:
 https://youtu.be/9UjL_a_ux_E
+
+## Technologies Used
+- A2A protocol for agent to agent communication model
+- My own PubSub+Kafka implementation for event driven architecture
+- Azure Deployed DALL-E model for image generation
+- Azure Agent Services for Act Agent
+- OpenAI for gpt-4.1 model support (significantly better than 4o in following instructions)
+- Tavily Web Search for web search
+- LangGraph for ReactAgents and Custom flows
+- Chainlit for chatbot UI
+- WebSockets for real-time communication between WebApp and Browser
+
+## Target Audience
+- People who don't like ads
+- People who want to avoid attention harvesting platforms
+- People who need personalized presentation of information
+- Event organizers who want to make their events more engaging
+
+## Future Work (if I had more time)
+#### General Usability Improvements
+- Lots of UI work
+- Support deploying the static site to the cloud so that it is accessible from anywhere
+- Performance optimizations like caching/reusing previously generated images and html and only streaming changes to the data.
+- User to be able to inject code for custom tool use
+- Memories vector store to be able to re-use data from previous interactions
+- Secret store for credentials sharing
+- 
+#### Generator Agent
+- Making the Generator Agent work smarter by splitting up the work into async tasks such as generating skeleton of the site, generating images, gathering data, and then stitching all of them together
+- Allow Generator to generate custom code and running it using CodeInterpreter tool (with the permission of the user)
+- Allow using previously created, or user uploaded images 
+- Enable talking to Builder if requested build needs more info or feature is not supported.
+
+#### Builder Agent
+- Builder Agent to use Plan-and-Execute pattern with streaming could also make transition from prompt to generating HTML smoother
+
+#### Chat Agent
+- Chat agent to be an actual agent, this could determine when new tasks begin. Right now have to say "forget previous instructions"
+- When asking multiple choice questions, produce buttons to avoid too much typing
+- Support uploading files for RAG
+
+#### Act Agent
+- Act Agent to support use of MCP server library. It will determine which MCP servers are needed for a given task and then use them to complete
+- Act Agent to talk to builder and generator to let them if credentials are missing in order to get them from the user
 
 
