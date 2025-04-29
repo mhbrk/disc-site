@@ -152,6 +152,7 @@ sequenceDiagram
     FrontEnd->>ChainLit: Deliver response (on_window_message)
     ChainLit->>User: Show response
 ```
+For more information see [Chat Agent README.md](chat_agent/README.md)
 
 ### Act Agent
 - Act Agent is a standalone agent implement using Azure AI Foundry and is accessed via a WebApp endpoint. 
@@ -182,9 +183,11 @@ flowchart TD
     agent -.-> tools
     tools --> agent
 ```
+For more information see [Act Agent README.md](act_agent/README.md)
 
 ## Event Driven Architecture using Publisher-Subscriber Pattern
 ![PubSub](images/pubsub.png)
+
 
 ## Communication Scheme
 ![Communication Scheme](images/communication.png)
