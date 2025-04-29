@@ -17,7 +17,7 @@ def save_data(data: Optional[str] = None) -> str:
     if data:
         file_path = Path("data.txt")
         with file_path.open("a") as f:  # Open in append mode
-            f.write(data.replace("\n", ""))
+            f.write(data.replace("\n", ", "))
             f.write("\n")
         return f"Data saved to {file_path.resolve()}."
     else:
