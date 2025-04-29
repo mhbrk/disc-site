@@ -185,12 +185,12 @@ flowchart TD
 ```
 For more information see [Act Agent README.md](act_agent/README.md)
 
-## Event Driven Architecture using Publisher-Subscriber Pattern
+### Event Driven Architecture using Publisher-Subscriber Pattern
 ![PubSub](images/pubsub.png)
 - This diagram shows the full cycle of communication between the agents and the browser and highlights how session id is passed between them.
 - PubSub is my own implementation of Google PubSub using Kafka for message queuing
-- 
-### Basic Operational Flow
+
+#### Basic Operational Flow
 
 0. WebApp and agent subscribe to various topics
 1. Browser establishes session for its websocket connection
@@ -200,7 +200,8 @@ For more information see [Act Agent README.md](act_agent/README.md)
 5. PubSub pushes the task response to the WebApp
 6. WebApp pushes the task response to the browser 
 
-## Communication Scheme
+For more information see [PubSub README.md](pubsub/README.md)
+### Communication Scheme
 ![Communication Scheme](images/communication.png)
 - This diagram maps out the topics and their roles.
 - WebApp subscribes to all topics in order to provide status updates to the user
@@ -208,3 +209,10 @@ For more information see [Act Agent README.md](act_agent/README.md)
 ## Demo
 View a quick demo here:
 https://youtu.be/9UjL_a_ux_E
+
+
+<style>
+h3 {
+  text-decoration: underline;
+}
+</style>
