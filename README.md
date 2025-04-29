@@ -233,8 +233,10 @@ https://youtu.be/9UjL_a_ux_E
 ## Future Work (if I had more time)
 #### General Usability Improvements
 - Lots of UI work
+- Better error handling
 - Support deploying the static site to the cloud so that it is accessible from anywhere
 - Performance optimizations like caching/reusing previously generated images and html and only streaming changes to the data.
+- Proper Task Management for the A2A Agents
 - User to be able to inject code for custom tool use
 - Memories vector store to be able to re-use data from previous interactions
 - Secret store for credentials sharing
