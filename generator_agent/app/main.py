@@ -9,9 +9,9 @@ from fastapi import FastAPI, Request, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 
 from common.constants import BUILDER_AGENT_TOPIC
-from common.model import TaskState, JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest
+from common.model import JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest
 from common.utils import subscribe_to_agent
-from task_manager import start_streaming_task
+from task_manager import execute_task
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -25,7 +25,6 @@ RECEIVE_URL: str = f"http://{HOST}:{PORT}"
 
 
 async def subscribe_to_agents():
-    # Receives tasks at root url
     # TODO: check for pubsub being up instead of sleeping
     await asyncio.sleep(2)
     await subscribe_to_agent(BUILDER_AGENT_TOPIC, RECEIVE_URL)
@@ -72,39 +71,6 @@ async def get_agent_card():
     })
 
 
-def execute_task(task_request: SendTaskRequest, background_tasks: BackgroundTasks):
-    params = task_request.params
-    query = params.message.parts[0].text
-    session_id = params.sessionId
-    task_id = params.id
-
-    # Start the streaming agent in the background
-    background_tasks.add_task(start_streaming_task, task_id, session_id, query)
-
-    # TODO: publish this to topic so that listener can know that the task was registered a new response is coming
-    # TODO: use SendTaskResponse type
-    return JSONResponse(
-        JSONRPCResponse(
-            id=task_request.id,
-            result={
-                "id": task_id,
-                "sessionId": session_id,
-                "status": {
-                    "state": TaskState.SUBMITTED,
-                    "message": {
-                        "role": "agent",
-                        "parts": [{
-                            "type": "text",
-                            "text": "Streaming has started. You will receive updates shortly."
-                        }]
-                    }
-                },
-                "metadata": {}
-            }
-        ).model_dump(exclude_none=True)
-    )
-
-
 @app.post("/")
 async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
     body = await request.json()
@@ -121,7 +87,7 @@ async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
         )
 
     if isinstance(json_rpc_request, SendTaskRequest):
-        return execute_task(json_rpc_request, background_tasks)
+        return JSONResponse(execute_task(json_rpc_request, background_tasks))
 
 
 @app.post("/echo")
@@ -146,7 +112,7 @@ curl -X POST http://localhost:8001/ \
         "role": "user",
         "parts": [{
           "type": "text",
-          "text": "generate an html resume"
+          "text": "generate a hello world site"
         }]
       }
     }

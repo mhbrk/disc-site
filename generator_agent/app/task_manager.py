@@ -1,17 +1,37 @@
-import os
-
 from dotenv import load_dotenv
+from fastapi import BackgroundTasks
 
 from accumulator import TagAccumulator
 from common.constants import GENERATOR_AGENT_TOPIC
-from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse
+from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse, SendTaskRequest
 from common.utils import publish_to_topic
 
 load_dotenv()
 
 from agent import agent
 
-PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
+
+def execute_task(task_request: SendTaskRequest, background_tasks: BackgroundTasks):
+    params = task_request.params
+    query = params.message.parts[0].text
+    session_id = params.sessionId
+    task_id = params.id
+
+    # Start the streaming agent in the background
+    background_tasks.add_task(start_streaming_task, task_id, session_id, query)
+
+    # TODO: publish this to topic so that listener can know that the task was registered a new response is coming
+    status = TaskStatus(
+        state=TaskState.SUBMITTED,
+        message=Message(
+            role="agent",
+            parts=[TextPart(text="Streaming has started. You will receive updates shortly.")]
+        )
+    )
+
+    task = Task(id=task_id, sessionId=session_id, status=status)
+
+    return SendTaskResponse(result=task).model_dump(exclude_none=True)
 
 
 async def start_streaming_task(task_id: str, session_id: str, query: str):
