@@ -12,12 +12,12 @@ The internet has deviated from its original promise of providing information tha
 * Attention harvesting platforms create distractions instead of focusing on what you need
 * Algorithms impede discovery of internet resource by giving you a siloed experience
 
-All of that makes users exposed to suboptimal, impersonal, and in some cases harmful presentations internet resources. For example:
-* For people who love outdoors, weather websites require many interactions to find the right information wasting much time.
-* News aggregators try to feed you clickbait, misinformation, and keeping you in a bubble.
+All of that makes users exposed to suboptimal, impersonal, and in some cases harmful presentations of internet resources. For example:
+* For people who love outdoors, weather websites require many interactions to find the right information resulting in wasted time.
+* News aggregators try to feed you clickbait, misinformation, and targeted content.
 * Social media platforms have focused on attention harvesting instead of facilitating meaningful interactions with your friends and communities.
 * And for all of the above, popups and ads litter the screen obscuring content useful to you.
-* Flashy ads purposefully trying to get clicks from kids
+* Flashy ads are purposefully trying to get clicks from kids
 * Countless other examples exist
 
 ## The Solution
@@ -211,8 +211,3 @@ View a quick demo here:
 https://youtu.be/9UjL_a_ux_E
 
 
-<style>
-h3 {
-  text-decoration: underline;
-}
-</style>
