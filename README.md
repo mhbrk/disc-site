@@ -13,18 +13,19 @@ The internet has deviated from its original promise of providing information tha
 * Algorithms impede discovery of internet resource by giving you a siloed experience
 
 All of that makes users exposed to suboptimal, impersonal, and in some cases harmful presentations of internet resources. For example:
-* For people who love outdoors, weather websites require many interactions to find the right information resulting in wasted time.
+* Shopping on a budget is a hassle, because while you monitor availability and prices on Marketplace, Amazon, Ebay, Etsy, REI, Craigslist, Buy Nothing, OfferUp, you are constantly surrounded by ads and guided by opaque algorithms.
 * News aggregators try to feed you clickbait, misinformation, and targeted content.
 * Social media platforms have focused on attention harvesting instead of facilitating meaningful interactions with your friends and communities.
 * And for all of the above, popups and ads litter the screen obscuring content useful to you.
 * Flashy ads are purposefully trying to get clicks from kids
+* For people who love outdoors, weather websites require many interactions to find the right information resulting in wasted time.
 * Countless other examples exist
 
 ## The Solution
 What if you could build software by typing up the requirements without writing any code? What if you could build your own website that contains all the information you need without ads and distractions?
 
 
-With the advent of useful LLMs and using Event Driven Agentic Architectures, `disc-site` will allow every human to build their own sites by simply typing in their own native language.
+With the advent of useful LLMs and using Event Driven Agentic Architectures, `disc-site` will allow every human to build their own sites by simply typing in their own native language. Let the agent do the annoying job of browsing the web and gathering information and then present you with a clean website containing the information that you can actually use.
 
 ## Implementation
 ### User Interface
@@ -225,6 +226,7 @@ https://youtu.be/9UjL_a_ux_E
 ## Target Audience
 - People who don't like ads
 - People who want to avoid attention harvesting platforms
+- People who love finding the cheapest prices by using their own personal shopping portal
 - People who need personalized presentation of information
 - Event organizers who want to make their events more engaging
 
