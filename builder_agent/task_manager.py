@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from common.constants import ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC
 from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse, SendTaskRequest, \
-    TaskSendParams
+    TaskSendParams, SendTaskStreamingRequest
 from common.utils import publish_to_topic
 
 # Needs to happen before agent
@@ -29,7 +29,7 @@ class AgentTaskManager:
             sessionId=session_id,
             message=message
         )
-        request = SendTaskRequest(params=task_params)
+        request = SendTaskStreamingRequest(params=task_params)
 
         await publish_to_topic(BUILDER_AGENT_TOPIC, request.model_dump(exclude_none=True), task_id)
 

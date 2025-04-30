@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 
 from common.constants import BUILDER_AGENT_TOPIC
-from common.model import JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest
+from common.model import JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskStreamingRequest
 from common.utils import subscribe_to_agent
 from task_manager import execute_task
 
@@ -86,7 +86,7 @@ async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
             status_code=400
         )
 
-    if isinstance(json_rpc_request, SendTaskRequest):
+    if isinstance(json_rpc_request, SendTaskStreamingRequest):
         return JSONResponse(await execute_task(json_rpc_request))
 
 

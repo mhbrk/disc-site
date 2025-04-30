@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import uuid
-
 from pathlib import Path
 
 import httpx
@@ -14,7 +13,8 @@ from starlette.staticfiles import StaticFiles
 
 from act_agent.agent import invoke_act_agent
 from common.constants import CHAT_AGENT_TOPIC, ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
-from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart
+from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart, A2AResponse, \
+    SendTaskStreamingResponse, TaskStatusUpdateEvent, JSONRPCMessage, TaskArtifactUpdateEvent, A2ARequest
 from common.utils import send_task_to_builder_indirect, subscribe_to_agent
 
 logging.basicConfig(level=logging.INFO, )
@@ -101,18 +101,22 @@ async def index(request: Request):
 
 
 # TODO: source should be part of the model
-async def update_status(session_id, source, model):
+async def update_status(session_id: str, source: str, model: JSONRPCMessage):
     # TODO: needs better pattern than if else
     socket = connected_status_sockets.get(session_id)
+    status = None
     if socket:
         if isinstance(model, SendTaskRequest):
             status = {"source": source, "message": f"Requested task: {model.params.id}"}
-            await connected_status_sockets.get(session_id).send_json(status)
-        if isinstance(model, SendTaskResponse):
-            # No need to produce update for streaming events (TODO: fix this by using status manager or better status conventions)
-            if model.result.status.state != TaskState.WORKING:
+        elif isinstance(model, SendTaskResponse):
+            status = {"source": source, "message": f"[{model.result.id}] {model.result.status.state}"}
+        elif isinstance(model, SendTaskStreamingResponse):
+            # For streaming responses, we only care about TaskStatusUpdate, not artifact updates
+            if isinstance(model.result, TaskStatusUpdateEvent):
                 status = {"source": source, "message": f"[{model.result.id}] {model.result.status.state}"}
-                await connected_status_sockets.get(session_id).send_json(status)
+
+        if status:
+            await connected_status_sockets.get(session_id).send_json(status)
     else:
         logger.error(f"No connected status socket found for session: {session_id}")
 
@@ -180,7 +184,7 @@ async def send_spec_to_builder(data: dict = Body(...)):
 @app.post("/agent/builder/push")
 async def push_from_builder_agent(payload: dict = Body(...)):
     logger.info(f"Received payload from builder agent: {payload}")
-    task_request = SendTaskRequest.model_validate(payload)
+    task_request = A2ARequest.validate_python(payload)
     session_id = task_request.params.sessionId
     logger.info(f"Received task session_id: {session_id}")
     websocket = connected_processing_sockets.get(session_id)
@@ -200,15 +204,27 @@ async def ws_generator(websocket: WebSocket):
 @app.post("/agent/generator/push")
 async def push_from_generator_agent(payload: dict = Body(...)):
     logger.info(f"Received payload from generator agent: {payload}")
-    task_response = SendTaskResponse.model_validate(payload)
-    session_id = task_response.result.sessionId
+    task_response = A2AResponse.validate_python(payload)
+
+    # TODO: what a hack... Fix this ugly code
+    session_id = "anonymous"
+    state = task_response.result.status.state
+    artifact = None
+    if isinstance(task_response, SendTaskResponse):
+        session_id = task_response.result.sessionId
+        artifact = task_response.result.artifacts[0]
+    elif isinstance(task_response, SendTaskStreamingResponse):
+        if isinstance(task_response.result, TaskArtifactUpdateEvent):
+            artifact = task_response.result.artifact
+        session_id = task_response.result.metadata["sessionId"]
+
     logger.info(f"Received task session_id: {session_id}")
     await update_status(session_id, "generator", task_response)
-    if task_response.result.status.state == TaskState.SUBMITTED:
+    if state == TaskState.SUBMITTED:
         return {"status": "success"}  # On SUBMITTED, there is nothing to do, we just update status and that's it
     websocket = connected_generator_sockets.get(session_id)
     if websocket:
-        main_part = task_response.result.artifacts[0].parts[0]
+        main_part = artifact.parts[0]
         if isinstance(main_part, FilePart):
             # If we received a file, we want to save it and reload the page
             response = await httpx.AsyncClient().get(main_part.file.uri)
@@ -219,11 +235,11 @@ async def push_from_generator_agent(payload: dict = Body(...)):
             image_path.write_bytes(image)
             await websocket.send_text("__reload__")
         elif isinstance(main_part, TextPart):
-            if task_response.result.status.state == TaskState.WORKING:
+            if state == TaskState.WORKING:
                 text = main_part.text
                 logger.info(f"[{session_id}] Sending text: {text}")
-                await websocket.send_text(task_response.result.artifacts[0].parts[0].text)
-            if task_response.result.status.state == TaskState.COMPLETED:
+                await websocket.send_text(artifact.parts[0].text)
+            if state == TaskState.COMPLETED:
                 await websocket.send_text("__completed__")
         else:
             logger.error(f"Unhandled part type: {type(main_part)} - {main_part}")
@@ -237,6 +253,7 @@ async def act(payload: str = Body(...)):
     logger.info(payload)
     response = await invoke_act_agent(payload)
     return response
+
 
 @app.post("/echo")
 async def echo(payload: dict = Body(...)):
