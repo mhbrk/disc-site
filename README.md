@@ -5,6 +5,37 @@ and executes them similar to how an interpreter executes python code instruction
 
 `disc-site` is a DisC solution for generating highly personalized websites.
 
+## Getting Started
+Download source code
+```
+git clone https://github.com/breba-hackathon/disc-site.git
+cd disc-site
+```
+Then copy env files and set the variables. If in trouble, find all the env files in [docker-compose.yaml](docker-compose.yaml)
+1. Copy `sample.env` in chat_agent/app/ and rename it to `.env`
+2. Copy `sample.env` in generator_agent/app/ and rename it to `.env`
+3. Copy `sample.env` in builder_agent/ and rename it to `.env`
+
+> 💡 **Note**: `README.md` inside each agent folder contains more information about environment variables.
+
+
+Then run agents
+```
+docker-compose up --build
+```
+
+Then run web app
+```
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python main.py
+```
+
+Then go to [http://localhost:7999/](http://localhost:7999/)
+
+
+
 ## The Problem
 
 The internet has deviated from its original promise of providing information that you need on demand and here are some reasons why:
