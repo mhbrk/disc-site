@@ -246,6 +246,8 @@ Building website specification from scratch: https://youtu.be/XOKMDUcFTGQ
 
 Building a Survey deep dive: https://youtu.be/4We3DAuwgVk
 
+Shopping Assistant(Web Search Tool): https://youtu.be/s5lgZb_W6YI
+
 Publisher Subscriber deep dive: https://youtu.be/ZdHUaKFHceI
 
 A2A deep dive: https://youtu.be/aTNhM9KCTVw
