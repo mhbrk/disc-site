@@ -21,6 +21,9 @@ PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
 
 
 class AgentTaskManager:
+    async def handle_error(self, response, task_id: str):
+        asyncio.create_task(publish_to_topic(BUILDER_AGENT_TOPIC, response, task_id))
+
     async def publish_task_request(self, task_id: str, session_id: str, message: str):
         message = Message(role="user", parts=[TextPart(text=message)])
 
