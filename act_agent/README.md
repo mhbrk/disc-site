@@ -36,7 +36,9 @@ state. It is basically a dynamic MCP server (new concept introduced in this hack
 
 ## Setup
 
-Don't forget to provide your OPEN_AI_KEY in .env file.
+You will need to set the following environment variables:
+PROJECT_CONNECTION_STRING - connection string to your Azure AI Project
+MODEL_DEPLOYMENT_NAME - name of your model deployment
 
 ## Testing and Debugging
 
