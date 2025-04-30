@@ -15,6 +15,7 @@ Then copy env files and set the variables. If in trouble, find all the env files
 1. Copy `sample.env` in chat_agent/app/ and rename it to `.env`
 2. Copy `sample.env` in generator_agent/app/ and rename it to `.env`
 3. Copy `sample.env` in builder_agent/ and rename it to `.env`
+4. Copy `sample.env` in act_agent/ and rename it to `.env`
 
 > 💡 **Note**: `README.md` inside each agent folder contains more information about environment variables.
 
