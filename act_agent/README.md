@@ -40,4 +40,9 @@ Don't forget to provide your OPEN_AI_KEY in .env file.
 
 ## Testing and Debugging
 
-Run the app with `python agent.py` to test it.
+Run the app with `python agent.py` to run the agent with a basic test
+
+Also you can run the integration test after starting the web app
+```
+python integration_test/act_agent.py
+```

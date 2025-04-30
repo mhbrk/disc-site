@@ -65,3 +65,8 @@ You will need the following in your .env file:
 `main.py`, `task_manager.py`, and `agent.py` have entry points defined for testing and debugging. 
 
 Find `generator_agent.Dockerfile` somewhere in the repo for more details.
+
+After starting the agent using docker-compose, you can run integration tests:
+```
+python integration_test/generator_agent.py
+```
