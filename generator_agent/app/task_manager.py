@@ -13,6 +13,10 @@ load_dotenv()
 from agent import agent
 
 
+async def handle_error(response, task_id: str):
+    asyncio.create_task(publish_to_topic(GENERATOR_AGENT_TOPIC, response, task_id))
+
+
 async def execute_task(task_request: SendTaskStreamingRequest):
     params = task_request.params
     query = params.message.parts[0].text
