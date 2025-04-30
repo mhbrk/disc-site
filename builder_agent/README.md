@@ -40,3 +40,8 @@ Don't forget to provide your OPEN_AI_KEY in .env file.
 `main.py`, `task_manager.py`, and `agent.py` have entry points defined for testing and debugging. 
 
 Find `builder_agent.Dockerfile` somewhere in the repo for more details.
+
+After starting the agent using docker-compose, you can run integration tests:
+```
+python integration_test/builder_agent.py
+```

@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import uuid
-
 from pathlib import Path
 
 import httpx
@@ -14,7 +13,8 @@ from starlette.staticfiles import StaticFiles
 
 from act_agent.agent import invoke_act_agent
 from common.constants import CHAT_AGENT_TOPIC, ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
-from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart
+from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart, A2AResponse, \
+    SendTaskStreamingResponse, TaskStatusUpdateEvent, JSONRPCMessage, TaskArtifactUpdateEvent, A2ARequest, Artifact
 from common.utils import send_task_to_builder_indirect, subscribe_to_agent
 
 logging.basicConfig(level=logging.INFO, )
@@ -36,9 +36,10 @@ app.mount("/images", StaticFiles(directory="./images"), name="images")
 
 templates = Jinja2Templates(directory="templates")
 
+# my-localhost is defined as parent host in pubsub container, should decouple this through config
 RECEIVE_URL: str = "http://my-localhost:7999"
 
-# Keeps track of the currently connected generator sockets by sessionId
+# Keeps track of the currently connected WebSockets by sessionId
 connected_generator_sockets: dict[str, WebSocket] = {}
 connected_input_sockets: dict[str, WebSocket] = {}
 connected_processing_sockets: dict[str, WebSocket] = {}
@@ -93,6 +94,9 @@ async def handle_socket_connection(
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
+    """
+    Home page route
+    """
     # Hardcode to simulate a user logging in
     request.session["sessionId"] = f"user-1-session-1"
     logger.info(f"Session ID: {request.session.get('sessionId')}")
@@ -101,34 +105,56 @@ async def index(request: Request):
 
 
 # TODO: source should be part of the model
-async def update_status(session_id, source, model):
+async def update_status(session_id: str, source: str, model: JSONRPCMessage):
+    """
+    Updates status panel
+    :param session_id: used to find the right WebSocket
+    :param source: Who is sending the message
+    :param model: JSONRPCMessage to report status on
+    """
     # TODO: needs better pattern than if else
     socket = connected_status_sockets.get(session_id)
+    status = None
     if socket:
         if isinstance(model, SendTaskRequest):
             status = {"source": source, "message": f"Requested task: {model.params.id}"}
-            await connected_status_sockets.get(session_id).send_json(status)
-        if isinstance(model, SendTaskResponse):
-            # No need to produce update for streaming events (TODO: fix this by using status manager or better status conventions)
-            if model.result.status.state != TaskState.WORKING:
+        elif isinstance(model, SendTaskResponse):
+            status = {"source": source, "message": f"[{model.result.id}] {model.result.status.state}"}
+        elif isinstance(model, SendTaskStreamingResponse):
+            # For streaming responses, we only care about TaskStatusUpdate, not artifact updates
+            if isinstance(model.result, TaskStatusUpdateEvent):
                 status = {"source": source, "message": f"[{model.result.id}] {model.result.status.state}"}
-                await connected_status_sockets.get(session_id).send_json(status)
+
+        if status:
+            await connected_status_sockets.get(session_id).send_json(status)
     else:
         logger.error(f"No connected status socket found for session: {session_id}")
 
 
 @app.websocket("/ws/status")
 async def ws_processing(websocket: WebSocket):
+    """
+    Establish WebSocket connection to the client.
+    :param websocket: the client websocket
+    """
     await handle_socket_connection(websocket, connected_status_sockets)
 
 
 @app.websocket("/ws/input")
 async def ws_input(websocket: WebSocket):
+    """
+    Establish WebSocket connection to the client.
+    :param websocket: the client websocket
+    """
     await handle_socket_connection(websocket, connected_input_sockets)
 
 
 @app.post("/agent/chat/push")
 async def message_from_chat_agent(payload: dict = Body(...)):
+    """
+    Handles push from chat agent. Usually to starting or confirming a user's task
+    :param payload: Should be a SendTaskRequest
+    """
     logger.info(f"Received payload from chat agent: {payload}")
     # TODO: handle validation errors
     task = SendTaskRequest.model_validate(payload)
@@ -137,6 +163,10 @@ async def message_from_chat_agent(payload: dict = Body(...)):
 
 @app.post("/agent/chat/ask")
 async def push_to_chat_agent(payload: dict = Body(...)):
+    """
+    Handles push to chat agent. Usually to ask for input
+    :param payload: Should be a SendTaskResponse
+    """
     logger.info(f"Received payload for chat agent: {payload}")
     task_response = SendTaskResponse.model_validate(payload)
     session_id = task_response.result.sessionId
@@ -155,14 +185,24 @@ async def push_to_chat_agent(payload: dict = Body(...)):
 
 @app.websocket("/ws/processing")
 async def ws_processing(websocket: WebSocket):
+    """
+    Handles WebSocket connection for builder panel
+    :param websocket: WebSocket from the client
+    """
     await handle_socket_connection(websocket, connected_processing_sockets)
 
 
 @app.post("/agent/builder/run")
 async def send_spec_to_builder(spec: dict = Body(...)):
+    """
+    Handles spec updates from the builder panel. This is the "Run" button. The spec will go through the builder agent,
+    but with an additional instruction to run without modification.
+    We want to run the spec by the builder to make sure that the builder agent is aware of our spec updates.
+    :param spec: Requirements to run.
+    """
     logger.info(f"Received spec from user: {spec}")
     task_id = f"task-{uuid.uuid4().hex}"
-    prompt = f"This is the final prompt. Just process it. I will not answer any questiosn: {spec['body']}"
+    prompt = f"This is the final prompt. Just process it. I will not answer any questions: {spec['body']}"
     await send_task_to_builder_indirect("user-1-session-1", task_id, prompt)
     return {"status": "success", "taskId": task_id}
 
@@ -179,8 +219,12 @@ async def send_spec_to_builder(data: dict = Body(...)):
 
 @app.post("/agent/builder/push")
 async def push_from_builder_agent(payload: dict = Body(...)):
+    """
+    Handles push from builder agent. This is the final spec that is expected to be picked up by the generator agent
+    :param payload: The request to the generator agent (or whoever needs to know about builder spec)
+    """
     logger.info(f"Received payload from builder agent: {payload}")
-    task_request = SendTaskRequest.model_validate(payload)
+    task_request = A2ARequest.validate_python(payload)
     session_id = task_request.params.sessionId
     logger.info(f"Received task session_id: {session_id}")
     websocket = connected_processing_sockets.get(session_id)
@@ -194,49 +238,120 @@ async def push_from_builder_agent(payload: dict = Body(...)):
 
 @app.websocket("/ws/generator")
 async def ws_generator(websocket: WebSocket):
+    """
+    Handles WebSocket connection for the generator panel
+    :param websocket: WebSocket from the client
+    """
     await handle_socket_connection(websocket, connected_generator_sockets)
 
 
 @app.post("/agent/generator/push")
 async def push_from_generator_agent(payload: dict = Body(...)):
+    """
+    Handles push from the generator agent. This will be streaming html tags or a complete html page
+    :param payload: Should be task response of some kind
+    :return:
+    """
     logger.info(f"Received payload from generator agent: {payload}")
-    task_response = SendTaskResponse.model_validate(payload)
+    task_response = A2AResponse.validate_python(payload)
+
+    if isinstance(task_response, SendTaskResponse):
+        return await handle_send_task_response(task_response)
+
+    if isinstance(task_response, SendTaskStreamingResponse):
+        return await handle_streaming_response(task_response)
+
+    logger.error(f"Unhandled task response type: {type(task_response)}")
+    return {"status": "ignored"}
+
+
+async def handle_send_task_response(task_response: SendTaskResponse):
+    """
+    Handles non-streaming task responses
+    :param task_response: payload to handle
+    """
     session_id = task_response.result.sessionId
-    logger.info(f"Received task session_id: {session_id}")
+    artifact = task_response.result.artifacts[0] if task_response.result.artifacts else None
+    state = task_response.result.status.state
+
     await update_status(session_id, "generator", task_response)
-    if task_response.result.status.state == TaskState.SUBMITTED:
-        return {"status": "success"}  # On SUBMITTED, there is nothing to do, we just update status and that's it
+    if state == TaskState.SUBMITTED:
+        return {"status": "success"}
+
+    return await send_artifact_to_websocket(session_id, artifact, state)
+
+
+async def handle_streaming_response(task_response: SendTaskStreamingResponse):
+    """
+    Handles streaming responses
+    :param task_response: payload to handle
+    """
+    result = task_response.result
+    session_id = result.metadata.get("sessionId", "anonymous")
+    artifact = result.artifact if isinstance(result, TaskArtifactUpdateEvent) else None
+    state = getattr(result.status, "state", TaskState.UNKNOWN)
+
+    await update_status(session_id, "generator", task_response)
+    if state == TaskState.SUBMITTED:
+        return {"status": "success"}
+
+    return await send_artifact_to_websocket(session_id, artifact, state)
+
+
+async def send_artifact_to_websocket(session_id: str, artifact: Artifact | None, state: TaskState):
+    """
+    Sends the html or file update to websocket
+    """
     websocket = connected_generator_sockets.get(session_id)
-    if websocket:
-        main_part = task_response.result.artifacts[0].parts[0]
-        if isinstance(main_part, FilePart):
-            # If we received a file, we want to save it and reload the page
-            response = await httpx.AsyncClient().get(main_part.file.uri)
-            image = response.content
-            images_dir = Path("images")
-            images_dir.mkdir(parents=True, exist_ok=True)
-            image_path = images_dir / main_part.file.name
-            image_path.write_bytes(image)
-            await websocket.send_text("__reload__")
-        elif isinstance(main_part, TextPart):
-            if task_response.result.status.state == TaskState.WORKING:
-                text = main_part.text
-                logger.info(f"[{session_id}] Sending text: {text}")
-                await websocket.send_text(task_response.result.artifacts[0].parts[0].text)
-            if task_response.result.status.state == TaskState.COMPLETED:
-                await websocket.send_text("__completed__")
-        else:
-            logger.error(f"Unhandled part type: {type(main_part)} - {main_part}")
-    else:
+    if not websocket:
         logger.warning(f"No connected generator socket found for session: {session_id}")
+        return {"status": "success"}
+
+    if not artifact or not artifact.parts:
+        logger.warning(f"No artifact or parts to send for session: {session_id}")
+        return {"status": "success"}
+
+    main_part = artifact.parts[0]
+    if isinstance(main_part, FilePart):
+        await handle_file_part(main_part, websocket)
+    elif isinstance(main_part, TextPart):
+        await handle_text_part(main_part, state, session_id, websocket)
+    else:
+        logger.error(f"Unhandled part type: {type(main_part)}")
+
     return {"status": "success"}
+
+
+async def handle_file_part(part: FilePart, websocket: WebSocket):
+    """Download and store the image, then trigger a client reload."""
+    response = await httpx.AsyncClient().get(part.file.uri)
+    image = response.content
+    images_dir = Path("images")
+    images_dir.mkdir(parents=True, exist_ok=True)
+    image_path = images_dir / part.file.name
+    image_path.write_bytes(image)
+    await websocket.send_text("__reload__")
+
+
+async def handle_text_part(part: TextPart, state: TaskState, session_id: str, websocket: WebSocket):
+    """Send text or completion notice depending on task state."""
+    if state == TaskState.WORKING:
+        logger.info(f"[{session_id}] Sending text: {part.text}")
+        await websocket.send_text(part.text)
+    elif state == TaskState.COMPLETED:
+        logger.info(f"[{session_id}] Task completed.")
+        await websocket.send_text("__completed__")
 
 
 @app.post("/act")
 async def act(payload: str = Body(...)):
+    """
+    Endpoint to run the Act Agent
+    """
     logger.info(payload)
     response = await invoke_act_agent(payload)
     return response
+
 
 @app.post("/echo")
 async def echo(payload: dict = Body(...)):

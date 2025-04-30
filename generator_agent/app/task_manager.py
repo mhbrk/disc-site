@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 
 from accumulator import TagAccumulator
 from common.constants import GENERATOR_AGENT_TOPIC
-from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse, SendTaskRequest
+from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse, \
+    SendTaskStreamingRequest, SendTaskStreamingResponse, TaskStatusUpdateEvent, TaskArtifactUpdateEvent
 from common.utils import publish_to_topic
 
 load_dotenv()
@@ -12,7 +13,11 @@ load_dotenv()
 from agent import agent
 
 
-async def execute_task(task_request: SendTaskRequest):
+async def handle_error(response, task_id: str):
+    asyncio.create_task(publish_to_topic(GENERATOR_AGENT_TOPIC, response, task_id))
+
+
+async def execute_task(task_request: SendTaskStreamingRequest):
     params = task_request.params
     query = params.message.parts[0].text
     session_id = params.sessionId
@@ -28,12 +33,37 @@ async def execute_task(task_request: SendTaskRequest):
             parts=[TextPart(text="Streaming has started. You will receive updates shortly.")]
         )
     )
-
-    task = Task(id=task_id, sessionId=session_id, status=status)
-    response = SendTaskResponse(result=task).model_dump(exclude_none=True)
+    update: TaskStatusUpdateEvent = TaskStatusUpdateEvent(id=task_id, status=status, metadata={"sessionId": session_id})
+    response = SendTaskStreamingResponse(result=update).model_dump(exclude_none=True)
     asyncio.create_task(publish_to_topic(GENERATOR_AGENT_TOPIC, response, task_id))
 
     return response
+
+
+async def publish_task_response(task_id: str, session_id: str, content: str):
+    task_status = TaskStatus(state=TaskState.COMPLETED)
+    artifact = Artifact(parts=[TextPart(text=content)])
+
+    task = Task(
+        id=task_id,
+        sessionId=session_id,
+        status=task_status,
+        artifacts=[artifact],
+        metadata={}
+    )
+
+    response = SendTaskResponse(result=task)
+    await publish_to_topic(GENERATOR_AGENT_TOPIC, response.model_dump(exclude_none=True), task_id)
+
+
+async def publish_artifact_update(task_id: str, session_id: str, content: str):
+    artifact = Artifact(parts=[TextPart(text=content)])
+
+    update = TaskArtifactUpdateEvent(id=task_id, artifact=artifact, metadata={"sessionId": session_id})
+
+    response = SendTaskStreamingResponse(result=update)
+
+    await publish_to_topic(GENERATOR_AGENT_TOPIC, response.model_dump(exclude_none=True), task_id)
 
 
 async def start_streaming_task(task_id: str, session_id: str, query: str):
@@ -47,28 +77,13 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
 
         # TODO: handle the case when input is required
         if is_task_completed:
-            task_status = TaskStatus(state=TaskState.COMPLETED)
+            await publish_task_response(task_id, session_id, content)
         else:
-            content = accumulator.append_and_return_html(content)
-            if not content:
+            tag_html = accumulator.append_and_return_html(content)
+            if not tag_html:
                 # Accumulate more text before publishing chunk.
                 continue
-            message = Message(role="agent", parts=[TextPart(text="Streaming...")])
-            task_status = TaskStatus(message=message, state=TaskState.WORKING)
-
-        artifact = Artifact(parts=[TextPart(text=content)])
-
-        task = Task(
-            id=task_id,
-            sessionId=session_id,
-            status=task_status,
-            artifacts=[artifact],  # or keep None if artifacts are sent at the end
-            metadata={}
-        )
-
-        response = SendTaskResponse(result=task)
-
-        await publish_to_topic(GENERATOR_AGENT_TOPIC, response.model_dump(exclude_none=True), task_id)
+            await publish_artifact_update(task_id, session_id, tag_html)
 
 
 if __name__ == "__main__":

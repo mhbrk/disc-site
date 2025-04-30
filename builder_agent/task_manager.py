@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from common.constants import ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC
 from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse, SendTaskRequest, \
-    TaskSendParams
+    TaskSendParams, SendTaskStreamingRequest
 from common.utils import publish_to_topic
 
 # Needs to happen before agent
@@ -21,6 +21,9 @@ PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
 
 
 class AgentTaskManager:
+    async def handle_error(self, response, task_id: str):
+        asyncio.create_task(publish_to_topic(BUILDER_AGENT_TOPIC, response, task_id))
+
     async def publish_task_request(self, task_id: str, session_id: str, message: str):
         message = Message(role="user", parts=[TextPart(text=message)])
 
@@ -29,7 +32,7 @@ class AgentTaskManager:
             sessionId=session_id,
             message=message
         )
-        request = SendTaskRequest(params=task_params)
+        request = SendTaskStreamingRequest(params=task_params)
 
         await publish_to_topic(BUILDER_AGENT_TOPIC, request.model_dump(exclude_none=True), task_id)
 

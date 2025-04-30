@@ -97,6 +97,14 @@ async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
 
     if isinstance(json_rpc_request, SendTaskRequest):
         return await task_manager.on_send_task(json_rpc_request)
+    else:
+        response: JSONRPCResponse = JSONRPCResponse(
+            response_method="tasks/send",
+            id=body.get("id"),
+            error=JSONRPCError(code=-32600, message="Invalid JSON-RPC request")
+        )
+        await task_manager.handle_error(response.model_dump(exclude_none=True), body.get("params", {}).get("id"))
+        return JSONResponse(response.model_dump(exclude_none=True), status_code=400)
 
 
 @app.post("/echo")

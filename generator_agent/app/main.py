@@ -9,8 +9,9 @@ from fastapi import FastAPI, Request, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 
 from common.constants import BUILDER_AGENT_TOPIC
-from common.model import JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest
+from common.model import JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskStreamingRequest
 from common.utils import subscribe_to_agent
+from generator_agent.app.task_manager import handle_error
 from task_manager import execute_task
 
 logging.basicConfig(level=logging.INFO, )
@@ -86,8 +87,16 @@ async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
             status_code=400
         )
 
-    if isinstance(json_rpc_request, SendTaskRequest):
+    if isinstance(json_rpc_request, SendTaskStreamingRequest):
         return JSONResponse(await execute_task(json_rpc_request))
+    else:
+        response: JSONRPCResponse = JSONRPCResponse(
+            response_method="tasks/send",
+            id=body.get("id"),
+            error=JSONRPCError(code=-32600, message="Invalid JSON-RPC request")
+        )
+        await handle_error(response.model_dump(exclude_none=True), body.get("params", {}).get("id"))
+        return JSONResponse(response.model_dump(exclude_none=True), status_code=400)
 
 
 @app.post("/echo")

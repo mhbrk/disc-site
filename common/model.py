@@ -54,7 +54,6 @@ class Message(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
-
 class TaskSendParams(BaseModel):
     id: str
     sessionId: str = Field(default_factory=lambda: uuid4().hex)
@@ -80,11 +79,12 @@ class JSONRPCError(BaseModel):
 
 
 class JSONRPCResponse(JSONRPCMessage):
+    response_method: str
     result: Any | None = None
     error: JSONRPCError | None = None
 
 
-class SendTaskRequest(JSONRPCMessage):
+class SendTaskRequest(JSONRPCRequest):
     method: Literal["tasks/send"] = "tasks/send"
     params: TaskSendParams
 
@@ -118,8 +118,33 @@ class Task(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
+class TaskStatusUpdateEvent(BaseModel):
+    id: str
+    status: TaskStatus
+    final: bool = False
+    metadata: dict[str, Any] | None = None
+
+
+class TaskArtifactUpdateEvent(BaseModel):
+    id: str
+    artifact: Artifact
+    status: TaskStatus = Field(default_factory=lambda: TaskStatus(state=TaskState.WORKING))
+    metadata: dict[str, Any] | None = None
+
+
 class SendTaskResponse(JSONRPCResponse):
+    response_method: Literal["tasks/send"] = "tasks/send"
     result: Task | None = None
+
+
+class SendTaskStreamingRequest(JSONRPCRequest):
+    method: Literal["tasks/sendSubscribe"] = "tasks/sendSubscribe"
+    params: TaskSendParams
+
+
+class SendTaskStreamingResponse(JSONRPCResponse):
+    response_method: Literal["tasks/sendSubscribe"] = "tasks/sendSubscribe"
+    result: TaskStatusUpdateEvent | TaskArtifactUpdateEvent | None = None
 
 
 class AgentProvider(BaseModel):
@@ -165,8 +190,18 @@ A2ARequest = TypeAdapter(
     Annotated[
         Union[
             SendTaskRequest,
-            # Future: Add other RPC types like GetTaskRequest here
+            SendTaskStreamingRequest
         ],
         Field(discriminator="method")
+    ]
+)
+
+A2AResponse = TypeAdapter(
+    Annotated[
+        Union[
+            SendTaskStreamingResponse,
+            SendTaskResponse
+        ],
+        Field(discriminator="response_method")
     ]
 )
