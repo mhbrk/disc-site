@@ -25,6 +25,11 @@ class AgentTaskManager:
         asyncio.create_task(publish_to_topic(BUILDER_AGENT_TOPIC, response, task_id))
 
     async def publish_task_request(self, task_id: str, session_id: str, message: str):
+        """
+        This function will publish task request to the builder agent topic.
+        Basically provoking other agents to pick up the task.
+        Use this when builder has finished building the spec
+        """
         message = Message(role="user", parts=[TextPart(text=message)])
 
         task_params = TaskSendParams(
@@ -37,6 +42,9 @@ class AgentTaskManager:
         await publish_to_topic(BUILDER_AGENT_TOPIC, request.model_dump(exclude_none=True), task_id)
 
     async def publish_task_response(self, task_id: str, session_id: str, content: str, task_state: TaskState):
+        """
+        This function will publish task response to the ask chat agent topic. Use this to get additional user input or complete task
+        """
         # When we are invoking the agent, if task is not complete, we assume it is waiting for user input
         # Even if there is an error, the only resolution that is possible, is another message from client
         if task_state == TaskState.INPUT_REQUIRED:
@@ -65,6 +73,10 @@ class AgentTaskManager:
         await publish_to_topic(ASK_CHAT_AGENT_TOPIC, response.model_dump(exclude_none=True), task_id)
 
     async def on_send_task(self, request: SendTaskRequest):
+        """
+        Use this when builder agent is receiving a new task request.
+        :param request: the SendTaskRequest to process
+        """
         logger.info(f"[{request.params.id}] Received task: {request.params.message}")
         agent_response = await agent.invoke(request.params.sessionId, request.params.message)
         content = agent_response.get("content")
