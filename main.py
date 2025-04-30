@@ -14,7 +14,7 @@ from starlette.staticfiles import StaticFiles
 from act_agent.agent import invoke_act_agent
 from common.constants import CHAT_AGENT_TOPIC, ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
 from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart, A2AResponse, \
-    SendTaskStreamingResponse, TaskStatusUpdateEvent, JSONRPCMessage, TaskArtifactUpdateEvent, A2ARequest
+    SendTaskStreamingResponse, TaskStatusUpdateEvent, JSONRPCMessage, TaskArtifactUpdateEvent, A2ARequest, Artifact
 from common.utils import send_task_to_builder_indirect, subscribe_to_agent
 
 logging.basicConfig(level=logging.INFO, )
@@ -206,46 +206,81 @@ async def push_from_generator_agent(payload: dict = Body(...)):
     logger.info(f"Received payload from generator agent: {payload}")
     task_response = A2AResponse.validate_python(payload)
 
-    # TODO: what a hack... Fix this ugly code
-    session_id = "anonymous"
-    state = task_response.result.status.state
-    artifact = None
     if isinstance(task_response, SendTaskResponse):
-        session_id = task_response.result.sessionId
-        artifact = task_response.result.artifacts[0]
-    elif isinstance(task_response, SendTaskStreamingResponse):
-        if isinstance(task_response.result, TaskArtifactUpdateEvent):
-            artifact = task_response.result.artifact
-        session_id = task_response.result.metadata["sessionId"]
+        return await handle_send_task_response(task_response)
 
-    logger.info(f"Received task session_id: {session_id}")
+    if isinstance(task_response, SendTaskStreamingResponse):
+        return await handle_streaming_response(task_response)
+
+    logger.error(f"Unhandled task response type: {type(task_response)}")
+    return {"status": "ignored"}
+
+
+async def handle_send_task_response(task_response: SendTaskResponse):
+    session_id = task_response.result.sessionId
+    artifact = task_response.result.artifacts[0] if task_response.result.artifacts else None
+    state = task_response.result.status.state
+
     await update_status(session_id, "generator", task_response)
     if state == TaskState.SUBMITTED:
-        return {"status": "success"}  # On SUBMITTED, there is nothing to do, we just update status and that's it
+        return {"status": "success"}
+
+    return await send_artifact_to_websocket(session_id, artifact, state)
+
+
+async def handle_streaming_response(task_response: SendTaskStreamingResponse):
+    result = task_response.result
+    session_id = result.metadata.get("sessionId", "anonymous")
+    artifact = result.artifact if isinstance(result, TaskArtifactUpdateEvent) else None
+    state = getattr(result.status, "state", TaskState.UNKNOWN)
+
+    await update_status(session_id, "generator", task_response)
+    if state == TaskState.SUBMITTED:
+        return {"status": "success"}
+
+    return await send_artifact_to_websocket(session_id, artifact, state)
+
+
+async def send_artifact_to_websocket(session_id: str, artifact: Artifact | None, state: TaskState):
     websocket = connected_generator_sockets.get(session_id)
-    if websocket:
-        main_part = artifact.parts[0]
-        if isinstance(main_part, FilePart):
-            # If we received a file, we want to save it and reload the page
-            response = await httpx.AsyncClient().get(main_part.file.uri)
-            image = response.content
-            images_dir = Path("images")
-            images_dir.mkdir(parents=True, exist_ok=True)
-            image_path = images_dir / main_part.file.name
-            image_path.write_bytes(image)
-            await websocket.send_text("__reload__")
-        elif isinstance(main_part, TextPart):
-            if state == TaskState.WORKING:
-                text = main_part.text
-                logger.info(f"[{session_id}] Sending text: {text}")
-                await websocket.send_text(artifact.parts[0].text)
-            if state == TaskState.COMPLETED:
-                await websocket.send_text("__completed__")
-        else:
-            logger.error(f"Unhandled part type: {type(main_part)} - {main_part}")
-    else:
+    if not websocket:
         logger.warning(f"No connected generator socket found for session: {session_id}")
+        return {"status": "success"}
+
+    if not artifact or not artifact.parts:
+        logger.warning(f"No artifact or parts to send for session: {session_id}")
+        return {"status": "success"}
+
+    main_part = artifact.parts[0]
+    if isinstance(main_part, FilePart):
+        await handle_file_part(main_part, websocket)
+    elif isinstance(main_part, TextPart):
+        await handle_text_part(main_part, state, session_id, websocket)
+    else:
+        logger.error(f"Unhandled part type: {type(main_part)}")
+
     return {"status": "success"}
+
+
+async def handle_file_part(part: FilePart, websocket: WebSocket):
+    """Download and store the image, then trigger a client reload."""
+    response = await httpx.AsyncClient().get(part.file.uri)
+    image = response.content
+    images_dir = Path("images")
+    images_dir.mkdir(parents=True, exist_ok=True)
+    image_path = images_dir / part.file.name
+    image_path.write_bytes(image)
+    await websocket.send_text("__reload__")
+
+
+async def handle_text_part(part: TextPart, state: TaskState, session_id: str, websocket: WebSocket):
+    """Send text or completion notice depending on task state."""
+    if state == TaskState.WORKING:
+        logger.info(f"[{session_id}] Sending text: {part.text}")
+        await websocket.send_text(part.text)
+    elif state == TaskState.COMPLETED:
+        logger.info(f"[{session_id}] Task completed.")
+        await websocket.send_text("__completed__")
 
 
 @app.post("/act")
