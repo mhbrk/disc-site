@@ -87,7 +87,7 @@ async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
         )
 
     if isinstance(json_rpc_request, SendTaskRequest):
-        return JSONResponse(execute_task(json_rpc_request, background_tasks))
+        return JSONResponse(await execute_task(json_rpc_request))
 
 
 @app.post("/echo")

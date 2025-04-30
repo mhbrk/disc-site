@@ -1,5 +1,6 @@
+import asyncio
+
 from dotenv import load_dotenv
-from fastapi import BackgroundTasks
 
 from accumulator import TagAccumulator
 from common.constants import GENERATOR_AGENT_TOPIC
@@ -11,16 +12,15 @@ load_dotenv()
 from agent import agent
 
 
-def execute_task(task_request: SendTaskRequest, background_tasks: BackgroundTasks):
+async def execute_task(task_request: SendTaskRequest):
     params = task_request.params
     query = params.message.parts[0].text
     session_id = params.sessionId
     task_id = params.id
 
     # Start the streaming agent in the background
-    background_tasks.add_task(start_streaming_task, task_id, session_id, query)
+    asyncio.create_task(start_streaming_task(task_id, session_id, query))
 
-    # TODO: publish this to topic so that listener can know that the task was registered a new response is coming
     status = TaskStatus(
         state=TaskState.SUBMITTED,
         message=Message(
@@ -30,8 +30,10 @@ def execute_task(task_request: SendTaskRequest, background_tasks: BackgroundTask
     )
 
     task = Task(id=task_id, sessionId=session_id, status=status)
+    response = SendTaskResponse(result=task).model_dump(exclude_none=True)
+    asyncio.create_task(publish_to_topic(GENERATOR_AGENT_TOPIC, response, task_id))
 
-    return SendTaskResponse(result=task).model_dump(exclude_none=True)
+    return response
 
 
 async def start_streaming_task(task_id: str, session_id: str, query: str):
@@ -70,8 +72,6 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
 
 
 if __name__ == "__main__":
-    import asyncio
-
     query = """
         
     HTML Site for 3-Day Weather Forecast

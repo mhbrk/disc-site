@@ -204,6 +204,8 @@ async def push_from_generator_agent(payload: dict = Body(...)):
     session_id = task_response.result.sessionId
     logger.info(f"Received task session_id: {session_id}")
     await update_status(session_id, "generator", task_response)
+    if task_response.result.status.state == TaskState.SUBMITTED:
+        return {"status": "success"}  # On SUBMITTED, there is nothing to do, we just update status and that's it
     websocket = connected_generator_sockets.get(session_id)
     if websocket:
         main_part = task_response.result.artifacts[0].parts[0]
