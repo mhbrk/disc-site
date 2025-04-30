@@ -209,8 +209,15 @@ For more information see [PubSub README.md](pubsub/README.md)
 - WebApp subscribes to all topics in order to provide status updates to the user
 
 ## Demo
-View a quick demo here:
-https://youtu.be/9UjL_a_ux_E
+View the main demo: https://youtu.be/9UjL_a_ux_E
+
+Building website specification from scratch: https://youtu.be/XOKMDUcFTGQ
+
+Building a Survey deep dive: https://youtu.be/4We3DAuwgVk
+
+Publisher Subscriber deep dive: https://youtu.be/ZdHUaKFHceI
+
+
 
 ## Technologies Used
 - A2A protocol for agent to agent communication model
