@@ -248,6 +248,8 @@ Building a Survey deep dive: https://youtu.be/4We3DAuwgVk
 
 Publisher Subscriber deep dive: https://youtu.be/ZdHUaKFHceI
 
+A2A deep dive: https://youtu.be/aTNhM9KCTVw
+
 
 
 ## Technologies Used
