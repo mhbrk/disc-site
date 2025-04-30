@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-from typing import NotRequired
 
 from dotenv import load_dotenv
 from langchain_core.messages import SystemMessage
@@ -16,8 +15,12 @@ from common.model import Message
 from instruction_reader import get_instructions
 
 
-# Define the structure of our state
 class State(MessagesState):
+    """
+    State for the builder agent.
+    messages: list[str] - to keep track of the conversation
+    prompt: str - the prompt to run
+    """
     prompt: str | None
 
 
@@ -30,9 +33,10 @@ class BuilderAgent:
     def __init__(self):
         self.system_prompt = get_instructions("builder_agent_system_prompt")
 
-        # Initialize model with tools
+        # 4.1 model seems to be the best
         self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
 
+        # Create a checkpointer, could use MongoDB checkpointer in the future
         checkpointer = MemorySaver()
 
         # Create a state graph
@@ -55,6 +59,11 @@ class BuilderAgent:
         self.final_state: State | None = None
 
     def is_final_prompt(self, state: State) -> bool:
+        """
+        Checks if agent has decided to produce final prompt in its last message.
+        :param state: agent state that contains messages
+        :return: boolean indicating if agent has decided to produce final prompt in the last message
+        """
         if len(state["messages"]) > 1:
             message = state["messages"][-1].content
             split_message = message.split("::final prompt result::")
@@ -64,11 +73,19 @@ class BuilderAgent:
         return False
 
     def get_user_input(self, state: State) -> State:
+        """
+        Use interrupt mechanism from langgraph. The client will need to re-invoke the agent to continue
+        :param state: state of the agent just before the interrupt.
+        :return: state updated with the message from the client.
+        """
         question = state["messages"][-1].content
         answer: Message = interrupt(question)
         return {"messages": [{"role": answer.role, "content": answer.parts[0].text}]}
 
     def extract_prompt(self, state: State) -> State:
+        """
+        This is a shortcut to structured output without using an extra LLM invokation.
+        """
         message = state["messages"][-1].content
         split_message = message.split("::final prompt result::")
         prompt = ""
@@ -106,6 +123,12 @@ class BuilderAgent:
         return self.get_agent_response(config)
 
     def is_waiting_for_user_input(self, config: dict):
+        """
+        Helper function to check if the agent is waiting for user input, to facilitate human in the loop
+        :param config: agent config used to get state.
+        :return: True, if the next agent node is "get_user_input" indicate interrupt was triggered.
+                 False, otherwise.
+        """
         state_snapshot = self.app.get_state(config)
         next_node_tuple = state_snapshot.next
 
