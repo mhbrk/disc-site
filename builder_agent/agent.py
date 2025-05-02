@@ -120,7 +120,7 @@ class BuilderAgent:
             logger.info(f"Invoking builder agent with user input: {user_input}")
             await self.app.ainvoke({"messages": [{"role": user_input.role, "content": user_input.parts[0].text}]},
                                    config)
-        return self.get_agent_response(config)
+        return await self.get_agent_response(config)
 
     def is_waiting_for_user_input(self, config: dict):
         """
@@ -136,9 +136,8 @@ class BuilderAgent:
             return next_node_tuple[0] == "get_user_input"
         return False
 
-    def get_agent_response(self, config):
-        # TODO: use aget_state
-        current_state = self.app.get_state(config)
+    async def get_agent_response(self, config):
+        current_state = await self.app.aget_state(config)
         # check if an interrupt was triggered by get_user_input node
         if self.is_waiting_for_user_input(config):
             return {
