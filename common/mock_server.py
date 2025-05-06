@@ -8,9 +8,9 @@ from uvicorn import Config, Server
 from common.constants import GENERATOR_AGENT_TOPIC
 from common.utils import subscribe_to_agent
 
-RECEIVE_URL: str = "http://my-localhost:7999"
-HOST = "127.0.0.1"
 PORT = 7999
+HOST = "127.0.0.1"
+RECEIVE_URL: str = f"http://my-localhost:{PORT}"
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
