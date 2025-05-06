@@ -35,7 +35,7 @@
     }
 
     // WebSocket for status updates
-    let status_ws = new WebSocket("{{ socket_server }}/ws/status");
+    const status_ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/status`);
     status_ws.onmessage = (event) => {
         console.log("Received status update:", event.data);
         const updatesList = document.getElementById("updates-list");
@@ -61,7 +61,7 @@
     };
 
     // WebSocket for builder text
-    let processing_ws = new WebSocket("{{ socket_server }}/ws/processing");
+    const processing_ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/processing`);
     processing_ws.onmessage = (event) => {
         lastServerContent = event.data;
         textarea.value = event.data;

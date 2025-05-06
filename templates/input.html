@@ -3,9 +3,10 @@
 <script>
     const chat_iframe = document.getElementById('chainlit');
 
-    let ws = new WebSocket("{{ socket_server }}/ws/input");
-    console.log("Input WebSocket connected:" + ws);
-    ws.onmessage = (event) => {
+    const input_ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/input`);
+
+    console.log("Input WebSocket connected:" + input_ws);
+    input_ws.onmessage = (event) => {
         chat_iframe.contentWindow.postMessage(event.data, '*');
     };
 </script>

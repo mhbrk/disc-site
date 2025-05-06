@@ -25,7 +25,9 @@
     }
 
     const iframe = document.getElementById('generator-frame');
-    const generator_ws = new WebSocket("{{ socket_server }}/ws/generator");
+
+    const generator_ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/generator`);
+
 
     let docOpened = false;
     let doc = iframe.contentWindow.document;

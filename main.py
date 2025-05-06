@@ -103,7 +103,7 @@ async def index(request: Request):
     request.session["sessionId"] = f"user-1-session-1"
     logger.info(f"Session ID: {request.session.get('sessionId')}")
     await subscribe_to_agents()
-    return templates.TemplateResponse("base.html", {"request": request, "socket_server": f"ws://{HOST}:{PORT}"})
+    return templates.TemplateResponse("base.html", {"request": request})
 
 
 # TODO: source should be part of the model
