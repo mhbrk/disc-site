@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import uuid
 from pathlib import Path
 
@@ -20,8 +21,9 @@ from common.utils import send_task_to_builder_indirect, subscribe_to_agent
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
 
-HOST = "localhost"
-PORT = 7999
+HOST = os.environ.get("HOST", "localhost")
+PORT = os.environ.get("PORT", "7999")
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -37,7 +39,7 @@ app.mount("/images", StaticFiles(directory="./images"), name="images")
 templates = Jinja2Templates(directory="templates")
 
 # my-localhost is defined as parent host in pubsub container, should decouple this through config
-RECEIVE_URL: str = "http://my-localhost:7999"
+RECEIVE_URL: str = f"http://{HOST}:{PORT}"
 
 # Keeps track of the currently connected WebSockets by sessionId
 connected_generator_sockets: dict[str, WebSocket] = {}

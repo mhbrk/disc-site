@@ -98,3 +98,18 @@ services:
     stdin_open: true  # -i
     tty: true         # makes it interactive if needed
     restart: "no"     # --rm is similar to no restart
+  breba-app:
+    build:
+      context: .
+      dockerfile: app.Dockerfile
+    container_name: breba-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - pubsub
+    environment:
+      PUBSUB_URL: http://pubsub:8000
+      HOST: breba-app
+      PORT: 8080
+    extra_hosts:
+      - "my-localhost:host-gateway"
