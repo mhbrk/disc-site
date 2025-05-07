@@ -21,8 +21,9 @@ from common.utils import send_task_to_builder_indirect, subscribe_to_agent
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
 
-HOST = os.environ.get("HOST", "localhost")
-PORT = os.environ.get("PORT", "7999")
+HOST = os.environ.get("HOST", "0.0.0.0")
+PORT = int(os.environ.get("PORT", "8080"))
+
 
 app = FastAPI()
 app.add_middleware(
