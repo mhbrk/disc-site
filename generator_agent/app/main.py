@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 HOST = os.getenv("AGENT_HOST", "localhost")
-PORT = int(os.getenv("AGENT_PORT", 8001))
+PORT = int(os.getenv("AGENT_PORT", 8080))
 
 RECEIVE_URL: str = f"http://{HOST}:{PORT}"
 

@@ -12,6 +12,4 @@ WORKDIR /app/generator_agent/app
 
 ENV PYTHONPATH=/app
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
-#CMD "/bin/bash"
-EXPOSE 8001
+CMD ["python", "main.py"]

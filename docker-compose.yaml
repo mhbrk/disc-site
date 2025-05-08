@@ -44,7 +44,7 @@ services:
       dockerfile: generator_agent.Dockerfile
     container_name: generator_agent
     ports:
-      - "8001:8001"
+      - "8001:8080"
     depends_on:
       - pubsub
     env_file:
@@ -52,7 +52,6 @@ services:
     environment:
       PUBSUB_URL: http://pubsub:8000
       AGENT_HOST: generator_agent
-      AGENT_PORT: 8001
     extra_hosts:
       - "my-localhost:host-gateway"
   builder_agent:
