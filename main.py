@@ -14,6 +14,7 @@ from starlette.staticfiles import StaticFiles
 
 from act_agent.agent import invoke_act_agent
 from common.constants import CHAT_AGENT_TOPIC, ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
+from common.google_pub_sub import extract_pubsub_message
 from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart, A2AResponse, \
     SendTaskStreamingResponse, TaskStatusUpdateEvent, JSONRPCMessage, TaskArtifactUpdateEvent, A2ARequest, Artifact
 from common.utils import send_task_to_builder_indirect, subscribe_to_agent
@@ -159,6 +160,7 @@ async def message_from_chat_agent(payload: dict = Body(...)):
     :param payload: Should be a SendTaskRequest
     """
     logger.info(f"Received payload from chat agent: {payload}")
+    payload = extract_pubsub_message(payload)
     # TODO: handle validation errors
     task = SendTaskRequest.model_validate(payload)
     await update_status(task.params.sessionId, "chat", task)
@@ -171,6 +173,7 @@ async def push_to_chat_agent(payload: dict = Body(...)):
     :param payload: Should be a SendTaskResponse
     """
     logger.info(f"Received payload for chat agent: {payload}")
+    payload = extract_pubsub_message(payload)
     task_response = SendTaskResponse.model_validate(payload)
     session_id = task_response.result.sessionId
     logger.info(f"Chat agent received task for session_id: {session_id}")
@@ -227,6 +230,7 @@ async def push_from_builder_agent(payload: dict = Body(...)):
     :param payload: The request to the generator agent (or whoever needs to know about builder spec)
     """
     logger.info(f"Received payload from builder agent: {payload}")
+    payload = extract_pubsub_message(payload)
     task_request = A2ARequest.validate_python(payload)
     session_id = task_request.params.sessionId
     logger.info(f"Received task session_id: {session_id}")
@@ -256,6 +260,7 @@ async def push_from_generator_agent(payload: dict = Body(...)):
     :return:
     """
     logger.info(f"Received payload from generator agent: {payload}")
+    payload = extract_pubsub_message(payload)
     task_response = A2AResponse.validate_python(payload)
 
     if isinstance(task_response, SendTaskResponse):
