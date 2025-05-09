@@ -51,7 +51,7 @@ services:
       - ./generator_agent/app/.env
     environment:
       PUBSUB_URL: http://pubsub:8000
-      AGENT_HOST: generator_agent
+      RECEIVE_URL: http://generator_agent:8080
     extra_hosts:
       - "my-localhost:host-gateway"
   builder_agent:
