@@ -60,15 +60,14 @@ services:
         dockerfile: builder_agent.Dockerfile
       container_name: builder_agent
       ports:
-        - "8002:8002"
+        - "8002:8080"
       depends_on:
         - pubsub
       env_file:
         - ./builder_agent/.env
       environment:
         PUBSUB_URL: http://pubsub:8000
-        AGENT_HOST: builder_agent
-        AGENT_PORT: 8002
+        RECEIVE_URL: http://builder_agent:8080
       extra_hosts:
         - "my-localhost:host-gateway"
   chat_agent:

@@ -4,17 +4,17 @@ import os
 
 import httpx
 
-from common.constants import BUILDER_AGENT_TOPIC
+from common.constants import CHAT_AGENT_TOPIC
 from common.utils import subscribe_to_agent
 
 logger = logging.getLogger(__name__)
 # These host and port values are not the same as receive url because
 # they are used to ping the server to see if it started,
 # while receive url is used to subscribe to pubsub and is the url for accessing agent form the outside world
-HOST = os.getenv("AGENT_HOST", "localhost")
-PORT = int(os.getenv("AGENT_PORT", 8080))
+HOST = "localhost"
+PORT = int(os.getenv("PORT", 8080))
 
-RECEIVE_URL: str = os.getenv("RECEIVE_URL", f"http://{HOST}:{PORT}")
+RECEIVE_URL: str = os.getenv("RECEIVE_URL", "")
 
 
 async def wait_for_server_ready(url: str, timeout: float = 30.0):
@@ -36,8 +36,11 @@ async def subscribe_to_agents():
     # TODO: check for pubsub being up instead of sleeping
     await wait_for_server_ready(f"http://{HOST}:{PORT}/health")
     await asyncio.sleep(2)
-    await subscribe_to_agent(BUILDER_AGENT_TOPIC, RECEIVE_URL)
+    await subscribe_to_agent(CHAT_AGENT_TOPIC, RECEIVE_URL)
 
 
 if __name__ == "__main__":
-    asyncio.run(subscribe_to_agents())
+    if RECEIVE_URL:
+        asyncio.run(subscribe_to_agents())
+    else:
+        raise ValueError("RECEIVE_URL is not set")

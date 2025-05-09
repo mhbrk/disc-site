@@ -1,7 +1,5 @@
-import asyncio
 import logging
 import os
-from contextlib import asynccontextmanager
 
 import uvicorn
 from dotenv import load_dotenv
@@ -9,10 +7,8 @@ from fastapi import FastAPI, Request, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 
 from builder_agent.agent import BuilderAgent
-from common.constants import CHAT_AGENT_TOPIC
 from common.model import JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest, AgentCard, AgentSkill, \
     AgentCapabilities
-from common.utils import subscribe_to_agent
 from task_manager import AgentTaskManager
 
 logging.basicConfig(level=logging.INFO, )
@@ -20,29 +16,11 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-HOST = os.getenv("AGENT_HOST", "localhost")
-PORT = int(os.getenv("AGENT_PORT", 8002))
-
-RECEIVE_URL: str = f"http://{HOST}:{PORT}"
+RECEIVE_URL = os.getenv("RECEIVE_URL", "http://0.0.0.0:8080")
 
 task_manager = AgentTaskManager()
 
-
-async def subscribe_to_agents():
-    # Receives tasks at root url
-    # TODO: check for pubsub being up instead of sleeping
-    await asyncio.sleep(2)
-    await subscribe_to_agent(CHAT_AGENT_TOPIC, RECEIVE_URL)
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await subscribe_to_agents()
-    yield
-    # TODO: unsubscribe
-
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 
 @app.get("/.well-known/agent.json")
@@ -63,7 +41,7 @@ async def get_agent_card():
     card = AgentCard(
         name="Currency Agent",
         description="Helps with exchange rates for currencies",
-        url=f"http://{HOST}:{PORT}/",
+        url=RECEIVE_URL,
         version="1.0.0",
         defaultInputModes=BuilderAgent.SUPPORTED_CONTENT_TYPES,
         defaultOutputModes=BuilderAgent.SUPPORTED_CONTENT_TYPES,
@@ -107,6 +85,11 @@ async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
         return JSONResponse(response.model_dump(exclude_none=True), status_code=400)
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 @app.post("/echo")
 def echo(payload: dict = Body(..., embed=False)):
     print(payload)
@@ -114,7 +97,9 @@ def echo(payload: dict = Body(..., embed=False)):
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host=HOST, port=PORT, reload=True)
+    host = os.getenv("AGENT_HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", 8080))
+    uvicorn.run("main:app", host=host, port=port, reload=True)
 
 """
 curl -X POST http://localhost:8002/ \
