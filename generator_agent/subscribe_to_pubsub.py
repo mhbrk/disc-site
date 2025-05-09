@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 HOST = os.getenv("AGENT_HOST", "localhost")
 PORT = int(os.getenv("AGENT_PORT", 8080))
 
-RECEIVE_URL: str = os.getenv("RECEIVE_URL", f"http://{HOST}:{PORT}")
+RECEIVE_URL: str = os.getenv("RECEIVE_URL", "")
 
 
 async def wait_for_server_ready(url: str, timeout: float = 30.0):
@@ -40,4 +40,7 @@ async def subscribe_to_agents():
 
 
 if __name__ == "__main__":
-    asyncio.run(subscribe_to_agents())
+    if RECEIVE_URL:
+        asyncio.run(subscribe_to_agents())
+    else:
+        raise ValueError("RECEIVE_URL is not set")
