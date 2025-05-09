@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from chainlit.utils import mount_chainlit
 from fastapi import FastAPI
 
@@ -9,9 +12,12 @@ def read_main():
     return {"message": "Hello World from main app"}
 
 
-mount_chainlit(app=app, target="my_cl_app.py", path="/chainlit")
+current_file_dir = Path(__file__).parent
+mount_chainlit(app=app, target=str(current_file_dir / "my_cl_app.py"), path="/chainlit")
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="127.0.0.1", port=8003, reload=True)
+    host = os.getenv("AGENT_HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", 8080))
+    uvicorn.run("main:app", host=host, port=port, reload=True)
