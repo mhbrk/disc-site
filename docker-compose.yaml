@@ -105,6 +105,7 @@ services:
       - pubsub
     environment:
       PUBSUB_URL: http://pubsub:8000
+      RECEIVE_URL: http://breba-app:8080
       HOST: breba-app
       PORT: 8080
     extra_hosts:

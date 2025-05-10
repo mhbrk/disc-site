@@ -41,7 +41,7 @@ app.mount("/images", StaticFiles(directory="./images"), name="images")
 templates = Jinja2Templates(directory="templates")
 
 # my-localhost is defined as parent host in pubsub container, should decouple this through config
-RECEIVE_URL: str = f"http://{HOST}:{PORT}"
+RECEIVE_URL: str = os.getenv("RECEIVE_URL", "")
 
 # Keeps track of the currently connected WebSockets by sessionId
 connected_generator_sockets: dict[str, WebSocket] = {}
@@ -54,6 +54,9 @@ async def subscribe_to_agents():
     """
     Subscribe to all the agents for the application
     """
+    if not RECEIVE_URL:
+        return
+
     await asyncio.gather(
         asyncio.create_task(subscribe_to_agent(CHAT_AGENT_TOPIC, f"{RECEIVE_URL}/agent/chat/push")),
         asyncio.create_task(subscribe_to_agent(ASK_CHAT_AGENT_TOPIC, f"{RECEIVE_URL}/agent/chat/ask")),
