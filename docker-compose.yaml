@@ -88,7 +88,7 @@ services:
   breba-app:
     build:
       context: .
-      dockerfile: breba_app/Dockerfile
+      dockerfile: breba_app.Dockerfile
     container_name: breba-app
     ports:
       - "8080:8080"
@@ -97,7 +97,7 @@ services:
     environment:
       PUBSUB_URL: http://pubsub:8000
       RECEIVE_URL: http://breba-app:8080
-      CHAT_URL: http://127.0.0.1:8003/chainlit   # This url is accessed from the browser, not the server
+      CHAT_URL: http://127.0.0.1:8003/chainlit/  # This url is accessed from the browser, not the server
       HOST: breba-app
       PORT: 8080
     extra_hosts:
