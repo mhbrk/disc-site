@@ -22,7 +22,7 @@ CHAT_AGENT_URL=$(gcloud run services describe "${CHAT_AGENT_SERVICE}" \
   --project "${PROJECT_ID}" \
   --format="value(status.url)")
 
-CHAT_URL=${CHAT_AGENT_URL}/chainlit
+CHAT_URL=${CHAT_AGENT_URL}/chainlit/
 
 echo "🚀 Deploying breba-app to Cloud Run..."
 gcloud run deploy "${SERVICE_NAME}" \
