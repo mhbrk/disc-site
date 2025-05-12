@@ -85,19 +85,10 @@ services:
       PUBSUB_URL: http://pubsub:8000
     extra_hosts:
       - "my-localhost:host-gateway"
-  github-mcp-server:
-    image: ghcr.io/github/github-mcp-server
-    ports:
-      - "8004:8004"
-    env_file:
-      - ./.env
-    stdin_open: true  # -i
-    tty: true         # makes it interactive if needed
-    restart: "no"     # --rm is similar to no restart
   breba-app:
     build:
       context: .
-      dockerfile: app.Dockerfile
+      dockerfile: breba_app/Dockerfile
     container_name: breba-app
     ports:
       - "8080:8080"
