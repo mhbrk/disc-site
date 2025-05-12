@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 
 from builder_agent.agent import BuilderAgent
+from common.google_pub_sub import extract_pubsub_message
 from common.model import JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskRequest, AgentCard, AgentSkill, \
     AgentCapabilities
 from task_manager import AgentTaskManager
@@ -59,11 +60,11 @@ async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
     :param background_tasks: used for async tasks (not used yet)
     """
     body = await request.json()
-
     logger.info(f"Received request: {body}")
+    pub_sub_message = extract_pubsub_message(body)
 
     try:
-        json_rpc_request = A2ARequest.validate_python(body)
+        json_rpc_request = A2ARequest.validate_python(pub_sub_message)
     except Exception as e:
         return JSONResponse(
             JSONRPCResponse(
