@@ -1,6 +1,7 @@
 import uuid
 import httpx
-from common.model import SendTaskRequest, SendTaskResponse, JSONRPCMessage, TaskSendParams
+from common.model import SendTaskRequest, SendTaskResponse, JSONRPCMessage, TaskSendParams, SendTaskStreamingRequest, \
+    SendTaskStreamingResponse
 
 
 class A2AClient:
@@ -20,3 +21,11 @@ class A2AClient:
         )
         response_data = await self._send_request(request)
         return SendTaskResponse(**response_data)
+
+    async def send_task_streaming(self, payload: TaskSendParams) -> SendTaskStreamingResponse:
+        request = SendTaskStreamingRequest(
+            params=payload,
+            id=str(uuid.uuid4())
+        )
+        response_data = await self._send_request(request)
+        return SendTaskStreamingResponse(**response_data)

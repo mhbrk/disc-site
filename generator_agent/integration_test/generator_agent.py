@@ -3,10 +3,35 @@ import os
 import uuid
 from uuid import uuid4
 
+from common.client import A2AClient
 from common.constants import BUILDER_AGENT_TOPIC
 from common.mock_server import start_mock_server
 from common.model import TaskSendParams, TextPart, Message, SendTaskRequest, SendTaskStreamingRequest
 from common.utils import publish_to_topic
+
+async def send_task_to_agent_direct(session_id: str):
+    client = A2AClient("http://localhost:8080")
+
+    # Build structured message
+    message = Message(
+        role="user",
+        parts=[
+            TextPart(
+                text="Generate a site for my birthday. I'm turning 18. My birthday is on June 11 and the theme is 1990s.")
+        ]
+    )
+
+    # Wrap in TaskSendParams
+    task_params = TaskSendParams(
+        id=f"task-{uuid4().hex}",
+        sessionId=session_id,
+        message=message
+    )
+
+    # TODO: I don't think model_dump is needed here because it's a pydantic model and model dump occurs later inside the client
+    response = await client.send_task_streaming(task_params)
+
+    print(response.model_dump())
 
 
 async def send_task_to_agent_indirect(session_id: str):
@@ -46,11 +71,18 @@ async def test_success():
 
     await send_task_to_agent_indirect(session_id)
 
+# TODO: make this a pytest suite
+async def test_success_direct():
+    session_id = os.getenv("SESSION_ID", "test-session")
+
+    await send_task_to_agent_direct(session_id)
+
 
 async def main():
-    await start_mock_server()
+    # await start_mock_server()
+    await test_success_direct()
     # await test_success()
-    await test_invalid_request_type()
+    # await test_invalid_request_type()
 
     await tasks_completed()
 
