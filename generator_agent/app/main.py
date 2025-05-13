@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 
+from common.google_pub_sub import extract_pubsub_message
 from common.model import JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskStreamingRequest
 from task_manager import execute_task, handle_error
 
@@ -53,10 +54,12 @@ async def get_agent_card():
 @app.post("/")
 async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
     body = await request.json()
+    pub_sub_message = extract_pubsub_message(body)
 
     try:
-        json_rpc_request = A2ARequest.validate_python(body)
+        json_rpc_request = A2ARequest.validate_python(pub_sub_message)
     except Exception as e:
+        # TODO: properly handle error
         return JSONResponse(
             JSONRPCResponse(
                 id=body.get("id"),
