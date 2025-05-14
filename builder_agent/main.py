@@ -75,7 +75,12 @@ async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
         )
 
     if isinstance(json_rpc_request, SendTaskRequest):
-        return await task_manager.on_send_task(json_rpc_request)
+        # Assuming that execute_task is instantaneous and creates asyncio tasks for any difficult computations
+        response = await task_manager.on_send_task(json_rpc_request)
+
+        logger.info(
+            f"returning acknowledgement for session={json_rpc_request.params.sessionId} and task_id={json_rpc_request.params.id}")
+        return JSONResponse(response, status_code=200)
     else:
         response: JSONRPCResponse = JSONRPCResponse(
             response_method="tasks/send",
@@ -100,7 +105,7 @@ def echo(payload: dict = Body(..., embed=False)):
 if __name__ == "__main__":
     host = os.getenv("AGENT_HOST", "0.0.0.0")
     port = int(os.getenv("PORT", 8080))
-    uvicorn.run("main:app", host=host, port=port, reload=True)
+    uvicorn.run("main:app", host=host, port=port, reload=False)
 
 """
 curl -X POST http://localhost:8002/ \

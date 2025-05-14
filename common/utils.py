@@ -19,6 +19,10 @@ logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
 
 
+publisher = pubsub_v1.PublisherClient()
+project_id = "breba-458921"
+
+
 async def send_task_to_builder_indirect(session_id: str, task_id: str, response: str):
     """
     Publish to chat agent topic.
@@ -92,10 +96,6 @@ async def publish_to_google_topic(topic: str, payload: dict[str, Any], task_id: 
     """
     Helper for publishing to Google Pub/Sub topic.
     """
-    # TODO: avoid taking the hit for initializing the client
-    publisher = pubsub_v1.PublisherClient()
-    project_id = "breba-458921"
-
     topic_path = publisher.topic_path(project_id, topic)
 
     # Serialize and encode the payload
@@ -105,6 +105,7 @@ async def publish_to_google_topic(topic: str, payload: dict[str, Any], task_id: 
         logger.info(f"[{task_id}] Publishing to pubsub topic {topic}: {payload}")
         future = publisher.publish(topic_path, payload_bytes)
         future.result()  # Block until the message is actually published
+        logger.info(f"[{task_id}] Published to pubsub topic {topic}: {payload}")
     except Exception as e:
         logger.error(f"[{task_id}] Failed to publish to pubsub: {e}")
 

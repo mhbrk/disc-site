@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-
 app = FastAPI()
 
 RECEIVE_URL = os.getenv("RECEIVE_URL", "http://0.0.0.0:8080")
+
 
 @app.get("/.well-known/agent.json")
 async def get_agent_card():
@@ -69,7 +69,12 @@ async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
         )
 
     if isinstance(json_rpc_request, SendTaskStreamingRequest):
-        return JSONResponse(await execute_task(json_rpc_request))
+        # Assuming that execute_task is instantaneous and creates asyncio tasks for any difficult computations
+        response = await execute_task(json_rpc_request)
+
+        logger.info(
+            f"returning acknowledgement for session={json_rpc_request.params.sessionId} and task_id={json_rpc_request.params.id}")
+        return JSONResponse(response, status_code=200)
     else:
         response: JSONRPCResponse = JSONRPCResponse(
             response_method="tasks/send",
@@ -94,7 +99,7 @@ def echo(payload: dict = Body(..., embed=False)):
 if __name__ == "__main__":
     host = os.getenv("AGENT_HOST", "0.0.0.0")
     port = int(os.getenv("PORT", 8080))
-    uvicorn.run("main:app", host=host, port=port, reload=True)
+    uvicorn.run("main:app", host=host, port=port, reload=False)
 
 """
 curl -X POST http://localhost:8001/ \
