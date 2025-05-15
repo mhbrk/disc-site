@@ -18,9 +18,10 @@ SUBSCRIBE_URL: str = f"{PUBSUB_URL}/subscribe"
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
 
+publisher = None
 
-publisher = pubsub_v1.PublisherClient()
-project_id = "breba-458921"
+if os.environ.get("PUBSUB_URL") is None:
+    publisher = pubsub_v1.PublisherClient()
 
 
 async def send_task_to_builder_indirect(session_id: str, task_id: str, response: str):
@@ -96,6 +97,8 @@ async def publish_to_google_topic(topic: str, payload: dict[str, Any], task_id: 
     """
     Helper for publishing to Google Pub/Sub topic.
     """
+    project_id = "breba-458921"
+
     topic_path = publisher.topic_path(project_id, topic)
 
     # Serialize and encode the payload
