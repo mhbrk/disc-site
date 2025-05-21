@@ -44,15 +44,14 @@ services:
       dockerfile: generator_agent.Dockerfile
     container_name: generator_agent
     ports:
-      - "8001:8001"
+      - "8001:8080"
     depends_on:
       - pubsub
     env_file:
       - ./generator_agent/app/.env
     environment:
       PUBSUB_URL: http://pubsub:8000
-      AGENT_HOST: generator_agent
-      AGENT_PORT: 8001
+      RECEIVE_URL: http://generator_agent:8080
     extra_hosts:
       - "my-localhost:host-gateway"
   builder_agent:
@@ -61,31 +60,30 @@ services:
         dockerfile: builder_agent.Dockerfile
       container_name: builder_agent
       ports:
-        - "8002:8002"
+        - "8002:8080"
       depends_on:
         - pubsub
       env_file:
         - ./builder_agent/.env
       environment:
         PUBSUB_URL: http://pubsub:8000
-        AGENT_HOST: builder_agent
-        AGENT_PORT: 8002
+        RECEIVE_URL: http://builder_agent:8080
       extra_hosts:
         - "my-localhost:host-gateway"
-  chat_agent:
+  breba-app:
     build:
       context: .
-      dockerfile: chat_agent.Dockerfile
-    container_name: chat_agent
+      dockerfile: breba_app.Dockerfile
+    container_name: breba-app
     ports:
-      - "8003:8003"
+      - "8080:8080"
     depends_on:
       - pubsub
-    env_file:
-      - ./chat_agent/app/.env
     environment:
       PUBSUB_URL: http://pubsub:8000
-      AGENT_HOST: chat_agent
-      AGENT_PORT: 8003
+      RECEIVE_URL: http://breba-app:8080
+      CHAT_URL: http://127.0.0.1:8003/chainlit/  # This url is accessed from the browser, not the server
+      HOST: breba-app
+      PORT: 8080
     extra_hosts:
       - "my-localhost:host-gateway"

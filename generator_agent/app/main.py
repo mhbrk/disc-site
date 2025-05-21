@@ -1,44 +1,23 @@
-import asyncio
 import logging
 import os
-from contextlib import asynccontextmanager
 
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 
-from common.constants import BUILDER_AGENT_TOPIC
+from common.google_pub_sub import extract_pubsub_message
 from common.model import JSONRPCResponse, JSONRPCError, A2ARequest, SendTaskStreamingRequest
-from common.utils import subscribe_to_agent
-from generator_agent.app.task_manager import handle_error
-from task_manager import execute_task
+from task_manager import execute_task, handle_error
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-HOST = os.getenv("AGENT_HOST", "localhost")
-PORT = int(os.getenv("AGENT_PORT", 8001))
+app = FastAPI()
 
-RECEIVE_URL: str = f"http://{HOST}:{PORT}"
-
-
-async def subscribe_to_agents():
-    # TODO: check for pubsub being up instead of sleeping
-    await asyncio.sleep(2)
-    await subscribe_to_agent(BUILDER_AGENT_TOPIC, RECEIVE_URL)
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await subscribe_to_agents()
-    yield
-    # TODO: unsubscribe
-
-
-app = FastAPI(lifespan=lifespan)
+RECEIVE_URL = os.getenv("RECEIVE_URL", "http://0.0.0.0:8080")
 
 
 @app.get("/.well-known/agent.json")
@@ -46,7 +25,7 @@ async def get_agent_card():
     return JSONResponse({
         "name": "Output Agent",
         "description": "Generates an HTML web page given detailed specifications",
-        "url": f"http://{HOST}:{PORT}",
+        "url": RECEIVE_URL,
         "version": "0.1.0",
         "capabilities": {
             "streaming": True,
@@ -75,10 +54,12 @@ async def get_agent_card():
 @app.post("/")
 async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
     body = await request.json()
+    pub_sub_message = extract_pubsub_message(body)
 
     try:
-        json_rpc_request = A2ARequest.validate_python(body)
+        json_rpc_request = A2ARequest.validate_python(pub_sub_message)
     except Exception as e:
+        # TODO: properly handle error
         return JSONResponse(
             JSONRPCResponse(
                 id=body.get("id"),
@@ -88,7 +69,12 @@ async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
         )
 
     if isinstance(json_rpc_request, SendTaskStreamingRequest):
-        return JSONResponse(await execute_task(json_rpc_request))
+        # Assuming that execute_task is instantaneous and creates asyncio tasks for any difficult computations
+        response = await execute_task(json_rpc_request)
+
+        logger.info(
+            f"returning acknowledgement for session={json_rpc_request.params.sessionId} and task_id={json_rpc_request.params.id}")
+        return JSONResponse(response, status_code=200)
     else:
         response: JSONRPCResponse = JSONRPCResponse(
             response_method="tasks/send",
@@ -99,6 +85,11 @@ async def handle_jsonrpc(request: Request, background_tasks: BackgroundTasks):
         return JSONResponse(response.model_dump(exclude_none=True), status_code=400)
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 @app.post("/echo")
 def echo(payload: dict = Body(..., embed=False)):
     print(payload)
@@ -106,7 +97,9 @@ def echo(payload: dict = Body(..., embed=False)):
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host=HOST, port=PORT, reload=True)
+    host = os.getenv("AGENT_HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", 8080))
+    uvicorn.run("main:app", host=host, port=port, reload=False)
 
 """
 curl -X POST http://localhost:8001/ \

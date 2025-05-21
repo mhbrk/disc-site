@@ -5,13 +5,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY /chat_agent ./chat_agent
+COPY /chat_agent/app ./chat_agent
 COPY /common ./common
-
-WORKDIR /app/chat_agent/app
 
 ENV PYTHONPATH=/app
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]
-#CMD "/bin/bash"
-EXPOSE 8003
+CMD ["python", "chat_agent/main.py"]
+#CMD ["sleep", "infinity"]

@@ -8,10 +8,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY /builder_agent ./builder_agent
 COPY /common ./common
 
-WORKDIR /app/builder_agent
+COPY ./builder_agent/start.sh ./start.sh
+COPY ./builder_agent/subscribe_to_pubsub.py ./subscribe_to_pubsub.py
+
+
+RUN chmod +x ./start.sh
+
 
 ENV PYTHONPATH=/app
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002"]
-#CMD "/bin/bash"
-EXPOSE 8002
+CMD ["./start.sh"]

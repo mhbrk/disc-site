@@ -6,16 +6,10 @@ python-dotenv==1.1.0
 uvicorn[standard]==0.34.0
 kafka-python==2.1.5
 aiohttp==3.11.16
-langchain-core==0.3.51
-langchain-openai==0.3.12
-langchain-community==0.3.21
-langgraph==0.3.29
 httpx==0.28.1
 starlette==0.41.3
 itsdangerous==2.2.0
 chainlit==2.5.5
 azure-identity
 azure-ai-projects
-mcp
-langchain-mcp-adapters
 google-cloud-pubsub

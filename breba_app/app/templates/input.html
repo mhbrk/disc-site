@@ -1,0 +1,12 @@
+<iframe id="chainlit" src="/chainlit"></iframe>
+
+<script>
+    const chat_iframe = document.getElementById('chainlit');
+
+    const input_ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/input`);
+
+    console.log("Input WebSocket connected:" + input_ws);
+    input_ws.onmessage = (event) => {
+        chat_iframe.contentWindow.postMessage(event.data, '*');
+    };
+</script>

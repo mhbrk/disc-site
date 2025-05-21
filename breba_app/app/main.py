@@ -1,9 +1,11 @@
 import asyncio
 import logging
+import os
 import uuid
 from pathlib import Path
 
 import httpx
+from chainlit.utils import mount_chainlit
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -13,6 +15,7 @@ from starlette.staticfiles import StaticFiles
 
 from act_agent.agent import invoke_act_agent
 from common.constants import CHAT_AGENT_TOPIC, ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
+from common.google_pub_sub import extract_pubsub_message
 from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart, A2AResponse, \
     SendTaskStreamingResponse, TaskStatusUpdateEvent, JSONRPCMessage, TaskArtifactUpdateEvent, A2ARequest, Artifact
 from common.utils import send_task_to_builder_indirect, subscribe_to_agent
@@ -20,8 +23,9 @@ from common.utils import send_task_to_builder_indirect, subscribe_to_agent
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
 
-HOST = "localhost"
-PORT = 7999
+HOST = os.environ.get("HOST", "0.0.0.0")
+PORT = int(os.environ.get("PORT", "8080"))
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -37,7 +41,7 @@ app.mount("/images", StaticFiles(directory="./images"), name="images")
 templates = Jinja2Templates(directory="templates")
 
 # my-localhost is defined as parent host in pubsub container, should decouple this through config
-RECEIVE_URL: str = "http://my-localhost:7999"
+RECEIVE_URL: str = os.getenv("RECEIVE_URL", "")
 
 # Keeps track of the currently connected WebSockets by sessionId
 connected_generator_sockets: dict[str, WebSocket] = {}
@@ -50,6 +54,9 @@ async def subscribe_to_agents():
     """
     Subscribe to all the agents for the application
     """
+    if not RECEIVE_URL:
+        return
+
     await asyncio.gather(
         asyncio.create_task(subscribe_to_agent(CHAT_AGENT_TOPIC, f"{RECEIVE_URL}/agent/chat/push")),
         asyncio.create_task(subscribe_to_agent(ASK_CHAT_AGENT_TOPIC, f"{RECEIVE_URL}/agent/chat/ask")),
@@ -101,7 +108,7 @@ async def index(request: Request):
     request.session["sessionId"] = f"user-1-session-1"
     logger.info(f"Session ID: {request.session.get('sessionId')}")
     await subscribe_to_agents()
-    return templates.TemplateResponse("base.html", {"request": request, "socket_server": f"ws://{HOST}:{PORT}"})
+    return templates.TemplateResponse("base.html", {"request": request, "chat_url": os.getenv("CHAT_URL")})
 
 
 # TODO: source should be part of the model
@@ -156,6 +163,7 @@ async def message_from_chat_agent(payload: dict = Body(...)):
     :param payload: Should be a SendTaskRequest
     """
     logger.info(f"Received payload from chat agent: {payload}")
+    payload = extract_pubsub_message(payload)
     # TODO: handle validation errors
     task = SendTaskRequest.model_validate(payload)
     await update_status(task.params.sessionId, "chat", task)
@@ -168,6 +176,7 @@ async def push_to_chat_agent(payload: dict = Body(...)):
     :param payload: Should be a SendTaskResponse
     """
     logger.info(f"Received payload for chat agent: {payload}")
+    payload = extract_pubsub_message(payload)
     task_response = SendTaskResponse.model_validate(payload)
     session_id = task_response.result.sessionId
     logger.info(f"Chat agent received task for session_id: {session_id}")
@@ -224,6 +233,7 @@ async def push_from_builder_agent(payload: dict = Body(...)):
     :param payload: The request to the generator agent (or whoever needs to know about builder spec)
     """
     logger.info(f"Received payload from builder agent: {payload}")
+    payload = extract_pubsub_message(payload)
     task_request = A2ARequest.validate_python(payload)
     session_id = task_request.params.sessionId
     logger.info(f"Received task session_id: {session_id}")
@@ -253,6 +263,7 @@ async def push_from_generator_agent(payload: dict = Body(...)):
     :return:
     """
     logger.info(f"Received payload from generator agent: {payload}")
+    payload = extract_pubsub_message(payload)
     task_response = A2AResponse.validate_python(payload)
 
     if isinstance(task_response, SendTaskResponse):
@@ -351,6 +362,10 @@ async def act(payload: str = Body(...)):
     logger.info(payload)
     response = await invoke_act_agent(payload)
     return response
+
+
+current_file_dir = Path(__file__).parent
+mount_chainlit(app=app, target=str(current_file_dir / "my_cl_app.py"), path="/chainlit")
 
 
 @app.post("/echo")

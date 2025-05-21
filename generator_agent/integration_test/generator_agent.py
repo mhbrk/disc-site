@@ -3,41 +3,35 @@ import os
 import uuid
 from uuid import uuid4
 
-import httpx
-from fastapi import FastAPI, Body
-from fastapi.middleware.cors import CORSMiddleware
-from uvicorn import Config, Server
-
-from common.constants import BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
+from common.client import A2AClient
+from common.constants import BUILDER_AGENT_TOPIC
+from common.mock_server import start_mock_server
 from common.model import TaskSendParams, TextPart, Message, SendTaskRequest, SendTaskStreamingRequest
-from common.utils import publish_to_topic, subscribe_to_agent
+from common.utils import publish_to_topic
 
-PUBSUB_URL = "http://127.0.0.1:8000"
-RECEIVE_URL: str = "http://my-localhost:7999"
-HOST = "127.0.0.1"
-PORT = 7999
+async def send_task_to_agent_direct(session_id: str):
+    client = A2AClient("http://localhost:8080")
 
-app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+    # Build structured message
+    message = Message(
+        role="user",
+        parts=[
+            TextPart(
+                text="Generate a site for my birthday. I'm turning 18. My birthday is on June 11 and the theme is 1990s.")
+        ]
+    )
 
+    # Wrap in TaskSendParams
+    task_params = TaskSendParams(
+        id=f"task-{uuid4().hex}",
+        sessionId=session_id,
+        message=message
+    )
 
-@app.post("/agent/generator/push")
-async def push_from_generator_agent(payload: dict = Body(...)):
-    print(f"✅ Received payload from generator agent:\n{payload}")
+    # TODO: I don't think model_dump is needed here because it's a pydantic model and model dump occurs later inside the client
+    response = await client.send_task_streaming(task_params)
 
-
-async def wait_for_server_ready(url: str, timeout: float = 10.0):
-    async with httpx.AsyncClient() as client:
-        for _ in range(int(timeout * 10)):
-            try:
-                response = await client.get(url)
-                if response.status_code < 500:
-                    print("✅ Server is ready.")
-                    return
-            except httpx.RequestError:
-                pass
-            await asyncio.sleep(0.1)
-    raise TimeoutError(f"Server did not start within {timeout} seconds")
+    print(response.model_dump())
 
 
 async def send_task_to_agent_indirect(session_id: str):
@@ -52,12 +46,6 @@ async def send_task_to_agent_indirect(session_id: str):
     await publish_to_topic(BUILDER_AGENT_TOPIC, request.model_dump(exclude_none=True), task_id)
 
 
-async def run_uvicorn_in_background():
-    config = Config(app=app, host=HOST, port=PORT, log_level="info", reload=False)
-    server = Server(config=config)
-    await server.serve()
-
-
 async def tasks_completed():
     current = asyncio.current_task()
     tasks = [t for t in asyncio.all_tasks() if t is not current]
@@ -65,11 +53,6 @@ async def tasks_completed():
     if tasks:
         print(f"Waiting for {len(tasks)} tasks...")
         await asyncio.gather(*tasks)
-
-
-async def start_listener():
-    asyncio.create_task(run_uvicorn_in_background())
-    asyncio.create_task(subscribe_to_agent(GENERATOR_AGENT_TOPIC, f"{RECEIVE_URL}/agent/generator/push"))
 
 
 async def test_invalid_request_type():
@@ -88,12 +71,18 @@ async def test_success():
 
     await send_task_to_agent_indirect(session_id)
 
+# TODO: make this a pytest suite
+async def test_success_direct():
+    session_id = os.getenv("SESSION_ID", "test-session")
+
+    await send_task_to_agent_direct(session_id)
+
 
 async def main():
-    await start_listener()
-    await wait_for_server_ready(f"http://{HOST}:{PORT}/docs")
+    # await start_mock_server()
+    await test_success_direct()
     # await test_success()
-    await test_invalid_request_type()
+    # await test_invalid_request_type()
 
     await tasks_completed()
 

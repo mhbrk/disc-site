@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from dotenv import load_dotenv
 
@@ -9,6 +10,8 @@ from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Tas
 from common.utils import publish_to_topic
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 from agent import agent
 
@@ -69,6 +72,7 @@ async def publish_artifact_update(task_id: str, session_id: str, content: str):
 async def start_streaming_task(task_id: str, session_id: str, query: str):
     accumulator = TagAccumulator()
     async for chunk in agent.stream(query, session_id, task_id):
+        logger.info(f"Processing chunk from agent: {chunk}")
         content = chunk.get("content")
         if not content:
             continue
@@ -83,6 +87,7 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
             if not tag_html:
                 # Accumulate more text before publishing chunk.
                 continue
+            logger.info(f"HTML tag exists: {tag_html}")
             await publish_artifact_update(task_id, session_id, tag_html)
 
 
