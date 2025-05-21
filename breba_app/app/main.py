@@ -5,6 +5,7 @@ import uuid
 from pathlib import Path
 
 import httpx
+from chainlit.utils import mount_chainlit
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -24,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8080"))
-
 
 app = FastAPI()
 app.add_middleware(
@@ -362,6 +362,10 @@ async def act(payload: str = Body(...)):
     logger.info(payload)
     response = await invoke_act_agent(payload)
     return response
+
+
+current_file_dir = Path(__file__).parent
+mount_chainlit(app=app, target=str(current_file_dir / "my_cl_app.py"), path="/chainlit")
 
 
 @app.post("/echo")

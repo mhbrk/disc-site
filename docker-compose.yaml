@@ -70,21 +70,6 @@ services:
         RECEIVE_URL: http://builder_agent:8080
       extra_hosts:
         - "my-localhost:host-gateway"
-  chat_agent:
-    build:
-      context: .
-      dockerfile: chat_agent.Dockerfile
-    container_name: chat_agent
-    ports:
-      - "8003:8080"
-    depends_on:
-      - pubsub
-    env_file:
-      - ./chat_agent/app/.env
-    environment:
-      PUBSUB_URL: http://pubsub:8000
-    extra_hosts:
-      - "my-localhost:host-gateway"
   breba-app:
     build:
       context: .
