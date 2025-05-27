@@ -6,7 +6,7 @@ import uuid
 
 from dotenv import load_dotenv
 from langchain_core.tools import tool
-from openai import AsyncAzureOpenAI
+from openai import AsyncOpenAI
 
 from common.constants import GENERATOR_AGENT_TOPIC
 from common.model import Artifact, Task, TaskState, TaskStatus, SendTaskResponse, FilePart, FileContent
@@ -18,11 +18,7 @@ load_dotenv()
 
 PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
 
-client = AsyncAzureOpenAI(
-    api_version="2024-02-01",
-    api_key=os.environ["AZURE_OPENAI_API_KEY"],
-    azure_endpoint=os.environ['AZURE_OPENAI_ENDPOINT']
-)
+client = AsyncOpenAI()
 
 
 # TODO: this is a task manager responsibility, but need to properly engineer task manager to move it there
@@ -49,7 +45,7 @@ async def send_task_response(task_id: str, session_id: str, image_name: str, ima
 async def _generate_and_send_image(session_id: str, task_id: str, prompt: str, image_name: str):
     try:
         result = await client.images.generate(
-            model="dalle3",
+            model="dall-e-3",
             prompt=prompt,
             n=1,
             size="1024x1024",

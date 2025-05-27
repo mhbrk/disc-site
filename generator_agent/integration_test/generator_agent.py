@@ -9,15 +9,18 @@ from common.mock_server import start_mock_server
 from common.model import TaskSendParams, TextPart, Message, SendTaskRequest, SendTaskStreamingRequest
 from common.utils import publish_to_topic
 
+
 async def send_task_to_agent_direct(session_id: str):
-    client = A2AClient("http://localhost:8080")
+    client = A2AClient("http://localhost:8001")
 
     # Build structured message
     message = Message(
         role="user",
         parts=[
             TextPart(
-                text="Generate a site for my birthday. I'm turning 18. My birthday is on June 11 and the theme is 1990s.")
+                text="Create a minimalistic Hello world site. "
+                     "Don’t ask questions. just do it. "
+                     "Use generated image of balloons for the background.")
         ]
     )
 
@@ -70,6 +73,7 @@ async def test_success():
     session_id = os.getenv("SESSION_ID", "test-session")
 
     await send_task_to_agent_indirect(session_id)
+
 
 # TODO: make this a pytest suite
 async def test_success_direct():
