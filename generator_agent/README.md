@@ -2,7 +2,7 @@
 
 * Generator Agent is a server that processes tasks in the spirit of te A2A protocol.
 * It subscribes to a pub sub topic that contains detailed description of a website to be generated.
-* It uses DALL-E model deployed on Azure AI Foundry for image generation.
+* It uses DALL-E-3 model from OpenAI for image generation.
 * It uses Tavily Web Search to look up information.
 
 
@@ -56,8 +56,6 @@ Currently only supports SendTaskRequests and SendTaskResponses with streaming.
 
 You will need the following in your .env file:
 * OPENAI_API_KEY - for LLM reasoning
-* AZURE_OPENAI_API_KEY - for the DALL-E model
-* AZURE_OPENAI_ENDPOINT - for the DALL-E model
 * TAVILY_API_KEY - for Tavily Web Search
 
 ## Testing and Debugging
