@@ -109,7 +109,7 @@ For more information see [Builder Agent README.md](builder_agent/README.md)
 ### Generator Agent
 * The Generator Agent is a server that hosts the agent in the spirit of A2A protocol. Although currently only supports SendTaskRequests and SendTaskResponses $with$ streaming.
 * It subscribes to a pub sub topic to receive detailed description of a website to be generated.
-* It uses DALL-E model deployed on Azure AI Foundry for image generation.
+* It uses DALL-E-3 model from OpenAI for image generation.
 * It uses Tavily Web Search to look up information.
 
 #### Basic Operational Flow
@@ -258,7 +258,6 @@ A2A deep dive: https://youtu.be/aTNhM9KCTVw
 ## Technologies Used
 - A2A protocol for agent to agent communication model
 - My own PubSub+Kafka implementation for event driven architecture
-- Azure Deployed DALL-E model for image generation
 - Azure Agent Services for Act Agent
 - OpenAI for gpt-4.1 model support (significantly better than 4o in following instructions)
 - Tavily Web Search for web search

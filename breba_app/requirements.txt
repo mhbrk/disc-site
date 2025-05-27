@@ -10,6 +10,4 @@ httpx==0.28.1
 starlette==0.41.3
 itsdangerous==2.2.0
 chainlit==2.5.5
-azure-identity
-azure-ai-projects
 google-cloud-pubsub
