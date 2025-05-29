@@ -2,15 +2,10 @@ import asyncio
 import json
 import logging
 import os
-import uuid
 from typing import Any
 
 import httpx
 from google.cloud import pubsub_v1
-
-import common
-from common.constants import CHAT_AGENT_TOPIC
-from common.model import TextPart, TaskSendParams, SendTaskRequest
 
 PUBSUB_URL = os.getenv("PUBSUB_URL", "http://localhost:8000")
 SUBSCRIBE_URL: str = f"{PUBSUB_URL}/subscribe"
@@ -22,30 +17,6 @@ publisher = None
 
 if os.environ.get("PUBSUB_URL") is None:
     publisher = pubsub_v1.PublisherClient()
-
-
-async def send_task_to_builder_indirect(session_id: str, task_id: str, response: str):
-    """
-    Publish to chat agent topic.
-    Builder should be listening and picking up tasks from this topic
-    """
-    message = common.model.Message(
-        role="user",
-        parts=[TextPart(text=response)])
-
-    # Wrap in TaskSendParams
-    task_params = TaskSendParams(
-        id=task_id,
-        sessionId=session_id,
-        message=message
-    )
-
-    request = SendTaskRequest(
-        params=task_params,
-        id=str(uuid.uuid4())  # or pass your own
-    )
-
-    await publish_to_topic(CHAT_AGENT_TOPIC, request.model_dump(exclude_none=True), task_id)
 
 
 async def subscribe_to_agent(topic, endpoint):

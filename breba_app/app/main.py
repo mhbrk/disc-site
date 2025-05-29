@@ -14,11 +14,12 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 
 from act_agent.agent import invoke_act_agent
+from orchestrator import process_user_message
 from common.constants import CHAT_AGENT_TOPIC, ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
 from common.google_pub_sub import extract_pubsub_message
 from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart, A2AResponse, \
     SendTaskStreamingResponse, TaskStatusUpdateEvent, JSONRPCMessage, TaskArtifactUpdateEvent, A2ARequest, Artifact
-from common.utils import send_task_to_builder_indirect, subscribe_to_agent
+from common.utils import subscribe_to_agent
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -212,7 +213,7 @@ async def send_spec_to_builder(spec: dict = Body(...)):
     logger.info(f"Received spec from user: {spec}")
     task_id = f"task-{uuid.uuid4().hex}"
     prompt = f"This is the final prompt. Just process it. I will not answer any questions: {spec['body']}"
-    await send_task_to_builder_indirect("user-1-session-1", task_id, prompt)
+    await process_user_message("user-1-session-1", prompt)
     return {"status": "success", "taskId": task_id}
 
 
@@ -222,7 +223,7 @@ async def send_spec_to_builder(data: dict = Body(...)):
     task_id = f"task-{uuid.uuid4().hex}"
     prompt = (f"Given the generated HTML page, the user selected the following text: {data["selection"]}. "
               f"The user comment regarding this text is:  {data["query"]}. Do not ask questions, just do it.")
-    await send_task_to_builder_indirect("user-1-session-1", task_id, prompt)
+    await process_user_message("user-1-session-1", prompt)
     return {"status": "success", "taskId": task_id}
 
 
