@@ -54,22 +54,6 @@ services:
       RECEIVE_URL: http://generator_agent:8080
     extra_hosts:
       - "my-localhost:host-gateway"
-  builder_agent:
-      build:
-        context: .
-        dockerfile: builder_agent.Dockerfile
-      container_name: builder_agent
-      ports:
-        - "8002:8080"
-      depends_on:
-        - pubsub
-      env_file:
-        - ./builder_agent/.env
-      environment:
-        PUBSUB_URL: http://pubsub:8000
-        RECEIVE_URL: http://builder_agent:8080
-      extra_hosts:
-        - "my-localhost:host-gateway"
   breba-app:
     build:
       context: .
@@ -79,6 +63,8 @@ services:
       - "8080:8080"
     depends_on:
       - pubsub
+    env_file:
+      - ./breba_app/.env
     environment:
       PUBSUB_URL: http://pubsub:8000
       RECEIVE_URL: http://breba-app:8080

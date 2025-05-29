@@ -3,7 +3,7 @@ import uuid
 import chainlit as cl
 from chainlit import Message
 
-from common.utils import send_task_to_builder_indirect
+from orchestrator import process_user_message
 
 task_id: str | None = None
 
@@ -24,4 +24,4 @@ async def window_message(message: str):
 
 @cl.on_message
 async def respond(message: Message):
-    await send_task_to_builder_indirect("user-1-session-1", task_id, message.content)
+    await process_user_message("user-1-session-1", message.content)

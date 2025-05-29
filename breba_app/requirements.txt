@@ -11,3 +11,7 @@ starlette==0.41.3
 itsdangerous==2.2.0
 chainlit==2.5.5
 google-cloud-pubsub
+langchain-core==0.3.51
+langchain-openai==0.3.12
+langchain-community==0.3.21
+langgraph==0.3.29
