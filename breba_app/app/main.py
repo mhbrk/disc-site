@@ -6,7 +6,7 @@ from pathlib import Path
 
 import httpx
 from chainlit.utils import mount_chainlit
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Body
+from fastapi import FastAPI, Request, WebSocket, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -14,18 +14,21 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 
 from act_agent.agent import invoke_act_agent
-from orchestrator import process_user_message
 from common.constants import CHAT_AGENT_TOPIC, ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
 from common.google_pub_sub import extract_pubsub_message
 from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart, A2AResponse, \
     SendTaskStreamingResponse, TaskStatusUpdateEvent, JSONRPCMessage, TaskArtifactUpdateEvent, A2ARequest, Artifact
 from common.utils import subscribe_to_agent
+from orchestrator import process_user_message
+from ui_bridge import UIBridge
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
 
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8080"))
+
+SESSION_KEY = "sessionId"
 
 app = FastAPI()
 app.add_middleware(
@@ -45,10 +48,7 @@ templates = Jinja2Templates(directory="templates")
 RECEIVE_URL: str = os.getenv("RECEIVE_URL", "")
 
 # Keeps track of the currently connected WebSockets by sessionId
-connected_generator_sockets: dict[str, WebSocket] = {}
-connected_input_sockets: dict[str, WebSocket] = {}
-connected_processing_sockets: dict[str, WebSocket] = {}
-connected_status_sockets: dict[str, WebSocket] = {}
+user_ui_bridges: dict[str, UIBridge] = {}
 
 
 async def subscribe_to_agents():
@@ -66,47 +66,16 @@ async def subscribe_to_agents():
     )
 
 
-async def handle_socket_connection(
-        websocket: WebSocket,
-        socket_registry: dict,
-        session_key: str = "sessionId",
-        ping_interval: float = 300.0,
-):
-    """
-    Helps manage socket connections for each session connected to this server
-    :param websocket: new websocket connection
-    :param socket_registry: map of session_id to WebSocket
-    :param session_key: session id key where session id is stored inside the session object
-    :param ping_interval: ping interval to see if connection is still alive (unused for now)
-    """
-    await websocket.accept()
-    session_id = websocket.session.get(session_key, "anonymous")
-    socket_registry[session_id] = websocket
-    logger.info(f"Connected socket for session: {session_id}")
-
-    try:
-        while True:
-            await asyncio.sleep(1)
-            # await websocket.send_text("__ping__")
-            # pong = await asyncio.wait_for(websocket.receive_text(), timeout=ping_interval)
-            # if pong != "__pong__":
-            #     raise WebSocketDisconnect(1006, f"Pong not received: {pong}")
-    except asyncio.TimeoutError:
-        logger.info(f"Disconnected socket for session: {session_id}, due to timeout")
-    except WebSocketDisconnect:
-        logger.info(f"Disconnected socket for session: {session_id}")
-    finally:
-        socket_registry.pop(session_id, None)
-        await websocket.close()
-
-
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """
     Home page route
     """
     # Hardcode to simulate a user logging in
-    request.session["sessionId"] = f"user-1-session-1"
+    session_id = "user-1-session-1"
+    request.session["sessionId"] = session_id
+    user_ui_bridges[session_id] = UIBridge(session_id)
+
     logger.info(f"Session ID: {request.session.get('sessionId')}")
     await subscribe_to_agents()
     return templates.TemplateResponse("base.html", {"request": request, "chat_url": os.getenv("CHAT_URL")})
@@ -121,7 +90,7 @@ async def update_status(session_id: str, source: str, model: JSONRPCMessage):
     :param model: JSONRPCMessage to report status on
     """
     # TODO: needs better pattern than if else
-    socket = connected_status_sockets.get(session_id)
+    socket = user_ui_bridges.get(session_id).status_socket
     status = None
     if socket:
         if isinstance(model, SendTaskRequest):
@@ -134,7 +103,7 @@ async def update_status(session_id: str, source: str, model: JSONRPCMessage):
                 status = {"source": source, "message": f"[{model.result.id}] {model.result.status.state}"}
 
         if status:
-            await connected_status_sockets.get(session_id).send_json(status)
+            await socket.send_json(status)
     else:
         logger.error(f"No connected status socket found for session: {session_id}")
 
@@ -145,7 +114,9 @@ async def ws_processing(websocket: WebSocket):
     Establish WebSocket connection to the client.
     :param websocket: the client websocket
     """
-    await handle_socket_connection(websocket, connected_status_sockets)
+    session_id = websocket.session.get(SESSION_KEY, "anonymous")
+    bridge = user_ui_bridges[session_id]
+    await bridge.add_status_socket(websocket)
 
 
 @app.websocket("/ws/input")
@@ -154,7 +125,9 @@ async def ws_input(websocket: WebSocket):
     Establish WebSocket connection to the client.
     :param websocket: the client websocket
     """
-    await handle_socket_connection(websocket, connected_input_sockets)
+    session_id = websocket.session.get(SESSION_KEY, "anonymous")
+    bridge = user_ui_bridges[session_id]
+    await bridge.add_user_socket(websocket)
 
 
 @app.post("/agent/chat/push")
@@ -183,7 +156,7 @@ async def push_to_chat_agent(payload: dict = Body(...)):
     logger.info(f"Chat agent received task for session_id: {session_id}")
     # TODO: again this we need to add source of the model
     await update_status(session_id, "to_chat", task_response)
-    websocket = connected_input_sockets.get(session_id)
+    websocket = user_ui_bridges.get(session_id).user_socket
     if websocket:
         task = task_response.result
         if task.status.state == TaskState.INPUT_REQUIRED:
@@ -199,7 +172,9 @@ async def ws_processing(websocket: WebSocket):
     Handles WebSocket connection for builder panel
     :param websocket: WebSocket from the client
     """
-    await handle_socket_connection(websocket, connected_processing_sockets)
+    session_id = websocket.session.get(SESSION_KEY, "anonymous")
+    bridge = user_ui_bridges[session_id]
+    await bridge.add_builder_socket(websocket)
 
 
 @app.post("/agent/builder/run")
@@ -238,7 +213,7 @@ async def push_from_builder_agent(payload: dict = Body(...)):
     task_request = A2ARequest.validate_python(payload)
     session_id = task_request.params.sessionId
     logger.info(f"Received task session_id: {session_id}")
-    websocket = connected_processing_sockets.get(session_id)
+    websocket = user_ui_bridges.get(session_id).builder_socket
     await update_status(session_id, "builder", task_request)
     if websocket:
         await websocket.send_text(task_request.params.message.parts[0].text)
@@ -253,7 +228,9 @@ async def ws_generator(websocket: WebSocket):
     Handles WebSocket connection for the generator panel
     :param websocket: WebSocket from the client
     """
-    await handle_socket_connection(websocket, connected_generator_sockets)
+    session_id = websocket.session.get(SESSION_KEY, "anonymous")
+    bridge = user_ui_bridges[session_id]
+    await bridge.add_generator_socket(websocket)
 
 
 @app.post("/agent/generator/push")
@@ -314,7 +291,7 @@ async def send_artifact_to_websocket(session_id: str, artifact: Artifact | None,
     """
     Sends the html or file update to websocket
     """
-    websocket = connected_generator_sockets.get(session_id)
+    websocket = user_ui_bridges.get(session_id).generator_socket
     if not websocket:
         logger.warning(f"No connected generator socket found for session: {session_id}")
         return {"status": "success"}
