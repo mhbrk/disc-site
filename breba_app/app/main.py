@@ -109,7 +109,7 @@ async def update_status(session_id: str, source: str, model: JSONRPCMessage):
 
 
 @app.websocket("/ws/status")
-async def ws_processing(websocket: WebSocket):
+async def ws_status(websocket: WebSocket):
     """
     Establish WebSocket connection to the client.
     :param websocket: the client websocket
