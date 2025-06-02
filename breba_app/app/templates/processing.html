@@ -60,13 +60,13 @@
         }
     };
 
-    // WebSocket for builder text
-    const processing_ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/processing`);
-    processing_ws.onmessage = (event) => {
+    // Updates to builder panel
+    window.addEventListener('message', (event) => {
+        console.log('Parent window received:', event.data);
         lastServerContent = event.data;
         textarea.value = event.data;
         updateRunButtonVisibility();   // hide, since in-sync
-    };
+    });
 
     // Detect user edits
     textarea.addEventListener("input", updateRunButtonVisibility);

@@ -3,10 +3,12 @@ import uuid
 import chainlit as cl
 from chainlit import Message
 
-from orchestrator import process_user_message
+from orchestrator import process_chat_message
 
 task_id: str | None = None
 
+async def builder_completed(payload: str):
+    await cl.send_window_message(payload)
 
 @cl.on_chat_start
 async def main():
@@ -24,4 +26,6 @@ async def window_message(message: str):
 
 @cl.on_message
 async def respond(message: Message):
-    await process_user_message("user-1-session-1", message.content)
+    # session_id = cl.user_session.get("id")
+    session_id = "user-1-session-1"  # hardcoded for now
+    await process_chat_message(session_id, message.content, builder_completed)

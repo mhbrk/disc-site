@@ -1,5 +1,4 @@
 import logging
-import os
 
 from builder_agent.agent import BuilderAgent
 from common.constants import ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
@@ -114,7 +113,6 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
 
 
 async def process_user_message(session_id, message: str):
-    url = os.getenv("RECEIVE_URL", "http://0.0.0.0:8080")
     agent_message = Message(role="user", parts=[TextPart(text=message)])
 
     agent_response = await builder_agent.invoke(session_id, agent_message)
@@ -124,6 +122,23 @@ async def process_user_message(session_id, message: str):
     if is_task_completed:
         await publish_task_request(session_id, session_id, content)
         await publish_task_response(session_id, session_id, content, TaskState.COMPLETED)
+        await start_streaming_task(session_id, session_id, content)
+    else:
+        await publish_task_response(session_id, session_id, content,
+                                    TaskState.INPUT_REQUIRED)
+
+
+async def process_chat_message(session_id: str, message: str, builder_completed_callback):
+    agent_message = Message(role="user", parts=[TextPart(text=message)])
+
+    agent_response = await builder_agent.invoke(session_id, agent_message)
+    content = agent_response.get("content")
+    is_task_completed = agent_response.get("is_task_complete")
+
+    if is_task_completed:
+        await publish_task_request(session_id, session_id, content)
+        await publish_task_response(session_id, session_id, content, TaskState.COMPLETED)
+        await builder_completed_callback(content)
         await start_streaming_task(session_id, session_id, content)
     else:
         await publish_task_response(session_id, session_id, content,

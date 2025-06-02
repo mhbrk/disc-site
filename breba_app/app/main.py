@@ -75,6 +75,7 @@ async def index(request: Request):
     session_id = "user-1-session-1"
     request.session["sessionId"] = session_id
     user_ui_bridges[session_id] = UIBridge(session_id)
+    logger.info(f"Added ui bridge for session_id: {session_id}")
 
     logger.info(f"Session ID: {request.session.get('sessionId')}")
     await subscribe_to_agents()
@@ -90,6 +91,7 @@ async def update_status(session_id: str, source: str, model: JSONRPCMessage):
     :param model: JSONRPCMessage to report status on
     """
     # TODO: needs better pattern than if else
+    logger.info(f"Updating status for session_id: {session_id}. Source: {source}")
     socket = user_ui_bridges.get(session_id).status_socket
     status = None
     if socket:
