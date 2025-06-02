@@ -120,8 +120,6 @@ async def to_builder(session_id: str, message: str, builder_completed_callback):
     is_task_completed = agent_response.get("is_task_complete")
 
     if is_task_completed:
-        await publish_task_request(session_id, session_id, content)
-        await publish_task_response(session_id, session_id, content, TaskState.COMPLETED)
         await builder_completed_callback(content)
         await start_streaming_task(session_id, session_id, content)
     else:

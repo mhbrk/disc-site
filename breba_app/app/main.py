@@ -58,7 +58,6 @@ async def subscribe_to_agents():
         return
 
     await asyncio.gather(
-        asyncio.create_task(subscribe_to_agent(CHAT_AGENT_TOPIC, f"{RECEIVE_URL}/agent/chat/push")),
         asyncio.create_task(subscribe_to_agent(ASK_CHAT_AGENT_TOPIC, f"{RECEIVE_URL}/agent/chat/ask")),
         asyncio.create_task(subscribe_to_agent(BUILDER_AGENT_TOPIC, f"{RECEIVE_URL}/agent/builder/push")),
         asyncio.create_task(subscribe_to_agent(GENERATOR_AGENT_TOPIC, f"{RECEIVE_URL}/agent/generator/push")),
@@ -129,19 +128,6 @@ async def ws_input(websocket: WebSocket):
     session_id = websocket.session.get(SESSION_KEY, "anonymous")
     bridge = user_ui_bridges[session_id]
     await bridge.add_user_socket(websocket)
-
-
-@app.post("/agent/chat/push")
-async def message_from_chat_agent(payload: dict = Body(...)):
-    """
-    Handles push from chat agent. Usually to starting or confirming a user's task
-    :param payload: Should be a SendTaskRequest
-    """
-    logger.info(f"Received payload from chat agent: {payload}")
-    payload = extract_pubsub_message(payload)
-    # TODO: handle validation errors
-    task = SendTaskRequest.model_validate(payload)
-    await update_status(task.params.sessionId, "chat", task)
 
 
 @app.post("/agent/chat/ask")
