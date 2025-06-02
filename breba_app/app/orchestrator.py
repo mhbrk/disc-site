@@ -128,7 +128,7 @@ async def process_user_message(session_id, message: str):
                                     TaskState.INPUT_REQUIRED)
 
 
-async def process_chat_message(session_id: str, message: str, builder_completed_callback):
+async def to_builder(session_id: str, message: str, builder_completed_callback):
     agent_message = Message(role="user", parts=[TextPart(text=message)])
 
     agent_response = await builder_agent.invoke(session_id, agent_message)

@@ -73,20 +73,17 @@
 
     // On “Run”, POST the current text to builder
     runButton.addEventListener("click", () => {
-        fetch("/agent/builder/run", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({body: textarea.value})
-        })
-            .then(res => {
-                if (!res.ok) throw new Error(res.statusText);
-                lastServerContent = textarea.value;
-                updateRunButtonVisibility();
-            })
-            .catch(err => {
-                console.error(err);
-                alert("Failed to run: " + err.message);
-            });
+
+        const chat = document.getElementById('chainlit');
+        if (chat) {
+            const prompt = {
+                method: "to_builder",
+                body: "This is the final prompt. Just process it. I will not answer any questions: " + textarea.value
+            };
+            chat.contentWindow.postMessage(prompt, '*');
+            lastServerContent = textarea.value;
+            updateRunButtonVisibility();
+        }
     });
 
 </script>

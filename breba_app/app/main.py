@@ -179,21 +179,6 @@ async def ws_processing(websocket: WebSocket):
     await bridge.add_builder_socket(websocket)
 
 
-@app.post("/agent/builder/run")
-async def send_spec_to_builder(spec: dict = Body(...)):
-    """
-    Handles spec updates from the builder panel. This is the "Run" button. The spec will go through the builder agent,
-    but with an additional instruction to run without modification.
-    We want to run the spec by the builder to make sure that the builder agent is aware of our spec updates.
-    :param spec: Requirements to run.
-    """
-    logger.info(f"Received spec from user: {spec}")
-    task_id = f"task-{uuid.uuid4().hex}"
-    prompt = f"This is the final prompt. Just process it. I will not answer any questions: {spec['body']}"
-    await process_user_message("user-1-session-1", prompt)
-    return {"status": "success", "taskId": task_id}
-
-
 @app.post("/agent/builder/inline-comment")
 async def send_spec_to_builder(data: dict = Body(...)):
     logger.info(f"Received spec from user: {data}")
@@ -202,26 +187,6 @@ async def send_spec_to_builder(data: dict = Body(...)):
               f"The user comment regarding this text is:  {data["query"]}. Do not ask questions, just do it.")
     await process_user_message("user-1-session-1", prompt)
     return {"status": "success", "taskId": task_id}
-
-
-@app.post("/agent/builder/push")
-async def push_from_builder_agent(payload: dict = Body(...)):
-    """
-    Handles push from builder agent. This is the final spec that is expected to be picked up by the generator agent
-    :param payload: The request to the generator agent (or whoever needs to know about builder spec)
-    """
-    logger.info(f"Received payload from builder agent: {payload}")
-    payload = extract_pubsub_message(payload)
-    task_request = A2ARequest.validate_python(payload)
-    session_id = task_request.params.sessionId
-    logger.info(f"Received task session_id: {session_id}")
-    websocket = user_ui_bridges.get(session_id).builder_socket
-    await update_status(session_id, "builder", task_request)
-    if websocket:
-        await websocket.send_text(task_request.params.message.parts[0].text)
-    else:
-        logger.warning(f"No connected generator socket found for session: {session_id}")
-    return {"status": "success"}
 
 
 @app.websocket("/ws/generator")
