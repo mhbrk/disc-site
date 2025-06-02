@@ -19,7 +19,6 @@ from common.google_pub_sub import extract_pubsub_message
 from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart, A2AResponse, \
     SendTaskStreamingResponse, TaskStatusUpdateEvent, JSONRPCMessage, TaskArtifactUpdateEvent, A2ARequest, Artifact
 from common.utils import subscribe_to_agent
-from orchestrator import process_user_message
 from ui_bridge import UIBridge
 
 logging.basicConfig(level=logging.INFO, )
@@ -177,16 +176,6 @@ async def ws_processing(websocket: WebSocket):
     session_id = websocket.session.get(SESSION_KEY, "anonymous")
     bridge = user_ui_bridges[session_id]
     await bridge.add_builder_socket(websocket)
-
-
-@app.post("/agent/builder/inline-comment")
-async def send_spec_to_builder(data: dict = Body(...)):
-    logger.info(f"Received spec from user: {data}")
-    task_id = f"task-{uuid.uuid4().hex}"
-    prompt = (f"Given the generated HTML page, the user selected the following text: {data["selection"]}. "
-              f"The user comment regarding this text is:  {data["query"]}. Do not ask questions, just do it.")
-    await process_user_message("user-1-session-1", prompt)
-    return {"status": "success", "taskId": task_id}
 
 
 @app.websocket("/ws/generator")

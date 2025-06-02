@@ -112,22 +112,6 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
             await publish_artifact_update(task_id, session_id, tag_html)
 
 
-async def process_user_message(session_id, message: str):
-    agent_message = Message(role="user", parts=[TextPart(text=message)])
-
-    agent_response = await builder_agent.invoke(session_id, agent_message)
-    content = agent_response.get("content")
-    is_task_completed = agent_response.get("is_task_complete")
-
-    if is_task_completed:
-        await publish_task_request(session_id, session_id, content)
-        await publish_task_response(session_id, session_id, content, TaskState.COMPLETED)
-        await start_streaming_task(session_id, session_id, content)
-    else:
-        await publish_task_response(session_id, session_id, content,
-                                    TaskState.INPUT_REQUIRED)
-
-
 async def to_builder(session_id: str, message: str, builder_completed_callback):
     agent_message = Message(role="user", parts=[TextPart(text=message)])
 

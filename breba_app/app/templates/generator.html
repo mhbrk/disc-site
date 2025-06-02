@@ -161,12 +161,16 @@
         const selection = popup.dataset.selection;
         if (!query) return;
 
-        // fire your explain endpoint
-        fetch('/agent/builder/inline-comment', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({query, selection})
-        }).catch(console.error);
+        const chat = document.getElementById('chainlit');
+        if (chat) {
+            const prompt = {
+                method: "to_builder",
+                body: "Given the generated HTML page, the user selected the following text: " + selection + ". " +
+                      "The user comment regarding this text is:  " + query + ". " +
+                      "Do not ask questions, just do it."
+            };
+            chat.contentWindow.postMessage(prompt, '*');
+        }
 
         // immediately hide
         popup.style.display = 'none';
