@@ -9,7 +9,13 @@ task_id: str | None = None
 
 
 async def builder_completed(payload: str):
-    await cl.send_window_message(payload)
+    builder_message = {"method": "to_builder", "body": payload}
+    await cl.send_window_message(builder_message)
+
+
+async def process_generator_message(message: str):
+    generator_message = {"method": "to_generator", "body": message}
+    await cl.send_window_message(generator_message)
 
 
 async def ask_user(message: str):
@@ -33,8 +39,10 @@ async def window_message(message: str | dict):
 
     session_id = "user-1-session-1"  # hardcoded for now
     if method == "to_builder":
-        await to_builder(session_id, message.get("body", "INVALID REQEUST, something went wrong"), builder_completed)
+        await to_builder(session_id, message.get("body", "INVALID REQEUST, something went wrong"), builder_completed,
+                         ask_user, process_generator_message)
     else:
+        # TODO: remove this, it is replaced by the "ask_user" function callback
         await cl.Message(content=message).send()
 
 
@@ -42,4 +50,4 @@ async def window_message(message: str | dict):
 async def respond(message: Message):
     # session_id = cl.user_session.get("id")
     session_id = "user-1-session-1"  # hardcoded for now
-    await to_builder(session_id, message.content, builder_completed, ask_user)
+    await to_builder(session_id, message.content, builder_completed, ask_user, process_generator_message)

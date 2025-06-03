@@ -62,10 +62,12 @@
 
     // Updates to builder panel
     window.addEventListener('message', (event) => {
-        console.log('Parent window received:', event.data);
-        lastServerContent = event.data;
-        textarea.value = event.data;
-        updateRunButtonVisibility();   // hide, since in-sync
+        if (event.data.method === "to_builder") {
+            console.log('Builder panel message:', event.data);
+            lastServerContent = event.data.body;
+            textarea.value = event.data.body;
+            updateRunButtonVisibility();   // hide, since in-sync
+        }
     });
 
     // Detect user edits

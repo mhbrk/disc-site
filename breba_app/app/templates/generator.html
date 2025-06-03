@@ -24,27 +24,10 @@
         doc.close();
     }
 
-    const iframe = document.getElementById('generator-frame');
+    function processChunk(chunk) {
+        console.log("chunk:" + chunk);
 
-    const generator_ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/generator`);
-
-
-    let docOpened = false;
-    let doc = iframe.contentWindow.document;
-
-    generator_ws.onopen = () => {
-        console.log("WebSocket connected");
-    };
-
-    generator_ws.onmessage = async (event) => {
-        console.log("chunk:" + event.data);
-
-        if (event.data === "__ping__") {
-            ws.send("__pong__");
-            return;
-        }
-
-        if (event.data === "__completed__") {
+        if (chunk === "__completed__") {
             if (docOpened) {
                 doc.close();
                 docOpened = false;
@@ -54,7 +37,7 @@
         }
 
 
-        if (event.data === "__reload__") {
+        if (chunk === "__reload__") {
             // if document is opened the doc.close() will make image render
             // if document is closed, we need to manually re-render
             // for the iframe images to be fetched again, need to re-create the iframe
@@ -70,8 +53,24 @@
             docOpened = true;
         }
 
+        doc.write(chunk);
+    }
 
-        doc.write(event.data);
+    const iframe = document.getElementById('generator-frame');
+
+    const generator_ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/generator`);
+
+
+    let docOpened = false;
+    let doc = iframe.contentWindow.document;
+
+    generator_ws.onopen = () => {
+        console.log("WebSocket connected");
+    };
+
+    generator_ws.onmessage = async (event) => {
+        console.log("Legacy web socket message:", event.data);
+        processChunk(event.data);
     };
 
     const popup = document.getElementById('popup');
@@ -166,8 +165,8 @@
             const prompt = {
                 method: "to_builder",
                 body: "Given the generated HTML page, the user selected the following text: " + selection + ". " +
-                      "The user comment regarding this text is:  " + query + ". " +
-                      "Do not ask questions, just do it."
+                    "The user comment regarding this text is:  " + query + ". " +
+                    "Do not ask questions, just do it."
             };
             chat.contentWindow.postMessage(prompt, '*');
         }
@@ -175,6 +174,16 @@
         // immediately hide
         popup.style.display = 'none';
     });
+
+
+    // Updates to builder panel
+    window.addEventListener('message', (event) => {
+        if (event.data.method === "to_generator") {
+            console.log('Generator panel message:', event.data);
+            processChunk(event.data.body);
+        }
+    });
+
 
     // 4) Click outside to cancel
     document.addEventListener('mousedown', e => {
