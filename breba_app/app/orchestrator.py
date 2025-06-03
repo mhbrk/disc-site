@@ -1,7 +1,7 @@
 import logging
 
 from builder_agent.agent import BuilderAgent
-from common.constants import ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
+from common.constants import BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
 from common.model import TextPart, Message, Artifact, TaskStatus, TaskState, Task, SendTaskResponse, TaskSendParams, \
     SendTaskStreamingRequest, TaskArtifactUpdateEvent, SendTaskStreamingResponse
 from common.utils import publish_to_topic
@@ -30,38 +30,6 @@ async def publish_task_request(task_id: str, session_id: str, message: str):
     request = SendTaskStreamingRequest(params=task_params)
 
     await publish_to_topic(BUILDER_AGENT_TOPIC, request.model_dump(exclude_none=True), task_id)
-
-
-async def publish_task_response(task_id: str, session_id: str, content: str, task_state: TaskState):
-    """
-    This function will publish task response to the ask chat agent topic. Use this to get additional user input or complete task
-    """
-    # When we are invoking the agent, if task is not complete, we assume it is waiting for user input
-    # Even if there is an error, the only resolution that is possible, is another message from client
-    if task_state == TaskState.INPUT_REQUIRED:
-        # If input required, we want to have status text, but not artifact text
-        status_text = content
-        artifact_text = ""
-    else:
-        status_text = ""
-        artifact_text = content
-
-    message = Message(role="agent", parts=[TextPart(text=status_text)])
-    task_status = TaskStatus(message=message, state=task_state)
-
-    artifact = Artifact(parts=[TextPart(text=artifact_text)])
-
-    task = Task(
-        id=task_id,
-        sessionId=session_id,
-        status=task_status,
-        artifacts=[artifact],  # or keep None if artifacts are sent at the end
-        metadata={}
-    )
-
-    response = SendTaskResponse(result=task)
-
-    await publish_to_topic(ASK_CHAT_AGENT_TOPIC, response.model_dump(exclude_none=True), task_id)
 
 
 async def publish_artifact_update(task_id: str, session_id: str, content: str):
@@ -112,7 +80,7 @@ async def start_streaming_task(task_id: str, session_id: str, query: str):
             await publish_artifact_update(task_id, session_id, tag_html)
 
 
-async def to_builder(session_id: str, message: str, builder_completed_callback):
+async def to_builder(session_id: str, message: str, builder_completed_callback, ask_user_callback):
     agent_message = Message(role="user", parts=[TextPart(text=message)])
 
     agent_response = await builder_agent.invoke(session_id, agent_message)
@@ -123,5 +91,5 @@ async def to_builder(session_id: str, message: str, builder_completed_callback):
         await builder_completed_callback(content)
         await start_streaming_task(session_id, session_id, content)
     else:
-        await publish_task_response(session_id, session_id, content,
-                                    TaskState.INPUT_REQUIRED)
+        logger.info(f"Waiting for user input: {content}")
+        await ask_user_callback(content)

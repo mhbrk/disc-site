@@ -7,8 +7,14 @@ from orchestrator import to_builder
 
 task_id: str | None = None
 
+
 async def builder_completed(payload: str):
     await cl.send_window_message(payload)
+
+
+async def ask_user(message: str):
+    await cl.Message(content=message).send()
+
 
 @cl.on_chat_start
 async def main():
@@ -36,4 +42,4 @@ async def window_message(message: str | dict):
 async def respond(message: Message):
     # session_id = cl.user_session.get("id")
     session_id = "user-1-session-1"  # hardcoded for now
-    await to_builder(session_id, message.content, builder_completed)
+    await to_builder(session_id, message.content, builder_completed, ask_user)

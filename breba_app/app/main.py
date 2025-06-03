@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import uuid
 from pathlib import Path
 
 import httpx
@@ -14,10 +13,10 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 
 from act_agent.agent import invoke_act_agent
-from common.constants import CHAT_AGENT_TOPIC, ASK_CHAT_AGENT_TOPIC, BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
+from common.constants import BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
 from common.google_pub_sub import extract_pubsub_message
 from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart, A2AResponse, \
-    SendTaskStreamingResponse, TaskStatusUpdateEvent, JSONRPCMessage, TaskArtifactUpdateEvent, A2ARequest, Artifact
+    SendTaskStreamingResponse, TaskStatusUpdateEvent, JSONRPCMessage, TaskArtifactUpdateEvent, Artifact
 from common.utils import subscribe_to_agent
 from ui_bridge import UIBridge
 
@@ -58,7 +57,6 @@ async def subscribe_to_agents():
         return
 
     await asyncio.gather(
-        asyncio.create_task(subscribe_to_agent(ASK_CHAT_AGENT_TOPIC, f"{RECEIVE_URL}/agent/chat/ask")),
         asyncio.create_task(subscribe_to_agent(BUILDER_AGENT_TOPIC, f"{RECEIVE_URL}/agent/builder/push")),
         asyncio.create_task(subscribe_to_agent(GENERATOR_AGENT_TOPIC, f"{RECEIVE_URL}/agent/generator/push")),
     )
@@ -117,40 +115,6 @@ async def ws_status(websocket: WebSocket):
     session_id = websocket.session.get(SESSION_KEY, "anonymous")
     bridge = user_ui_bridges[session_id]
     await bridge.add_status_socket(websocket)
-
-
-@app.websocket("/ws/input")
-async def ws_input(websocket: WebSocket):
-    """
-    Establish WebSocket connection to the client.
-    :param websocket: the client websocket
-    """
-    session_id = websocket.session.get(SESSION_KEY, "anonymous")
-    bridge = user_ui_bridges[session_id]
-    await bridge.add_user_socket(websocket)
-
-
-@app.post("/agent/chat/ask")
-async def push_to_chat_agent(payload: dict = Body(...)):
-    """
-    Handles push to chat agent. Usually to ask for input
-    :param payload: Should be a SendTaskResponse
-    """
-    logger.info(f"Received payload for chat agent: {payload}")
-    payload = extract_pubsub_message(payload)
-    task_response = SendTaskResponse.model_validate(payload)
-    session_id = task_response.result.sessionId
-    logger.info(f"Chat agent received task for session_id: {session_id}")
-    # TODO: again this we need to add source of the model
-    await update_status(session_id, "to_chat", task_response)
-    websocket = user_ui_bridges.get(session_id).user_socket
-    if websocket:
-        task = task_response.result
-        if task.status.state == TaskState.INPUT_REQUIRED:
-            await websocket.send_text(task.status.message.parts[0].text)
-    else:
-        logger.warning(f"No connected input socket found for session: {session_id}")
-    return {"status": "success"}
 
 
 @app.websocket("/ws/processing")
