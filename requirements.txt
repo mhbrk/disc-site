@@ -17,4 +17,4 @@ chainlit==2.5.5
 openai==1.82.0
 mcp
 langchain-mcp-adapters
-google-cloud-pubsub
+httpx

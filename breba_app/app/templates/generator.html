@@ -24,41 +24,37 @@
         doc.close();
     }
 
-    const iframe = document.getElementById('generator-frame');
+    function processChunk(chunk) {
+        console.log("chunk:" + chunk);
 
-    const generator_ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/generator`);
+        // Check for image references
+        const imageUrls = [...chunk.matchAll(/["'](\/images\/[^"']+\.(jpg|png|jpeg|webp|gif))["']/gi)]
+            .map(match => match[1]);
 
-
-    let docOpened = false;
-    let doc = iframe.contentWindow.document;
-
-    generator_ws.onopen = () => {
-        console.log("WebSocket connected");
-    };
-
-    generator_ws.onmessage = async (event) => {
-        console.log("chunk:" + event.data);
-
-        if (event.data === "__ping__") {
-            ws.send("__pong__");
-            return;
+        for (const imageUrl of imageUrls) {
+            // Start polling every 5 seconds
+            const intervalId = setInterval(async () => {
+                try {
+                    const res = await fetch(imageUrl, {method: 'HEAD'});
+                    if (res.ok) {
+                        clearInterval(intervalId);
+                        console.log(`Image ${imageUrl} loaded — triggering reload`);
+                        if (!docOpened) {
+                            reload();
+                        }
+                    } else {
+                        console.log(`Image ${imageUrl} not ready yet (status: ${res.status})`);
+                    }
+                } catch (e) {
+                    console.log(`Error checking image ${imageUrl}:`, e);
+                }
+            }, 5000);
         }
 
-        if (event.data === "__completed__") {
+        if (chunk === "__completed__") {
             if (docOpened) {
                 doc.close();
                 docOpened = false;
-                reload();
-            }
-            return;
-        }
-
-
-        if (event.data === "__reload__") {
-            // if document is opened the doc.close() will make image render
-            // if document is closed, we need to manually re-render
-            // for the iframe images to be fetched again, need to re-create the iframe
-            if (!docOpened) {
                 reload();
             }
             return;
@@ -70,9 +66,13 @@
             docOpened = true;
         }
 
+        doc.write(chunk);
+    }
 
-        doc.write(event.data);
-    };
+    const iframe = document.getElementById('generator-frame');
+
+    let docOpened = false;
+    let doc = iframe.contentWindow.document;
 
     const popup = document.getElementById('popup');
     const input = document.getElementById('popup-input');
@@ -161,16 +161,30 @@
         const selection = popup.dataset.selection;
         if (!query) return;
 
-        // fire your explain endpoint
-        fetch('/agent/builder/inline-comment', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({query, selection})
-        }).catch(console.error);
+        const chat = document.getElementById('chainlit');
+        if (chat) {
+            const prompt = {
+                method: "to_builder",
+                body: "Given the generated HTML page, the user selected the following text: " + selection + ". " +
+                    "The user comment regarding this text is:  " + query + ". " +
+                    "Do not ask questions, just do it."
+            };
+            chat.contentWindow.postMessage(prompt, '*');
+        }
 
         // immediately hide
         popup.style.display = 'none';
     });
+
+
+    // Updates to builder panel
+    window.addEventListener('message', (event) => {
+        if (event.data.method === "to_generator") {
+            console.log('Generator panel message:', event.data);
+            processChunk(event.data.body);
+        }
+    });
+
 
     // 4) Click outside to cancel
     document.addEventListener('mousedown', e => {

@@ -12,7 +12,7 @@ from langgraph.graph import StateGraph, MessagesState
 from langgraph.types import interrupt, Command
 
 from common.model import Message
-from instruction_reader import get_instructions
+from .instruction_reader import get_instructions
 
 
 class State(MessagesState):

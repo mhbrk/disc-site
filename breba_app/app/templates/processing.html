@@ -60,33 +60,32 @@
         }
     };
 
-    // WebSocket for builder text
-    const processing_ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/processing`);
-    processing_ws.onmessage = (event) => {
-        lastServerContent = event.data;
-        textarea.value = event.data;
-        updateRunButtonVisibility();   // hide, since in-sync
-    };
+    // Updates to builder panel
+    window.addEventListener('message', (event) => {
+        if (event.data.method === "to_builder") {
+            console.log('Builder panel message:', event.data);
+            lastServerContent = event.data.body;
+            textarea.value = event.data.body;
+            updateRunButtonVisibility();   // hide, since in-sync
+        }
+    });
 
     // Detect user edits
     textarea.addEventListener("input", updateRunButtonVisibility);
 
     // On “Run”, POST the current text to builder
     runButton.addEventListener("click", () => {
-        fetch("/agent/builder/run", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({body: textarea.value})
-        })
-            .then(res => {
-                if (!res.ok) throw new Error(res.statusText);
-                lastServerContent = textarea.value;
-                updateRunButtonVisibility();
-            })
-            .catch(err => {
-                console.error(err);
-                alert("Failed to run: " + err.message);
-            });
+
+        const chat = document.getElementById('chainlit');
+        if (chat) {
+            const prompt = {
+                method: "to_builder",
+                body: "This is the final prompt. Just process it. I will not answer any questions: " + textarea.value
+            };
+            chat.contentWindow.postMessage(prompt, '*');
+            lastServerContent = textarea.value;
+            updateRunButtonVisibility();
+        }
     });
 
 </script>

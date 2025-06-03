@@ -5,7 +5,6 @@ from uuid import uuid4
 
 from common.client import A2AClient
 from common.constants import BUILDER_AGENT_TOPIC
-from common.mock_server import start_mock_server
 from common.model import TaskSendParams, TextPart, Message, SendTaskRequest, SendTaskStreamingRequest
 from common.utils import publish_to_topic
 

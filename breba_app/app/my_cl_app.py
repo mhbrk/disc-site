@@ -3,9 +3,23 @@ import uuid
 import chainlit as cl
 from chainlit import Message
 
-from common.utils import send_task_to_builder_indirect
+from orchestrator import to_builder
 
 task_id: str | None = None
+
+
+async def builder_completed(payload: str):
+    builder_message = {"method": "to_builder", "body": payload}
+    await cl.send_window_message(builder_message)
+
+
+async def process_generator_message(message: str):
+    generator_message = {"method": "to_generator", "body": message}
+    await cl.send_window_message(generator_message)
+
+
+async def ask_user(message: str):
+    await cl.Message(content=message).send()
 
 
 @cl.on_chat_start
@@ -18,10 +32,22 @@ async def main():
 
 
 @cl.on_window_message
-async def window_message(message: str):
-    await cl.Message(content=message).send()
+async def window_message(message: str | dict):
+    method = "user_message"
+    if isinstance(message, dict):
+        method = message.get("method")
+
+    session_id = "user-1-session-1"  # hardcoded for now
+    if method == "to_builder":
+        await to_builder(session_id, message.get("body", "INVALID REQEUST, something went wrong"), builder_completed,
+                         ask_user, process_generator_message)
+    else:
+        # TODO: remove this, it is replaced by the "ask_user" function callback
+        await cl.Message(content=message).send()
 
 
 @cl.on_message
 async def respond(message: Message):
-    await send_task_to_builder_indirect("user-1-session-1", task_id, message.content)
+    # session_id = cl.user_session.get("id")
+    session_id = "user-1-session-1"  # hardcoded for now
+    await to_builder(session_id, message.content, builder_completed, ask_user, process_generator_message)

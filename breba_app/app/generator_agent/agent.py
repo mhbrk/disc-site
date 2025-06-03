@@ -7,8 +7,8 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel, Field
 
-from generate_image import generate_image
-from instruction_reader import get_instructions
+from .generate_image import generate_image
+from .instruction_reader import get_instructions
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
