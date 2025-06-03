@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import os
 import uuid
 from pathlib import Path
 
@@ -13,8 +12,6 @@ from openai import AsyncOpenAI
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-
-PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
 
 client = AsyncOpenAI()
 

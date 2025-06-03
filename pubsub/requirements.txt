@@ -1,5 +1,0 @@
-fastapi
-uvicorn[standard]
-kafka-python
-aiohttp
-pydantic
