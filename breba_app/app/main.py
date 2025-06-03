@@ -12,7 +12,6 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 
-from act_agent.agent import invoke_act_agent
 from common.constants import BUILDER_AGENT_TOPIC, GENERATOR_AGENT_TOPIC
 from common.google_pub_sub import extract_pubsub_message
 from common.model import SendTaskResponse, TaskState, SendTaskRequest, FilePart, TextPart, A2AResponse, \
@@ -238,28 +237,18 @@ async def handle_text_part(part: TextPart, state: TaskState, session_id: str, we
         await websocket.send_text("__completed__")
 
 
-@app.post("/act")
-async def act(payload: str = Body(...)):
-    """
-    Endpoint to run the Act Agent
-    """
-    logger.info(payload)
-    response = await invoke_act_agent(payload)
-    return response
+# @app.post("/act")
+# async def act(payload: str = Body(...)):
+#     """
+#     Endpoint to run the Act Agent
+#     """
+#     logger.info(payload)
+#     response = await invoke_act_agent(payload)
+#     return response
 
 
 current_file_dir = Path(__file__).parent
 mount_chainlit(app=app, target=str(current_file_dir / "my_cl_app.py"), path="/chainlit")
-
-
-@app.post("/echo")
-async def echo(payload: dict = Body(...)):
-    """
-    Used for testing
-    """
-    logger.info(payload)
-    return payload
-
 
 if __name__ == "__main__":
     import uvicorn
