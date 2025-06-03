@@ -14,24 +14,6 @@ builder_agent = BuilderAgent()
 generator_agent = HTMLAgent()
 
 
-async def publish_task_request(task_id: str, session_id: str, message: str):
-    """
-    This function will publish task request to the builder agent topic.
-    Basically provoking other agents to pick up the task.
-    Use this when builder has finished building the spec
-    """
-    message = Message(role="user", parts=[TextPart(text=message)])
-
-    task_params = TaskSendParams(
-        id=task_id,
-        sessionId=session_id,
-        message=message
-    )
-    request = SendTaskStreamingRequest(params=task_params)
-
-    await publish_to_topic(BUILDER_AGENT_TOPIC, request.model_dump(exclude_none=True), task_id)
-
-
 async def publish_artifact_update(task_id: str, session_id: str, content: str):
     artifact = Artifact(parts=[TextPart(text=content)])
 
