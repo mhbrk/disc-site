@@ -3,14 +3,12 @@ import json
 import logging
 import os
 import uuid
+from pathlib import Path
 
+import httpx
 from dotenv import load_dotenv
 from langchain_core.tools import tool
 from openai import AsyncOpenAI
-
-from common.constants import GENERATOR_AGENT_TOPIC
-from common.model import Artifact, Task, TaskState, TaskStatus, SendTaskResponse, FilePart, FileContent
-from common.utils import publish_to_topic
 
 logger = logging.getLogger(__name__)
 
@@ -21,28 +19,7 @@ PUBSUB_URL = os.environ.get("PUBSUB_URL", "http://localhost:8000")
 client = AsyncOpenAI()
 
 
-# TODO: this is a task manager responsibility, but need to properly engineer task manager to move it there
-#  This is currently a hack
-async def send_task_response(task_id: str, session_id: str, image_name: str, image_location: str):
-    logger.info(f"[{task_id}] Sending task response: {image_name}, {image_location}")
-    file_content: FileContent = FileContent(name=image_name, uri=image_location, mimeType="image/png")
-    artifact = Artifact(parts=[FilePart(file=file_content)])
-
-    task_status = TaskStatus(state=TaskState.COMPLETED)
-    task = Task(
-        id=task_id,
-        sessionId=session_id,
-        status=task_status,
-        artifacts=[artifact],  # or keep None if artifacts are sent at the end
-        metadata={}
-    )
-
-    response = SendTaskResponse(result=task)
-
-    await publish_to_topic(GENERATOR_AGENT_TOPIC, response.model_dump(exclude_none=True), task_id)
-
-
-async def _generate_and_send_image(session_id: str, task_id: str, prompt: str, image_name: str):
+async def _generate_and_save_image(task_id: str, prompt: str, image_name: str):
     try:
         result = await client.images.generate(
             model="dall-e-3",
@@ -57,7 +34,12 @@ async def _generate_and_send_image(session_id: str, task_id: str, prompt: str, i
         image_url = json_response["data"][0]["url"]
 
         # Send task response
-        await send_task_response(task_id, session_id, image_name, image_url)
+        response = await httpx.AsyncClient().get(image_url)
+        image = response.content
+        images_dir = Path("images")
+        images_dir.mkdir(parents=True, exist_ok=True)
+        image_path = images_dir / image_name
+        image_path.write_bytes(image)
 
     except Exception as e:
         logger.error(f"[{task_id}] Error generating or sending image: {e}")
@@ -81,7 +63,7 @@ async def generate_image(session_id: str, task_id: str, prompt: str) -> str:
     image_name = f"{task_id}{uuid.uuid4().hex}.png"
 
     # Kick off background image generation + response sending
-    asyncio.create_task(_generate_and_send_image(session_id, task_id, prompt, image_name))
+    asyncio.create_task(_generate_and_save_image(task_id, prompt, image_name))
 
     # TODO: store in the cloud. That would remove dependency on knowing the "images" directory
     return f"Generated image: /images/{image_name}"
