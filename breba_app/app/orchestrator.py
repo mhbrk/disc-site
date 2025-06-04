@@ -11,6 +11,10 @@ builder_agent = BuilderAgent()
 generator_agent = HTMLAgent()
 
 
+def get_generator_response(session_id: str):
+    return generator_agent.get_last_html(session_id)
+
+
 async def start_streaming_task(session_id: str, query: str, generator_callback):
     accumulator = TagAccumulator()
     async for chunk in generator_agent.stream(query, session_id, session_id):

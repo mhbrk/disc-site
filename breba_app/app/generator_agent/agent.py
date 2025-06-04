@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 memory = MemorySaver()
 
+
 class ResponseFormat(BaseModel):
     """Respond to the user in this format."""
     status: Literal["input_required", "completed", "error"] = "input_required"
@@ -51,7 +52,7 @@ class HTMLAgent:
 
         config = {"configurable": {"thread_id": session_id}}
 
-        async for mode, data  in self.graph.astream(inputs, config, stream_mode=["messages", "values"]):
+        async for mode, data in self.graph.astream(inputs, config, stream_mode=["messages", "values"]):
             if mode == "messages":
                 chunk, metadata = data
                 if metadata["langgraph_node"] == "agent" and chunk.content:
@@ -64,6 +65,12 @@ class HTMLAgent:
                 logger.info(data["messages"][-1].pretty_repr())
 
         yield self.get_agent_response(config)
+
+    def get_last_html(self, session_id):
+        config = {"configurable": {"thread_id": session_id}}
+        current_state = self.graph.get_state(config)
+        structured_response = current_state.values.get('structured_response')
+        return structured_response.html_output
 
     def get_agent_response(self, config):
         current_state = self.graph.get_state(config)
