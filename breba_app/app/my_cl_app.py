@@ -5,9 +5,8 @@ import chainlit as cl
 from chainlit import Message
 from chainlit.types import CommandDict
 
-from breba_app.app.orchestrator import get_generator_response
+from orchestrator import get_generator_response, to_builder
 from site_upload import upload_site
-from orchestrator import to_builder
 
 task_id: str | None = None
 

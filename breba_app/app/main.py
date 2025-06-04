@@ -7,7 +7,6 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 
 logging.basicConfig(level=logging.INFO, )
@@ -24,7 +23,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(SessionMiddleware, secret_key="my-super-secret-key")
 
 app.mount("/images", StaticFiles(directory="./images"), name="images")
 
@@ -34,14 +32,8 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """
-    Home page route
+    Home page route. This just renders the HTML. All communication with the server is done through chianlit.
     """
-    # Hardcode to simulate a user logging in
-    session_id = "user-1-session-1"
-    request.session["sessionId"] = session_id
-    logger.info(f"Added ui bridge for session_id: {session_id}")
-
-    logger.info(f"Session ID: {request.session.get('sessionId')}")
     return templates.TemplateResponse("base.html", {"request": request})
 
 
@@ -61,4 +53,4 @@ mount_chainlit(app=app, target=str(current_file_dir / "my_cl_app.py"), path="/ch
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host=HOST, port=PORT, reload=True)
+    uvicorn.run("main:app", host=HOST, port=PORT, reload=False)
