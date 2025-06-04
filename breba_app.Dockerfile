@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the entire app into the image
 COPY ./breba_app/app .
 COPY ./common ./common
-COPY ./act_agent ./act_agent
+#COPY ./act_agent ./act_agent
 
 
 # Command to run the app with uvicorn
