@@ -171,13 +171,12 @@ if __name__ == "__main__":
 
 
     async def run_agent():
-        await agent.invoke("user-1-session-1",
-                           "Create a website for my 18th birthday party")
+        session_id = "user-1-session-1"
+        await agent.invoke(session_id, "Create a website for my 18th birthday party")
 
         while True:
-            agent_response = await agent.invoke("user-1-session-1",
-                                                "Just do what you think is best.")
-            if not agent.is_waiting_for_user_input({"configurable": {"thread_id": "user-1-session-1"}}):
+            agent_response = await agent.invoke(session_id, "Just do what you think is best.")
+            if not agent.is_waiting_for_user_input({"configurable": {"thread_id": session_id}}):
                 break
 
         print(agent_response["content"])

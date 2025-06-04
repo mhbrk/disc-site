@@ -21,8 +21,8 @@ async def builder_completed(payload: str):
     builder_message = {"method": "to_builder", "body": payload}
     await cl.send_window_message(builder_message)
 
-async def generator_completed(payload: str):
-    session_id = "user-1-session-1"
+async def generator_completed():
+    session_id = cl.user_session.get("id")
     sites_dir = get_current_site_dir(session_id)
     html = get_generator_response(session_id)
     site_path = sites_dir / "index.html"
@@ -34,7 +34,7 @@ async def generator_completed(payload: str):
 
 async def process_generator_message(message: str):
     if message == "__completed__":
-        await generator_completed(message)
+        await generator_completed()
     generator_message = {"method": "to_generator", "body": message}
     await cl.send_window_message(generator_message)
 
@@ -69,7 +69,7 @@ async def window_message(message: str | dict):
     if isinstance(message, dict):
         method = message.get("method")
 
-    session_id = "user-1-session-1"  # hardcoded for now
+    session_id = cl.user_session.get("id")
     if method == "to_builder":
         await to_builder(session_id, message.get("body", "INVALID REQEUST, something went wrong"), builder_completed,
                          ask_user, process_generator_message)
@@ -80,6 +80,7 @@ async def window_message(message: str | dict):
 
 @cl.on_message
 async def respond(message: Message):
+    session_id = cl.user_session.get("id")
     if message.command == "Deploy":
         await cl.Message(content="Deploying your website...").send()
         site_name = message.content
@@ -87,9 +88,7 @@ async def respond(message: Message):
             await cl.Message(content="Please provide a name for your site.").send()
             return
 
-        url = upload_site(str(get_current_site_dir("user-1-session-1")), site_name)
+        url = upload_site(str(get_current_site_dir(session_id)), site_name)
         await cl.Message(content=f"Deployed your website to: {url}").send()
     else:
-        # session_id = cl.user_session.get("id")
-        session_id = "user-1-session-1"  # hardcoded for now
         await to_builder(session_id, message.content, builder_completed, ask_user, process_generator_message)
