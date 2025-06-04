@@ -28,7 +28,7 @@
         console.log("chunk:" + chunk);
 
         // Check for image references
-        const imageUrls = [...chunk.matchAll(/["'](\/images\/[^"']+\.(jpg|png|jpeg|webp|gif))["']/gi)]
+        const imageUrls = [...chunk.matchAll(/["'](\.\/images\/[^"']+\.(jpg|png|jpeg|webp|gif))["']/gi)]
             .map(match => match[1]);
 
         for (const imageUrl of imageUrls) {

@@ -16,7 +16,7 @@ load_dotenv()
 client = AsyncOpenAI()
 
 
-async def _generate_and_save_image(task_id: str, prompt: str, image_name: str):
+async def _generate_and_save_image(session_id: str, task_id: str, prompt: str, image_name: str):
     try:
         result = await client.images.generate(
             model="dall-e-3",
@@ -30,13 +30,20 @@ async def _generate_and_save_image(task_id: str, prompt: str, image_name: str):
         json_response = json.loads(result.model_dump_json())
         image_url = json_response["data"][0]["url"]
 
-        # Send task response
         response = await httpx.AsyncClient().get(image_url)
         image = response.content
-        images_dir = Path("images")
+
+        # First save for deployment
+        images_dir = Path(f"sites/{session_id}/images")
         images_dir.mkdir(parents=True, exist_ok=True)
         image_path = images_dir / image_name
         image_path.write_bytes(image)
+
+        # Then save locally, for in app display
+        local_images_dir = Path("images")
+        local_images_dir.mkdir(parents=True, exist_ok=True)
+        local_image_path = local_images_dir / image_name
+        local_image_path.write_bytes(image)
 
     except Exception as e:
         logger.error(f"[{task_id}] Error generating or sending image: {e}")
@@ -60,10 +67,10 @@ async def generate_image(session_id: str, task_id: str, prompt: str) -> str:
     image_name = f"{task_id}{uuid.uuid4().hex}.png"
 
     # Kick off background image generation + response sending
-    asyncio.create_task(_generate_and_save_image(task_id, prompt, image_name))
+    asyncio.create_task(_generate_and_save_image(session_id, task_id, prompt, image_name))
 
     # TODO: store in the cloud. That would remove dependency on knowing the "images" directory
-    return f"Generated image: /images/{image_name}"
+    return f"Generated image: ./images/{image_name}"
 
 
 if __name__ == "__main__":
