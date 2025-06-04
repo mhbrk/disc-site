@@ -11,3 +11,6 @@ services:
     environment:
       HOST: breba-app
       PORT: 8080
+      GOOGLE_APPLICATION_CREDENTIALS: /adc.json  # ← Add this
+    volumes:
+      - ./adc.json:/adc.json:ro  # ← Mount the JSON key read-only
