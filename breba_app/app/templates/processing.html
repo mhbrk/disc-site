@@ -34,32 +34,6 @@
         }
     }
 
-    // WebSocket for status updates
-    const status_ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/status`);
-    status_ws.onmessage = (event) => {
-        console.log("Received status update:", event.data);
-        const updatesList = document.getElementById("updates-list");
-
-        try {
-            const data = JSON.parse(event.data);  // Parse incoming JSON
-            const who = data.source || "unknown";
-            const message = data.message || "";
-
-            // Create new list item
-            const li = document.createElement("li");
-            li.innerHTML = `<strong>${who}:</strong> ${message}`;
-
-            // Append to list
-            updatesList.appendChild(li);
-
-            // Scroll to bottom of updates panel
-            updatesList.parentElement.scrollTop = updatesList.parentElement.scrollHeight;
-
-        } catch (e) {
-            console.error("Invalid status update:", event.data);
-        }
-    };
-
     // Updates to builder panel
     window.addEventListener('message', (event) => {
         if (event.data.method === "to_builder") {
