@@ -15,6 +15,7 @@ langchain-openai==0.3.12
 langchain-community==0.3.21
 langgraph==0.3.29
 google-cloud-storage>=3.1.0
+beanie==1.29.0
 motor~=3.7.1
 protobuf~=5.29.5
 typing_extensions~=4.13.2
