@@ -15,7 +15,13 @@ starlette==0.41.3
 itsdangerous==2.2.0
 chainlit==2.5.5
 openai==1.82.0
-mcp
+mcp~=1.9.2
 langchain-mcp-adapters
 httpx
 google-cloud-storage>=3.1.0
+beanie==1.29.0
+motor~=3.7.1
+protobuf~=5.29.5
+typing_extensions~=4.13.2
+bcrypt
+passlib[bcrypt]

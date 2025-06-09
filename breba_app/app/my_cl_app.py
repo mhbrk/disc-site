@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from pathlib import Path
 
@@ -5,6 +6,8 @@ import chainlit as cl
 from chainlit import Message
 from chainlit.types import CommandDict
 
+from auth import verify_password, create_user
+from models.user import User
 from orchestrator import get_generator_response, to_builder
 from site_upload import upload_site
 
@@ -92,3 +95,15 @@ async def respond(message: Message):
         await cl.Message(content=f"Deployed your website to: {url}").send()
     else:
         await to_builder(session_id, message.content, builder_completed, ask_user, process_generator_message)
+
+
+@cl.password_auth_callback
+async def auth_callback(username: str, password: str):
+    user = await User.find_one(User.username == username)
+
+    if verify_password(password, user.password_hash):
+        return cl.User(
+            identifier=username, metadata={"role": "user", "provider": "credentials"}
+        )
+    else:
+        return None
