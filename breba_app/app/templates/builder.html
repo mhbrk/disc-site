@@ -1,7 +1,7 @@
 <div class="d-flex flex-column" style="height: 100%;">
     <!-- Textarea section -->
     <div style="flex: 0 0 70%; position: relative;">
-        <textarea id="processing-log"
+        <textarea id="builder-prompt"
                   class="form-control h-100"
                   style="resize: none;"></textarea>
         <button id="run-button"
@@ -21,7 +21,7 @@
 </div>
 
 <script>
-    const textarea = document.getElementById("processing-log");
+    const textarea = document.getElementById("builder-prompt");
     const runButton = document.getElementById("run-button");
     let lastServerContent = "";
 
