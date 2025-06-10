@@ -36,6 +36,10 @@ def copy_directory(
 def save_image_to_private(session_id: str, image_name: str, content: bytes,):
     private_bucket.blob(f"{session_id}/images/{image_name}").upload_from_string(content, "image/png")
 
+def save_image_file_to_private(session_id: str, file_name: str, file_path: str):
+    blob = private_bucket.blob(f"{session_id}/images/{file_name}")
+    blob.upload_from_filename(file_path)
+
 
 def read_image_from_private(session_id: str, image_name: str):
     blob = private_bucket.blob(f"{session_id}/images/{image_name}")
@@ -48,4 +52,5 @@ def read_image_from_private(session_id: str, image_name: str):
 
 def save_file_to_private(session_id: str, file_name: str, content: bytes, content_type: str):
     private_bucket.blob(f"{session_id}/{file_name}").upload_from_string(content, content_type)
+
 

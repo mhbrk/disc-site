@@ -5,10 +5,10 @@ from chainlit import Message
 from chainlit.types import CommandDict
 
 from auth import verify_password
+from common.storage import save_file_to_private, save_image_file_to_private
 from models.user import User
 from orchestrator import get_generator_response, to_builder
 from site_upload import upload_site
-from common.storage import save_file_to_private
 
 task_id: str | None = None
 
@@ -87,6 +87,9 @@ async def respond(message: Message):
         url = upload_site(session_id, site_name)
         await cl.Message(content=f"Deployed your website to: {url}").send()
     else:
+        if len(message.elements) > 0:
+            save_image_file_to_private(session_id, message.elements[0].name, message.elements[0].path)
+
         await to_builder(session_id, message.content, builder_completed, ask_user, process_generator_message)
 
 
