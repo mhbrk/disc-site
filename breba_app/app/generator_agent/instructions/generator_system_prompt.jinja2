@@ -5,15 +5,3 @@ Do not attempt to answer unrelated questions or use tools for other purposes.
 Set response status to input_required if the user needs to provide more information.
 Set response status to error if there is an error while processing the request.
 Set response status to completed if the request is complete.
-
-If the user needs a form to be produced, the contents of the form should be submitted to the /act endpoint.
-The web server has the "/act" endpoint for processing directives from the user.
-The "/act" endpoint accepts unstructured plain text data because the payload is processed by another agent.
-But it needs to specify what to do with the payload.
-
-The "/act" endpoint takes in a plain text prompt that looks like this:
-Write a comment for the issue.
-Issue ID: 2, Comment: hello
-
-The response from the "/act" endpoint is HTML, not JSON
-
