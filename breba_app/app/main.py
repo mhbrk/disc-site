@@ -12,8 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.responses import Response
 from fastapi.templating import Jinja2Templates
-from google.cloud import storage
 
+from common.storage import read_image_from_private
 from config import init_db
 
 logging.basicConfig(level=logging.INFO, )
@@ -51,12 +51,9 @@ async def custom_static_handler(file_path: str, request: Request):
     ws_session = WebsocketSession.get_by_id(session_id=session_id)
     init_ws_context(ws_session)
 
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket("breba-private")
-    blob = bucket.blob(f"{session_id}/images/{file_path}")
-    blob.reload()
+    image_bytes = read_image_from_private(session_id=session_id, image_name=file_path)
 
-    if not blob.exists():
+    if not image_bytes:
         raise HTTPException(status_code=404, detail="File not found")
 
     # Guess MIME type from filename
@@ -65,13 +62,12 @@ async def custom_static_handler(file_path: str, request: Request):
 
     headers = {
         "Content-Type": media_type,
-        "Content-Length": str(blob.size),
+        "Content-Length": str(len(image_bytes)),
     }
 
     if request.method == "HEAD":
         return Response(status_code=200, headers=headers)
 
-    image_bytes = blob.download_as_bytes()
     return Response(content=image_bytes, media_type=media_type, headers=headers)
 
 

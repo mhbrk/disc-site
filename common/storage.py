@@ -4,14 +4,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+storage_client = storage.Client()
+
+private_bucket = storage_client.get_bucket("breba-private")
+public_bucket = storage_client.get_bucket("breba-sites")
+
 def copy_directory(
     source_bucket_name: str,
     target_bucket_name: str,
     prefix: str,  # e.g., "some/folder/"
     target_prefix: str = None  # Optional new prefix in target
 ):
-    storage_client = storage.Client()
-
     source_bucket = storage_client.bucket(source_bucket_name)
     target_bucket = storage_client.bucket(target_bucket_name)
 
@@ -31,15 +34,18 @@ def copy_directory(
 
 
 def save_image_to_private(session_id: str, image_name: str, content: bytes,):
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket("breba-private")
+    private_bucket.blob(f"{session_id}/images/{image_name}").upload_from_string(content, "image/png")
 
-    bucket.blob(f"{session_id}/images/{image_name}").upload_from_string(content, "image/png")
+
+def read_image_from_private(session_id: str, image_name: str):
+    blob = private_bucket.blob(f"{session_id}/images/{image_name}")
+
+    if not blob.exists():
+        return None
+
+    return blob.download_as_bytes()
 
 
 def save_file_to_private(session_id: str, file_name: str, content: bytes, content_type: str):
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket("breba-private")
-
-    bucket.blob(f"{session_id}/{file_name}").upload_from_string(content, content_type)
+    private_bucket.blob(f"{session_id}/{file_name}").upload_from_string(content, content_type)
 
