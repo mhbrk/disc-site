@@ -1,35 +1,28 @@
-import asyncio
 import uuid
-from pathlib import Path
 
 import chainlit as cl
 from chainlit import Message
 from chainlit.types import CommandDict
 
-from auth import verify_password, create_user
+from auth import verify_password
 from models.user import User
 from orchestrator import get_generator_response, to_builder
 from site_upload import upload_site
+from common.storage import save_file_to_private
 
 task_id: str | None = None
-
-
-def get_current_site_dir(session_id: str) -> Path:
-    sites_dir = Path(f"sites/{session_id}")
-    sites_dir.mkdir(exist_ok=True)
-    return sites_dir
 
 
 async def builder_completed(payload: str):
     builder_message = {"method": "to_builder", "body": payload}
     await cl.send_window_message(builder_message)
 
+
 async def generator_completed():
     session_id = cl.user_session.get("id")
-    sites_dir = get_current_site_dir(session_id)
     html = get_generator_response(session_id)
-    site_path = sites_dir / "index.html"
-    site_path.write_text(html)
+
+    save_file_to_private(session_id, "index.html", html, "text/html")
 
     await cl.Message(
         content="The website is ready to be deployed. Use the /Deploy my-site to deploy your website as my-site.").send()
@@ -91,7 +84,7 @@ async def respond(message: Message):
             await cl.Message(content="Please provide a name for your site.").send()
             return
 
-        url = upload_site(str(get_current_site_dir(session_id)), site_name)
+        url = upload_site(session_id, site_name)
         await cl.Message(content=f"Deployed your website to: {url}").send()
     else:
         await to_builder(session_id, message.content, builder_completed, ask_user, process_generator_message)

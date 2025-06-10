@@ -2,12 +2,13 @@ import asyncio
 import json
 import logging
 import uuid
-from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
 from langchain_core.tools import tool
 from openai import AsyncOpenAI
+
+from common.storage import save_image_to_private
 
 logger = logging.getLogger(__name__)
 
@@ -33,17 +34,8 @@ async def _generate_and_save_image(session_id: str, task_id: str, prompt: str, i
         response = await httpx.AsyncClient().get(image_url)
         image = response.content
 
-        # First save for deployment
-        images_dir = Path(f"sites/{session_id}/images")
-        images_dir.mkdir(parents=True, exist_ok=True)
-        image_path = images_dir / image_name
-        image_path.write_bytes(image)
+        save_image_to_private(session_id, image_name, image)
 
-        # Then save locally, for in app display
-        local_images_dir = Path("images")
-        local_images_dir.mkdir(parents=True, exist_ok=True)
-        local_image_path = local_images_dir / image_name
-        local_image_path.write_bytes(image)
 
     except Exception as e:
         logger.error(f"[{task_id}] Error generating or sending image: {e}")
@@ -64,7 +56,7 @@ async def generate_image(session_id: str, task_id: str, prompt: str) -> str:
             The image file name.
         """
     logger.info(f"[{task_id}] Generating image for prompt: {prompt}")
-    image_name = f"{task_id}{uuid.uuid4().hex}.png"
+    image_name = f"{uuid.uuid4().hex}.png"
 
     # Kick off background image generation + response sending
     asyncio.create_task(_generate_and_save_image(session_id, task_id, prompt, image_name))

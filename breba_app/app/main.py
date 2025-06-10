@@ -1,14 +1,18 @@
 import logging
+import mimetypes
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from chainlit.context import init_ws_context
+from chainlit.session import WebsocketSession
 from chainlit.utils import mount_chainlit
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.responses import Response
 from fastapi.templating import Jinja2Templates
-from starlette.staticfiles import StaticFiles
+from google.cloud import storage
 
 from config import init_db
 
@@ -34,9 +38,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/images", StaticFiles(directory="./images"), name="images")
-
 templates = Jinja2Templates(directory="templates")
+
+IMAGE_DIR = Path("./images")
+
+
+@app.api_route("/images/{file_path:path}", methods=["GET", "HEAD"])
+async def custom_static_handler(file_path: str, request: Request):
+    session_id = request.cookies.get("X-Chainlit-Session-id")
+    print("Session ID:", session_id)
+
+    ws_session = WebsocketSession.get_by_id(session_id=session_id)
+    init_ws_context(ws_session)
+
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket("breba-private")
+    blob = bucket.blob(f"{session_id}/images/{file_path}")
+    blob.reload()
+
+    if not blob.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # Guess MIME type from filename
+    media_type, _ = mimetypes.guess_type(file_path)
+    media_type = media_type or "application/octet-stream"
+
+    headers = {
+        "Content-Type": media_type,
+        "Content-Length": str(blob.size),
+    }
+
+    if request.method == "HEAD":
+        return Response(status_code=200, headers=headers)
+
+    image_bytes = blob.download_as_bytes()
+    return Response(content=image_bytes, media_type=media_type, headers=headers)
 
 
 @app.get("/", response_class=HTMLResponse)
