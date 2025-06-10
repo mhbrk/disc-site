@@ -37,8 +37,10 @@ def save_image_to_private(session_id: str, image_name: str, content: bytes,):
     private_bucket.blob(f"{session_id}/images/{image_name}").upload_from_string(content, "image/png")
 
 def save_image_file_to_private(session_id: str, file_name: str, file_path: str):
-    blob = private_bucket.blob(f"{session_id}/images/{file_name}")
+    relative_path = f"images/{file_name}"
+    blob = private_bucket.blob(f"{session_id}/{relative_path}")
     blob.upload_from_filename(file_path)
+    return relative_path
 
 
 def read_image_from_private(session_id: str, image_name: str):
