@@ -43,7 +43,7 @@ def save_image_file_to_private(session_id: str, file_name: str, file_path: str):
     return relative_path
 
 
-def read_image_from_private(session_id: str, image_name: str):
+def read_image_from_private(session_id: str, image_name: str) -> bytes | None:
     blob = private_bucket.blob(f"{session_id}/images/{image_name}")
 
     if not blob.exists():
