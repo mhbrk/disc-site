@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import uuid
 
 import httpx
 from dotenv import load_dotenv
@@ -34,11 +33,17 @@ async def _generate_and_save_image(session_id: str, task_id: str, prompt: str, i
         response = await httpx.AsyncClient().get(image_url)
         image = response.content
 
-        save_image_to_private(session_id, image_name, image)
-
-
+        save_image_to_private(session_id, image_name, image, prompt)
     except Exception as e:
         logger.error(f"[{task_id}] Error generating or sending image: {e}")
+
+
+async def get_file_name(description: str) -> str:
+    prompt = (f"Create a file name given the description. "
+              f"File name should be one to three words long separated by underscores. Description: {description}")
+    response = await client.responses.create(model="gpt-4.1-nano", input=prompt)
+
+    return f"{response.output_text}.png"
 
 
 @tool
@@ -56,7 +61,7 @@ async def generate_image(session_id: str, task_id: str, prompt: str) -> str:
             The image file name.
         """
     logger.info(f"[{task_id}] Generating image for prompt: {prompt}")
-    image_name = f"{uuid.uuid4().hex}.png"
+    image_name = await get_file_name(prompt)
 
     # Kick off background image generation + response sending
     asyncio.create_task(_generate_and_save_image(session_id, task_id, prompt, image_name))
