@@ -88,7 +88,7 @@ async def respond(message: Message):
         await cl.Message(content=f"Deployed your website to: {url}").send()
     else:
         if len(message.elements) > 0:
-            blob_image_path = save_image_file_to_private(session_id, message.elements[0].name, message.elements[0].path)
+            blob_image_path = save_image_file_to_private(session_id, message.elements[0].name, message.elements[0].path, message.content)
             message.content = f"Given: ./{blob_image_path} \n {message.content}"
         await to_builder(session_id, message.content, builder_completed, ask_user, process_generator_message)
 

@@ -51,7 +51,7 @@ async def custom_static_handler(file_path: str, request: Request):
     ws_session = WebsocketSession.get_by_id(session_id=session_id)
     init_ws_context(ws_session)
 
-    image_bytes = read_image_from_private(session_id=session_id, image_name=file_path)
+    image_bytes, metadata = read_image_from_private(session_id=session_id, image_name=file_path)
 
     if not image_bytes:
         raise HTTPException(status_code=404, detail="File not found")
