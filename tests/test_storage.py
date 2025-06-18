@@ -1,7 +1,7 @@
 from collections import defaultdict
 from unittest.mock import Mock, patch
 
-from common.storage import list_files_structured, register_file, make_dir_tree
+from common.storage import list_files_structured, register_file, make_dir_tree, format_tree, list_files_in_private
 
 
 class MockBlob:
@@ -119,3 +119,51 @@ def test_list_files_structured_multiple_sessions():
 
         # Assert list_blobs was called with the correct prefix
         mock_bucket.list_blobs.assert_called_once_with(prefix="session1")
+
+
+def test_format_tree_simple():
+    """Test formatting a simple flat tree"""
+    tree = {
+        "images": {
+            "photo.png": {"__description__": "A photo"},
+            "photo2.png": {"__description__": "A photo"}
+        },
+        "docs": {
+            "readme.txt": {"__description__": "Readme"},
+            "license.txt": {"__description__": "Readme"}
+        }
+    }
+
+    lines = format_tree(tree)
+    expected_lines = [
+        "docs/",
+        "  - license.txt (Readme)",
+        "  - readme.txt (Readme)",
+        "images/",
+        "  - photo.png (A photo)",
+        "  - photo2.png (A photo)",
+    ]
+
+    assert lines == expected_lines
+
+
+def test_list_files_in_private():
+    """Test final human-readable output with formatting"""
+    mock_bucket = Mock()
+    mock_blobs = [
+        MockBlob("test_session/images/photo.png", {"description": "A photo"}),
+        MockBlob("test_session/docs/readme.txt", {"description": "Readme"}),
+    ]
+    mock_bucket.list_blobs.return_value = mock_blobs
+
+    with patch('common.storage.private_bucket', mock_bucket):
+        result = list_files_in_private("test_session")
+
+    expected = (
+        "docs/\n"
+        "  - readme.txt (Readme)\n"
+        "images/\n"
+        "  - photo.png (A photo)"
+    )
+
+    assert result == expected
