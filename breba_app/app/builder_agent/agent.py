@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 import os
 
@@ -12,6 +13,7 @@ from langgraph.graph import StateGraph, MessagesState
 from langgraph.types import interrupt, Command
 
 from common.model import Message
+from common.storage import list_files_in_private
 from .instruction_reader import get_instructions
 
 
@@ -23,6 +25,8 @@ class State(MessagesState):
     """
     prompt: str | None
 
+    session_id: str
+
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -31,9 +35,6 @@ logger = logging.getLogger(__name__)
 class BuilderAgent:
 
     def __init__(self):
-        self.system_prompt = get_instructions("builder_agent_system_prompt")
-
-        # 4.1 model seems to be the best
         self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
 
         # Create a checkpointer, could use MongoDB checkpointer in the future
@@ -93,8 +94,13 @@ class BuilderAgent:
             prompt = split_message[1]
         return {"prompt": prompt}
 
-    async def agent(self, state: State) -> State:
-        system_message = SystemMessage(content=self.system_prompt)
+    async def agent(self, state: State, config: RunnableConfig) -> State:
+        # TODO: use callback or class to get files, probably usersessioncontext class to get userid, user time, and zone
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        system_message = SystemMessage(content=get_instructions("builder_agent_system_prompt",
+                                                                files=list_files_in_private(
+                                                                    config['configurable']["thread_id"]),
+                                                                current_time=current_time))
         response = await self.model.ainvoke([system_message] + state["messages"])
         return {"messages": [response]}
 

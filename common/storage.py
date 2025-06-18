@@ -18,6 +18,7 @@ public_bucket: Bucket = storage_client.get_bucket("breba-sites")
 class FileMetadata(TypedDict):
     description: str  # No need for __description__
 
+
 DirTreeValue = Union[FileMetadata, "DirTree"]
 DirTree = dict[str, DirTreeValue]
 
@@ -96,9 +97,12 @@ def list_files_structured(session_id: str) -> DirTree:
         file_name = parts[-1]
 
         file = register_file(parts, files)
-        file[file_name] = {
-            "__description__": blob.metadata.get("description", "No description")
-        }
+        if blob.metadata:
+            file[file_name] = {
+                "__description__": blob.metadata.get("description", "No description")
+            }
+        else:
+            file[file_name] = {"__description__": "No description"}
 
     return files
 

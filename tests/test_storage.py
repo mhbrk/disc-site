@@ -7,7 +7,7 @@ from common.storage import list_files_structured, register_file, make_dir_tree, 
 class MockBlob:
     def __init__(self, name, metadata=None):
         self.name = name
-        self.metadata = metadata or {}
+        self.metadata = metadata
 
 
 def test_register_file():
@@ -164,6 +164,25 @@ def test_list_files_in_private():
         "  - readme.txt (Readme)\n"
         "images/\n"
         "  - photo.png (A photo)"
+    )
+
+    assert result == expected
+
+
+def test_list_files_in_private_no_metadata():
+    """Test final human-readable output with formatting"""
+    mock_bucket = Mock()
+    mock_blobs = [
+        MockBlob("test_session/images/photo.png", None),
+    ]
+    mock_bucket.list_blobs.return_value = mock_blobs
+
+    with patch('common.storage.private_bucket', mock_bucket):
+        result = list_files_in_private("test_session")
+
+    expected = (
+        "images/\n"
+        "  - photo.png (No description)"
     )
 
     assert result == expected
