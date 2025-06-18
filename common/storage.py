@@ -1,15 +1,25 @@
-from typing import Tuple
-
-from google.cloud import storage
+from __future__ import annotations
 
 import logging
+from collections import defaultdict
+from typing import Tuple, TypedDict, Union
+
+from google.cloud import storage
+from google.cloud.storage import Bucket
 
 logger = logging.getLogger(__name__)
 
 storage_client = storage.Client()
 
-private_bucket = storage_client.get_bucket("breba-private")
-public_bucket = storage_client.get_bucket("breba-sites")
+private_bucket: Bucket = storage_client.get_bucket("breba-private")
+public_bucket: Bucket = storage_client.get_bucket("breba-sites")
+
+
+class FileMetadata(TypedDict):
+    description: str  # No need for __description__
+
+DirTreeValue = Union[FileMetadata, "DirTree"]
+DirTree = dict[str, DirTreeValue]
 
 
 def copy_directory(
@@ -64,3 +74,47 @@ def read_image_from_private(session_id: str, image_name: str) -> Tuple[bytes, di
 
 def save_file_to_private(session_id: str, file_name: str, content: bytes, content_type: str):
     private_bucket.blob(f"{session_id}/{file_name}").upload_from_string(content, content_type)
+
+
+def make_dir_tree() -> DirTree:
+    return defaultdict(make_dir_tree)
+
+
+def register_file(parts: list[str], tree: DirTree):
+    current = tree
+    for part in parts[:-1]:
+        current = current[part]
+    return current
+
+
+def list_files_structured(session_id: str) -> DirTree:
+    blobs = private_bucket.list_blobs(prefix=f"{session_id}")
+    files = make_dir_tree()
+
+    for blob in blobs:
+        parts = blob.name[len(session_id) + 1:].split("/")  # skip session_id prefix
+        file_name = parts[-1]
+
+        file = register_file(parts, files)
+        file[file_name] = {
+            "__description__": blob.metadata.get("description", "No description")
+        }
+
+    return files
+
+
+def format_tree(tree: DirTree, indent=0):
+    lines = []
+    for key, value in sorted(tree.items()):
+        if isinstance(value, dict) and "__description__" in value:
+            desc = value["__description__"]
+            lines.append("  " * indent + f"- {key} ({desc})")
+        else:
+            lines.append("  " * indent + f"{key}/")
+            lines.extend(format_tree(value, indent + 1))
+    return lines
+
+
+def list_files_in_private(session_id: str):
+    structured = list_files_structured(session_id)
+    return "\n".join(format_tree(structured))

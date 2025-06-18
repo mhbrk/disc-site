@@ -23,5 +23,6 @@ beanie==1.29.0
 motor~=3.7.1
 protobuf~=5.29.5
 typing_extensions~=4.13.2
+pytest~=8.4.0
 bcrypt
 passlib[bcrypt]
