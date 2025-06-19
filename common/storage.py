@@ -1,18 +1,22 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections import defaultdict
 from typing import Tuple, TypedDict, Union
 
+from dotenv import load_dotenv
 from google.cloud import storage
 from google.cloud.storage import Bucket
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
 storage_client = storage.Client()
 
-private_bucket: Bucket = storage_client.get_bucket("breba-private")
-public_bucket: Bucket = storage_client.get_bucket("breba-sites")
+private_bucket: Bucket = storage_client.get_bucket(os.getenv("USERS_BUCKET"))
+public_bucket: Bucket = storage_client.get_bucket(os.getenv("PUBLIC_BUCKET"))
 
 
 class FileMetadata(TypedDict):
@@ -42,7 +46,6 @@ def copy_directory(
 
         # Copy blob to target
         new_blob = source_bucket.copy_blob(blob, target_bucket, new_name)
-        new_blob.make_public()
 
         logger.info(f"Copied {blob.name} -> {new_name}")
 
@@ -122,3 +125,20 @@ def format_tree(tree: DirTree, indent=0):
 def list_files_in_private(session_id: str):
     structured = list_files_structured(session_id)
     return "\n".join(format_tree(structured))
+
+
+def upload_site(session_id: str, site_name: str):
+    """
+    Uploads site to google cloud
+    Example: upload_site("/Users/yason/breba/disc-site/sites/test-site", "test-site")
+    :param session_id: session id used for locating site files
+    :param site_name: site name where all the files will be stored
+    :return:
+    """
+    copy_directory(
+        source_bucket_name=private_bucket.name,
+        target_bucket_name=public_bucket.name, prefix=session_id, target_prefix=site_name
+    )
+
+    url = f"https://storage.googleapis.com/{public_bucket.name}/{site_name}/index.html"
+    return url
