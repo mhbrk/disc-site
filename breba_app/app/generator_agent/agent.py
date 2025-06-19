@@ -28,7 +28,6 @@ class HTMLAgent:
     def __init__(self):
         search_tool = TavilySearchResults(
             max_results=5,
-            include_raw_content=True,
             include_images=True,
         )
 
