@@ -12,6 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.responses import Response
 from fastapi.templating import Jinja2Templates
+from starlette.responses import RedirectResponse
+from starlette.staticfiles import StaticFiles
 
 from common.storage import read_image_from_private
 from config import init_db
@@ -41,6 +43,13 @@ app.add_middleware(
 templates = Jinja2Templates(directory="templates")
 
 IMAGE_DIR = Path("./images")
+
+app.mount("/public", StaticFiles(directory="public"), name="public")
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    return RedirectResponse(url="/public/favicon.ico")
 
 
 @app.api_route("/images/{file_path:path}", methods=["GET", "HEAD"])
