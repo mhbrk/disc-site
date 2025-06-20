@@ -11,6 +11,6 @@ services:
     environment:
       HOST: breba-app
       PORT: 8080
-      GOOGLE_APPLICATION_CREDENTIALS: /adc.json  # ← Add this
+      GOOGLE_APPLICATION_CREDENTIALS: /adc.json # This is needed for accessing Google Cloud from local host
     volumes:
       - ./adc.json:/adc.json:ro  # ← Mount the JSON key read-only
