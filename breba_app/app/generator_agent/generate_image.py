@@ -66,7 +66,6 @@ async def generate_image(session_id: str, task_id: str, prompt: str) -> str:
     # Kick off background image generation + response sending
     asyncio.create_task(_generate_and_save_image(session_id, task_id, prompt, image_name))
 
-    # TODO: store in the cloud. That would remove dependency on knowing the "images" directory
     return f"Generated image: ./images/{image_name}"
 
 
