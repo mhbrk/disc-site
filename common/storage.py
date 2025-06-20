@@ -127,6 +127,10 @@ def list_files_in_private(session_id: str):
     return "\n".join(format_tree(structured))
 
 
+def get_public_url(site_name: str) -> str:
+    return f"https://{site_name}.breba.site"
+
+
 def upload_site(session_id: str, site_name: str):
     """
     Uploads site to google cloud
@@ -140,5 +144,4 @@ def upload_site(session_id: str, site_name: str):
         target_bucket_name=public_bucket.name, prefix=session_id, target_prefix=site_name
     )
 
-    url = f"https://storage.googleapis.com/{public_bucket.name}/{site_name}/index.html"
-    return url
+    return get_public_url(site_name)
