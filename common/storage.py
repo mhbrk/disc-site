@@ -7,7 +7,7 @@ from typing import Tuple, TypedDict, Union
 
 from dotenv import load_dotenv
 from google.cloud import storage
-from google.cloud.storage import Bucket
+from google.cloud.storage import Bucket, Blob
 
 load_dotenv()
 
@@ -27,7 +27,7 @@ DirTreeValue = Union[FileMetadata, "DirTree"]
 DirTree = dict[str, DirTreeValue]
 
 
-def copy_directory(
+def _copy_directory(
         source_bucket_name: str,
         target_bucket_name: str,
         prefix: str,  # e.g., "some/folder/"
@@ -50,24 +50,28 @@ def copy_directory(
         logger.info(f"Copied {blob.name} -> {new_name}")
 
 
-def save_image_to_private(session_id: str, image_name: str, content: bytes, description: str = None):
-    blob = private_bucket.blob(f"{session_id}/images/{image_name}")
+def _user_session_blob(user_name: str, session_id: str, relative_path: str, description: str) -> Blob:
+    blob = private_bucket.blob(f"{user_name}/{session_id}/{relative_path}")
     if description is not None:
         blob.metadata = {"description": description}
+    return blob
+
+
+def save_image_to_private(user_name: str, session_id: str, image_name: str, content: bytes, description: str = None):
+    blob = _user_session_blob(user_name, session_id, f"images/{image_name}", description)
     blob.upload_from_string(content, "image/png")
 
 
-def save_image_file_to_private(session_id: str, file_name: str, file_path: str, description: str = None):
+def save_image_file_to_private(user_name: str, session_id: str, file_name: str, file_path: str,
+                               description: str = None):
     relative_path = f"images/{file_name}"
-    blob = private_bucket.blob(f"{session_id}/{relative_path}")
-    if description is not None:
-        blob.metadata = {"description": description}
+    blob = _user_session_blob(user_name, session_id, relative_path, description)
     blob.upload_from_filename(file_path)
     return relative_path
 
 
-def read_image_from_private(session_id: str, image_name: str) -> Tuple[bytes, dict[str, str]] | None:
-    blob = private_bucket.blob(f"{session_id}/images/{image_name}")
+def read_image_from_private(user_name: str, session_id: str, image_name: str) -> Tuple[bytes, dict[str, str]] | None:
+    blob = private_bucket.blob(f"{user_name}/{session_id}/images/{image_name}")
 
     if not blob.exists():
         return None
@@ -76,8 +80,8 @@ def read_image_from_private(session_id: str, image_name: str) -> Tuple[bytes, di
     return blob.download_as_bytes(), blob.metadata
 
 
-def save_file_to_private(session_id: str, file_name: str, content: bytes, content_type: str):
-    private_bucket.blob(f"{session_id}/{file_name}").upload_from_string(content, content_type)
+def save_file_to_private(user_name: str, session_id: str, file_name: str, content: bytes, content_type: str):
+    private_bucket.blob(f"{user_name}/{session_id}/{file_name}").upload_from_string(content, content_type)
 
 
 def make_dir_tree() -> DirTree:
@@ -131,17 +135,19 @@ def get_public_url(site_name: str) -> str:
     return f"https://{site_name}.breba.site"
 
 
-def upload_site(session_id: str, site_name: str):
+# TODO: user_name/session_id are state for the entire request, should probably create a user_cloud_storage class
+def upload_site(user_name: str, session_id: str, site_name: str):
     """
     Uploads site to google cloud
     Example: upload_site("/Users/yason/breba/disc-site/sites/test-site", "test-site")
+    :param user_name: user name
     :param session_id: session id used for locating site files
     :param site_name: site name where all the files will be stored
     :return:
     """
-    copy_directory(
+    _copy_directory(
         source_bucket_name=private_bucket.name,
-        target_bucket_name=public_bucket.name, prefix=session_id, target_prefix=site_name
+        target_bucket_name=public_bucket.name, prefix=f"{user_name}/{session_id}", target_prefix=site_name
     )
 
     return get_public_url(site_name)

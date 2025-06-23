@@ -15,9 +15,9 @@ def get_generator_response(session_id: str):
     return generator_agent.get_last_html(session_id)
 
 
-async def start_streaming_task(session_id: str, query: str, generator_callback):
+async def start_streaming_task(user_name: str, session_id: str, query: str, generator_callback):
     accumulator = TagAccumulator()
-    async for chunk in generator_agent.stream(query, session_id, session_id):
+    async for chunk in generator_agent.stream(query, user_name, session_id):
         logger.info(f"Processing chunk from agent: {chunk}")
         content = chunk.get("content")
         if not content:
@@ -37,7 +37,8 @@ async def start_streaming_task(session_id: str, query: str, generator_callback):
             await generator_callback(tag_html)
 
 
-async def to_builder(session_id: str, message: str, builder_completed_callback, ask_user_callback, generator_callback):
+async def to_builder(user_name: str, session_id: str, message: str, builder_completed_callback, ask_user_callback,
+                     generator_callback):
     agent_message = Message(role="user", parts=[TextPart(text=message)])
 
     agent_response = await builder_agent.invoke(session_id, agent_message)
@@ -46,7 +47,7 @@ async def to_builder(session_id: str, message: str, builder_completed_callback, 
 
     if is_task_completed:
         await builder_completed_callback(content)
-        await start_streaming_task(session_id, content, generator_callback)
+        await start_streaming_task(user_name, session_id, content, generator_callback)
     else:
         logger.info(f"Waiting for user input: {content}")
         await ask_user_callback(content)

@@ -39,14 +39,17 @@ class HTMLAgent:
             response_format=ResponseFormat
         )
 
-    def invoke(self, query, sessionId):
-        config = {"configurable": {"thread_id": sessionId}}
+    def invoke(self, query, session_id):
+        # TODO: this is unused and outdated?
+        config = {"configurable": {"thread_id": session_id}}
         self.graph.invoke({"messages": [("user", query)]}, config)
         return self.get_agent_response(config)
 
-    async def stream(self, query: str, session_id: str, task_id: str) -> AsyncIterable[Dict[str, Any]]:
+    async def stream(self, query: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
+        # TODO: username needs to be used as a static parameter to the tool call
+        #  For this need to redo the generator agent using custom graph or using baml
         inputs = {"messages": [("user", f"Your session id is: {session_id}."),
-                               ("user", f"Your task id is: {task_id}."),
+                               ("user", f"The user name for tool use is: {user_name}."),
                                ("user", query)]}
 
         config = {"configurable": {"thread_id": session_id}}

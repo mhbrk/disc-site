@@ -16,7 +16,7 @@ load_dotenv()
 client = AsyncOpenAI()
 
 
-async def _generate_and_save_image(session_id: str, task_id: str, prompt: str, image_name: str):
+async def _generate_and_save_image(user_name: str, session_id: str, prompt: str, image_name: str):
     try:
         result = await client.images.generate(
             model="dall-e-3",
@@ -33,9 +33,9 @@ async def _generate_and_save_image(session_id: str, task_id: str, prompt: str, i
         response = await httpx.AsyncClient().get(image_url)
         image = response.content
 
-        save_image_to_private(session_id, image_name, image, prompt)
+        save_image_to_private(user_name, session_id, image_name, image, prompt)
     except Exception as e:
-        logger.error(f"[{task_id}] Error generating or sending image: {e}")
+        logger.error(f"[{session_id}] Error generating or sending image: {e}")
 
 
 async def get_file_name(description: str) -> str:
@@ -47,24 +47,24 @@ async def get_file_name(description: str) -> str:
 
 
 @tool
-async def generate_image(session_id: str, task_id: str, prompt: str) -> str:
+async def generate_image(user_name: str, session_id: str, prompt: str) -> str:
     """
     This tool starts to generate images. It will return image path, and then start to generate the image.
     For better outcomes provide some context regarding where and how the image will be used.
 
         Args:
+            user_name: Username of current user
             session_id: The session id
-            task_id: The task id
             prompt: The prompt to generate the image. For better outcomes provide some context regarding where and how the image will be used.
 
         Returns:
             The image file name.
         """
-    logger.info(f"[{task_id}] Generating image for prompt: {prompt}")
+    logger.info(f"[{session_id}] Generating image for prompt: {prompt}")
     image_name = await get_file_name(prompt)
 
     # Kick off background image generation + response sending
-    asyncio.create_task(_generate_and_save_image(session_id, task_id, prompt, image_name))
+    asyncio.create_task(_generate_and_save_image(user_name, session_id, prompt, image_name))
 
     return f"Generated image: ./images/{image_name}"
 
