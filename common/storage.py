@@ -118,12 +118,13 @@ def register_file(parts: list[str], tree: DirTree):
     return current
 
 
-def list_files_structured(session_id: str) -> DirTree:
-    blobs = private_bucket.list_blobs(prefix=f"{session_id}")
+def list_files_structured(user_name: str, session_id: str) -> DirTree:
+    prefix = f"{user_name}/{session_id}"
+    blobs = private_bucket.list_blobs(prefix=prefix)
     files = make_dir_tree()
 
     for blob in blobs:
-        parts = blob.name[len(session_id) + 1:].split("/")  # skip session_id prefix
+        parts = blob.name[len(prefix) + 1:].split("/")  # skip session_id prefix
         file_name = parts[-1]
 
         file = register_file(parts, files)
@@ -149,8 +150,8 @@ def format_tree(tree: DirTree, indent=0):
     return lines
 
 
-def list_files_in_private(session_id: str):
-    structured = list_files_structured(session_id)
+def list_files_in_private(user_name: str, session_id: str):
+    structured = list_files_structured(user_name, session_id)
     return "\n".join(format_tree(structured))
 
 

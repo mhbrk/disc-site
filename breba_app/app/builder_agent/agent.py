@@ -26,6 +26,7 @@ class State(MessagesState):
     prompt: str | None
 
     session_id: str
+    user_name: str
 
 
 logging.basicConfig(level=logging.INFO, )
@@ -98,8 +99,9 @@ class BuilderAgent:
         # TODO: use callback or class to get files, probably usersessioncontext class to get userid, user time, and zone
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         system_message = SystemMessage(content=get_instructions("builder_agent_system_prompt",
-                                                                files=list_files_in_private(
-                                                                    config['configurable']["thread_id"]),
+                                                                files=list_files_in_private(state["user_name"],
+                                                                                            config['configurable'][
+                                                                                                "thread_id"]),
                                                                 current_time=current_time))
         response = await self.model.ainvoke([system_message] + state["messages"])
         return {"messages": [response]}
@@ -109,6 +111,7 @@ class BuilderAgent:
             file.write(self.app.get_graph().draw_mermaid_png())
 
     def stream(self, session_id: str, user_input: Message):
+        # TODO: this is not used and outdated
         config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id})
         logger.info(f"Streaming builder agent with user input: {user_input}")
         for event in self.app.stream({"messages": [{"role": user_input.role, "content": user_input.parts[0].text}]},
@@ -116,8 +119,10 @@ class BuilderAgent:
             event['messages'][-1].pretty_print()
             self.final_state = event
 
-    async def invoke(self, session_id: str, user_input: Message):
+    async def invoke(self, user_name: str, session_id: str, user_input: Message):
         config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id})
+        # Preset the state
+        await self.app.aupdate_state(config, {"user_name": user_name}, as_node="agent")
         # if the agent is waiting for user input
         if self.is_waiting_for_user_input(config):
             await self.app.ainvoke(Command(resume=user_input), config)

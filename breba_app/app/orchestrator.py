@@ -7,12 +7,14 @@ from generator_agent.agent import HTMLAgent
 
 logger = logging.getLogger(__name__)
 
+# TODO: should have the agents initialized per user session
 builder_agent = BuilderAgent()
 generator_agent = HTMLAgent()
 
 
 def get_generator_response(session_id: str):
     return generator_agent.get_last_html(session_id)
+
 
 def set_generator_response(session_id: str, html_output: str):
     generator_agent.set_last_html(session_id, html_output)
@@ -44,7 +46,7 @@ async def to_builder(user_name: str, session_id: str, message: str, builder_comp
                      generator_callback):
     agent_message = Message(role="user", parts=[TextPart(text=message)])
 
-    agent_response = await builder_agent.invoke(session_id, agent_message)
+    agent_response = await builder_agent.invoke(user_name, session_id, agent_message)
     content = agent_response.get("content")
     is_task_completed = agent_response.get("is_task_complete")
 
