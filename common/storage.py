@@ -50,7 +50,7 @@ def _copy_directory(
         logger.info(f"Copied {blob.name} -> {new_name}")
 
 
-def _user_session_blob(user_name: str, session_id: str, relative_path: str, description: str) -> Blob:
+def _user_session_blob(user_name: str, session_id: str, relative_path: str, description: str | None = None) -> Blob:
     blob = private_bucket.blob(f"{user_name}/{session_id}/{relative_path}")
     if description is not None:
         blob.metadata = {"description": description}
@@ -70,6 +70,21 @@ def save_image_file_to_private(user_name: str, session_id: str, file_name: str, 
     return relative_path
 
 
+def save_spec(user_name: str, session_id: str, spec: str):
+    blob = _user_session_blob(user_name, session_id, "spec.txt")
+    blob.upload_from_string(spec)
+
+
+def read_spec_text(user_name: str, session_id: str) -> str:
+    blob = _user_session_blob(user_name, session_id, "spec.txt")
+    return blob.download_as_string().decode("utf-8")
+
+
+def read_index_html(user_name: str, session_id: str) -> str:
+    blob = _user_session_blob(user_name, session_id, "index.html")
+    return blob.download_as_string().decode("utf-8")
+
+
 def read_image_from_private(user_name: str, session_id: str, image_name: str) -> Tuple[bytes, dict[str, str]] | None:
     blob = private_bucket.blob(f"{user_name}/{session_id}/images/{image_name}")
 
@@ -82,6 +97,14 @@ def read_image_from_private(user_name: str, session_id: str, image_name: str) ->
 
 def save_file_to_private(user_name: str, session_id: str, file_name: str, content: bytes, content_type: str):
     private_bucket.blob(f"{user_name}/{session_id}/{file_name}").upload_from_string(content, content_type)
+
+
+def load_template(user_name: str, session_id: str, template_name: str):
+    _copy_directory(
+        source_bucket_name=private_bucket.name, target_bucket_name=private_bucket.name,
+        prefix=f"templates/{template_name}",
+        target_prefix=f"{user_name}/{session_id}"
+    )
 
 
 def make_dir_tree() -> DirTree:

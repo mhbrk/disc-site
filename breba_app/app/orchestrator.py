@@ -14,6 +14,9 @@ generator_agent = HTMLAgent()
 def get_generator_response(session_id: str):
     return generator_agent.get_last_html(session_id)
 
+def set_generator_response(session_id: str, html_output: str):
+    generator_agent.set_last_html(session_id, html_output)
+
 
 async def start_streaming_task(user_name: str, session_id: str, query: str, generator_callback):
     accumulator = TagAccumulator()
@@ -51,3 +54,8 @@ async def to_builder(user_name: str, session_id: str, message: str, builder_comp
     else:
         logger.info(f"Waiting for user input: {content}")
         await ask_user_callback(content)
+
+
+async def update_builder_spec(session_id: str, message: str):
+    agent_response = await builder_agent.set_agent_prompt(session_id, message)
+    return agent_response

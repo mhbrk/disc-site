@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 import chainlit as cl
@@ -5,9 +6,10 @@ from chainlit import Message
 from chainlit.types import CommandDict
 
 from auth import verify_password
-from common.storage import save_file_to_private, save_image_file_to_private, upload_site
+from common.storage import save_file_to_private, save_image_file_to_private, upload_site, load_template, read_spec_text, \
+    read_index_html
 from models.user import User
-from orchestrator import get_generator_response, to_builder
+from orchestrator import get_generator_response, to_builder, update_builder_spec, set_generator_response
 
 task_id: str | None = None
 
@@ -68,10 +70,21 @@ async def window_message(message: str | dict):
 
     session_id = cl.user_session.get("id")
     user_name = cl.user_session.get("user").identifier
+
     if method == "to_builder":
         await to_builder(user_name, session_id, message.get("body", "INVALID REQEUST, something went wrong"),
                          builder_completed,
                          ask_user, process_generator_message)
+    elif method == "load_template":
+        load_template(user_name, session_id, message.get("body"))
+        spec = read_spec_text(user_name, session_id)
+        product = read_index_html(user_name, session_id)
+        set_generator_response(session_id, product)
+
+        await process_generator_message(product)
+
+        await asyncio.gather(update_builder_spec(session_id, spec), builder_completed(spec),
+                             process_generator_message("__completed__"))
     else:
         # TODO: remove this, it is replaced by the "ask_user" function callback
         await cl.Message(content=message).send()

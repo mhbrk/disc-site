@@ -1,3 +1,7 @@
+<div id="templates-container">
+    {% include "templates.html" %}
+</div>
+
 <div id="popup"
      style="display:none; position:absolute; z-index:1000; background:white;
             border:1px solid #ccc; padding:10px; border-radius:8px;
@@ -182,6 +186,7 @@
         if (event.data.method === "to_generator") {
             console.log('Generator panel message:', event.data);
             processChunk(event.data.body);
+            document.getElementById("templates-container").style.display = "none";
         }
     });
 

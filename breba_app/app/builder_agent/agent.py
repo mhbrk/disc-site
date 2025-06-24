@@ -166,6 +166,12 @@ class BuilderAgent:
 
     SUPPORTED_CONTENT_TYPES = ["text", "text/plain"]
 
+    async def set_agent_prompt(self, session_id, prompt: str):
+        config = RunnableConfig(configurable={"thread_id": session_id})
+        # Must add to messages in order to be able to continue conversation
+        await self.app.aupdate_state(config, {"prompt": prompt, "messages": [
+            ("ai", f"::final prompt result::\n{prompt}\n::final prompt result::")]})
+
 
 if os.environ.get("OPENAI_API_KEY") is None:
     load_dotenv()
