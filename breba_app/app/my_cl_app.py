@@ -15,6 +15,10 @@ task_id: str | None = None
 
 
 async def builder_completed(payload: str):
+    session_id = cl.user_session.get("id")
+    user_name = cl.user_session.get("user").identifier
+
+    save_file_to_private(user_name, session_id, "spec.txt", payload.encode("utf-8"), "text/plain")
     builder_message = {"method": "to_builder", "body": payload}
     await cl.send_window_message(builder_message)
 
