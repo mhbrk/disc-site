@@ -122,7 +122,7 @@ class BuilderAgent:
     async def invoke(self, user_name: str, session_id: str, user_input: Message):
         config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id})
         # Preset the state
-        await self.app.aupdate_state(config, {"user_name": user_name}, as_node="agent")
+        await self.app.aupdate_state(config, {"user_name": user_name}, as_node="extract_prompt")
         # if the agent is waiting for user input
         if self.is_waiting_for_user_input(config):
             await self.app.ainvoke(Command(resume=user_input), config)
