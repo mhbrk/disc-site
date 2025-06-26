@@ -52,9 +52,10 @@ async def favicon():
     return RedirectResponse(url="/public/favicon.ico")
 
 
-@app.api_route("/images/{file_path:path}", methods=["GET", "HEAD"])
-async def custom_static_handler(file_path: str, request: Request):
-    session_id: str = request.cookies.get("X-Chainlit-Session-id")
+@app.api_route("/images/{session_id}/{file_path:path}", methods=["GET", "HEAD"])
+async def custom_static_handler(session_id: str, file_path: str, request: Request):
+    if not session_id:
+        raise HTTPException(status_code=400, detail="Missing session ID")
 
     ws_session = WebsocketSession.get_by_id(session_id=session_id)
     init_ws_context(ws_session)

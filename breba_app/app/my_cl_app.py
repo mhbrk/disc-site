@@ -98,7 +98,9 @@ async def respond(message: Message):
         blob_image_path = save_image_file_to_private(user_name, session_id, message.elements[0].name,
                                                      message.elements[0].path,
                                                      message.content)
-        message.content = f"Given: ./{blob_image_path} \n {message.content}"
+        # TODO: remove this when using CDN
+        image_path_for_preview = blob_image_path.replace("images/", f"images/{session_id}/")
+        message.content = f"Given: ./{image_path_for_preview} \n {message.content}"
     await to_builder(user_name, session_id, message.content, builder_completed, ask_user, process_generator_message)
 
 

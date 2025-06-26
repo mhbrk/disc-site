@@ -66,7 +66,9 @@ async def generate_image(user_name: str, session_id: str, prompt: str) -> str:
     # Kick off background image generation + response sending
     asyncio.create_task(_generate_and_save_image(user_name, session_id, prompt, image_name))
 
-    return f"Generated image: ./images/{image_name}"
+    # TODO: Just use a CDN for images
+    # Append SESSION_ID for preview mode. Should be removed when deploying
+    return f"Generated image: ./images/{session_id}/{image_name}"
 
 
 if __name__ == "__main__":

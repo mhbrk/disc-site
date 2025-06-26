@@ -178,4 +178,15 @@ def upload_site(user_name: str, session_id: str, site_name: str):
         target_bucket_name=public_bucket.name, prefix=f"{user_name}/{session_id}", target_prefix=site_name
     )
 
+    # TODO: when using CDN, this garbage should be removed, we don't need to modify index.html
+    public_index_path = f"{site_name}/index.html"
+    blob = public_bucket.blob(public_index_path)
+
+    if blob.exists():
+        content = blob.download_as_text()
+        updated_content = content.replace(f"{session_id}/", "")
+        blob.upload_from_string(updated_content, content_type="text/html")
+    else:
+        print(f"Warning: {public_index_path} not found in public bucket.")
+
     return get_public_url(site_name)
