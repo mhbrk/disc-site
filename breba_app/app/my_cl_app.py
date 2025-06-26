@@ -1,17 +1,13 @@
 import asyncio
-import uuid
 
 import chainlit as cl
 from chainlit import Message
-from chainlit.types import CommandDict
 
 from auth import verify_password
 from common.storage import save_file_to_private, save_image_file_to_private, upload_site, load_template, read_spec_text, \
     read_index_html
 from models.user import User
 from orchestrator import get_generator_response, to_builder, update_builder_spec, set_generator_response
-
-task_id: str | None = None
 
 
 async def builder_completed(payload: str):
@@ -32,7 +28,7 @@ async def generator_completed():
     save_file_to_private(user_name, session_id, "index.html", html, "text/html")
 
     await cl.Message(
-        content="The website is ready to be deployed. Use the /Deploy my-site to deploy your website as my-site.").send()
+        content="The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website").send()
 
 
 async def process_generator_message(message: str):
@@ -53,14 +49,6 @@ async def ask_user(message: str):
 
 @cl.on_chat_start
 async def main():
-    global task_id
-    task_id = f"task-{uuid.uuid4().hex}"
-
-    deploy_cmd: CommandDict = {"id": "Deploy", "icon": "globe",
-                               "description": "Deploy the website. type name of site after the command"}
-    commands = [deploy_cmd]
-    await cl.context.emitter.set_commands(commands)
-
     await cl.Message(
         content="Hello, I'm here to assist you with building your website. We can build it together one step at a time,"
                 " or you can give me the full specification, and I will have it built.").send()
@@ -89,6 +77,12 @@ async def window_message(message: str | dict):
 
         await asyncio.gather(update_builder_spec(session_id, spec), builder_completed(spec),
                              process_generator_message("__completed__"))
+    elif method == "deploy":
+        site_name = message.get("body")
+        url = upload_site(user_name, session_id, site_name)
+        message_text = f"Deployed your website to: {url}"
+        await asyncio.gather(cl.Message(content=message_text).send(),
+                             cl.send_window_message({"method": "deploy_status", "body": message_text}))
     else:
         # TODO: remove this, it is replaced by the "ask_user" function callback
         await cl.Message(content=message).send()
@@ -99,23 +93,13 @@ async def respond(message: Message):
     session_id = cl.user_session.get("id")
     user_name = cl.user_session.get("user").identifier
 
-    if message.command == "Deploy":
-        await cl.Message(content="Deploying your website...").send()
-        site_name = message.content
-        if not site_name:
-            await cl.Message(content="Please provide a name for your site.").send()
-            return
-
-        url = upload_site(user_name, session_id, site_name)
-        await cl.Message(content=f"Deployed your website to: {url}").send()
-    else:
-        if len(message.elements) > 0:
-            # This happens when we are uploading a file from the chat window
-            blob_image_path = save_image_file_to_private(user_name, session_id, message.elements[0].name,
-                                                         message.elements[0].path,
-                                                         message.content)
-            message.content = f"Given: ./{blob_image_path} \n {message.content}"
-        await to_builder(user_name, session_id, message.content, builder_completed, ask_user, process_generator_message)
+    if len(message.elements) > 0:
+        # This happens when we are uploading a file from the chat window
+        blob_image_path = save_image_file_to_private(user_name, session_id, message.elements[0].name,
+                                                     message.elements[0].path,
+                                                     message.content)
+        message.content = f"Given: ./{blob_image_path} \n {message.content}"
+    await to_builder(user_name, session_id, message.content, builder_completed, ask_user, process_generator_message)
 
 
 @cl.password_auth_callback

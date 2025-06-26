@@ -1,0 +1,60 @@
+<div class="d-flex flex-column h-100 p-3">
+    <!-- Input + Button row -->
+    <div class="mb-3">
+        <label for="sitename" class="form-label">Website Name</label>
+        <div class="input-group">
+            <input type="text" id="sitename" class="form-control" placeholder="e.g. my-portfolio">
+            <button id="deploy-button" class="btn btn-primary">Deploy</button>
+        </div>
+    </div>
+
+    <!-- Status message -->
+    <p id="deploy-status" class="form-text text-muted mt-2">
+    </p>
+</div>
+
+<script>
+    const sitenameInput = document.getElementById("sitename");
+    const deployButton = document.getElementById("deploy-button");
+    const statusText = document.getElementById("deploy-status");
+
+    function autoLink(text) {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        return text.replace(urlRegex, (url) => {
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        });
+    }
+
+    function triggerDeploy() {
+        const sitename = sitenameInput.value.trim();
+        if (!sitename) {
+            statusText.textContent = "Please enter a site name.";
+            return;
+        }
+
+        statusText.textContent = "Deploying...";
+        const chat = document.getElementById('chainlit');
+        if (chat) {
+            chat.contentWindow.postMessage({
+                method: "deploy",
+                body: sitename
+            }, '*');
+        }
+    }
+
+    deployButton.addEventListener("click", triggerDeploy);
+
+    sitenameInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            triggerDeploy();
+        }
+    });
+
+    // Updates to builder panel
+    window.addEventListener('message', (event) => {
+        if (event.data.method === "deploy_status") {
+            console.log('Deploy status message:', event.data);
+            statusText.innerHTML = autoLink(event.data.body);
+        }
+    });
+</script>

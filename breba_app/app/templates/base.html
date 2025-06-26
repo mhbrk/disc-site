@@ -65,6 +65,22 @@
             overflow-y: auto;
             padding: 1rem;
         }
+
+        #deploy-panel {
+            display: none;
+            position: absolute;
+            top: 1rem;
+            left: 74px;
+            width: 33%;
+            height: 95vh;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 0.5rem;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            padding: 1rem;
+        }
     </style>
 
 </head>
@@ -74,6 +90,7 @@
         <div class="col-auto">
             <div class="sidebar">
                 <button id="toggle-builder" title="Open Builder">&#x1F4C4;</button>
+                <button id="toggle-deploy" title="Deploy App">&#x1F680;</button>
             </div>
         </div>
         <div class="col-md-4">
@@ -92,6 +109,10 @@
     <div id="builder-panel">
         {% include "builder.html" %}
     </div>
+
+    <div id="deploy-panel">
+        {% include "deploy.html" %}
+    </div>
 </div>
 
 <script>
@@ -99,9 +120,19 @@
         const builderPanel = document.getElementById("builder-panel");
         const toggleButton = document.getElementById("toggle-builder");
 
+        const deployButton = document.getElementById("toggle-deploy")
+        const deployPanel = document.getElementById("deploy-panel");
+
         toggleButton.addEventListener("click", () => {
-            const visible = builderPanel.style.display === "block";
-            builderPanel.style.display = visible ? "none" : "block";
+            const builderVisible = builderPanel.style.display === "block";
+            builderPanel.style.display = builderVisible ? "none" : "block";
+            deployPanel.style.display = "none";
+        });
+
+        deployButton.addEventListener("click", () => {
+            const deployVisible = deployPanel.style.display === "block";
+            deployPanel.style.display = deployVisible ? "none" : "block";
+            builderPanel.style.display = "none"
         });
     });
 </script>
