@@ -134,7 +134,17 @@
             deployPanel.style.display = deployVisible ? "none" : "block";
             builderPanel.style.display = "none"
         });
+
+        // Close all panels on Escape key press
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" || event.key === "Esc") {
+                builderPanel.style.display = "none";
+                deployPanel.style.display = "none";
+            }
+        });
     });
+
+
 </script>
 
 </body>
