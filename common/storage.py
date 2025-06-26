@@ -38,6 +38,7 @@ def _copy_directory(
 
     blobs = storage_client.list_blobs(source_bucket, prefix=prefix)
 
+    # TODO: optimize this using asyncio.to_thread or create_task
     for blob in blobs:
         # Compute new destination name
         relative_path = blob.name[len(prefix):]
@@ -164,11 +165,14 @@ def upload_site(user_name: str, session_id: str, site_name: str):
     """
     Uploads site to google cloud
     Example: upload_site("/Users/yason/breba/disc-site/sites/test-site", "test-site")
-    :param user_name: user name
+    :param user_name: username
     :param session_id: session id used for locating site files
     :param site_name: site name where all the files will be stored
-    :return:
+    :return: public url of deployed site
     """
+    # Sanitize site name
+    site_name = site_name.lower().replace(" ", "-").strip()
+    # TODO: when empty dir is being uploaded, should pass back an error message
     _copy_directory(
         source_bucket_name=private_bucket.name,
         target_bucket_name=public_bucket.name, prefix=f"{user_name}/{session_id}", target_prefix=site_name
