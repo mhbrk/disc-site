@@ -38,11 +38,6 @@ async def process_generator_message(message: str):
     await cl.send_window_message(generator_message)
 
 
-@cl.action_callback("action_button")
-async def on_action(action: cl.Action):
-    print(action.payload)
-
-
 async def ask_user(message: str):
     await cl.Message(content=message).send()
 
