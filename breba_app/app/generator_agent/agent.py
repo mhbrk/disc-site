@@ -2,6 +2,8 @@ import logging
 from typing import Any, Dict, AsyncIterable, Literal
 
 from langchain_community.tools import TavilySearchResults
+from langchain_core.messages import trim_messages
+from langchain_core.messages.utils import count_tokens_approximately
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
@@ -21,6 +23,17 @@ class ResponseFormat(BaseModel):
     status: Literal["input_required", "completed", "error"] = "input_required"
     html_output: str = Field(description="The HTML content to be rendered as the final output.")
 
+def pre_model_hook(state):
+    trimmed_messages = trim_messages(
+        state["messages"],
+        strategy="last",
+        token_counter=count_tokens_approximately,
+        max_tokens=10000,
+        include_system=True,
+    )
+    # You can return updated messages either under `llm_input_messages` or
+    # `messages` key (see the note below)
+    return {"llm_input_messages": trimmed_messages}
 
 class HTMLAgent:
     SYSTEM_INSTRUCTION = get_instructions("generator_system_prompt")
@@ -35,7 +48,7 @@ class HTMLAgent:
         self.tools = [generate_image, search_tool]
 
         self.graph = create_react_agent(
-            self.model, tools=self.tools, checkpointer=memory, prompt=self.SYSTEM_INSTRUCTION,
+            self.model, tools=self.tools, pre_model_hook=pre_model_hook, checkpointer=memory, prompt=self.SYSTEM_INSTRUCTION,
             response_format=ResponseFormat
         )
 
