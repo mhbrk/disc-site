@@ -6,6 +6,8 @@ from chainlit import Message
 from auth import verify_password
 from common.storage import save_file_to_private, save_image_file_to_private, upload_site, load_template, read_spec_text, \
     read_index_html
+from llm_utils import get_product_name
+from models.product import Product
 from models.user import User
 from orchestrator import get_generator_response, to_builder, update_builder_spec, set_generator_response
 
@@ -19,6 +21,13 @@ async def populate_from_cloud_storage(user_name: str, session_id: str):
 
     await asyncio.gather(update_builder_spec(session_id, spec), builder_completed(spec),
                          process_generator_message("__completed__"))
+
+
+async def create_product_for(user_name: str, product_id: str, product_spec: str):
+    user_obj = await User.find_one(User.username == user_name)
+    product_name = await get_product_name(product_spec)
+    product = Product(product_id=product_id, user=user_obj, name=product_name)
+    await product.insert()
 
 
 async def builder_completed(payload: str):
