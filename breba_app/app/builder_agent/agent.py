@@ -175,7 +175,7 @@ class BuilderAgent:
         config = RunnableConfig(configurable={"thread_id": session_id})
         # Must add to messages in order to be able to continue conversation
         await self.app.aupdate_state(config, {"prompt": prompt, "messages": [
-            ("ai", f"::final prompt result::\n{prompt}\n::final prompt result::")]})
+            ("ai", f"::final prompt result::\n{prompt}\n::final prompt result::")]}, as_node="extract_prompt")
 
 
 if os.environ.get("OPENAI_API_KEY") is None:
