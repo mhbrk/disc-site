@@ -4,8 +4,8 @@ from beanie import init_beanie
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from breba_app.app.models.deployment import Deployment
-from breba_app.app.models.product import Product
+from models.deployment import Deployment
+from models.product import Product
 from models.user import User
 
 load_dotenv()
