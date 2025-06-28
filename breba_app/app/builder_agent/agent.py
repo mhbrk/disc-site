@@ -4,7 +4,8 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage, trim_messages
+from langchain_core.messages.utils import count_tokens_approximately
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
@@ -97,13 +98,22 @@ class BuilderAgent:
 
     async def agent(self, state: State, config: RunnableConfig) -> State:
         # TODO: use callback or class to get files, probably usersessioncontext class to get userid, user time, and zone
+
+        trimmed_messages = trim_messages(
+            state["messages"],
+            strategy="last",
+            token_counter=count_tokens_approximately,
+            max_tokens=2000,
+            include_system=False,
+        )
+
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         system_message = SystemMessage(content=get_instructions("builder_agent_system_prompt",
                                                                 files=list_files_in_private(state["user_name"],
                                                                                             config['configurable'][
                                                                                                 "thread_id"]),
                                                                 current_time=current_time))
-        response = await self.model.ainvoke([system_message] + state["messages"])
+        response = await self.model.ainvoke([system_message] + trimmed_messages)
         return {"messages": [response]}
 
     def visualize(self):
