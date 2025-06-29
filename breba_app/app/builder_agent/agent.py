@@ -103,7 +103,7 @@ class BuilderAgent:
             state["messages"],
             strategy="last",
             token_counter=count_tokens_approximately,
-            max_tokens=2000,
+            max_tokens=5000,
             include_system=False,
         )
 
