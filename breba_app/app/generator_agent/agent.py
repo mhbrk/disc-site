@@ -29,6 +29,7 @@ def pre_model_hook(state):
         strategy="last",
         token_counter=count_tokens_approximately,
         max_tokens=10000,
+        start_on = ["user", "ai"],
         include_system=True,
     )
     # You can return updated messages either under `llm_input_messages` or

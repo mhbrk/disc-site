@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from langchain_core.tools import tool
 from openai import AsyncOpenAI
 
-from common.storage import save_image_to_private
+from common.storage import save_image_to_private, public_file_url
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +38,9 @@ async def _generate_and_save_image(user_name: str, session_id: str, prompt: str,
         logger.error(f"[{session_id}] Error generating or sending image: {e}")
 
 
-async def get_file_name(description: str) -> str:
+async def generate_file_name(description: str) -> str:
     prompt = (f"Create a file name given the description. "
-              f"File name should be one to three words long separated by underscores. Description: {description}")
+              f"File name should be one to three words long separated by underscores. DO NOT include file extension. Description: {description}")
     response = await client.responses.create(model="gpt-4.1-nano", input=prompt)
 
     return f"{response.output_text}.png"
@@ -61,14 +61,12 @@ async def generate_image(user_name: str, session_id: str, prompt: str) -> str:
             The image file name.
         """
     logger.info(f"[{session_id}] Generating image for prompt: {prompt}")
-    image_name = await get_file_name(prompt)
+    image_name = await generate_file_name(prompt)
 
     # Kick off background image generation + response sending
     asyncio.create_task(_generate_and_save_image(user_name, session_id, prompt, image_name))
 
-    # TODO: Just use a CDN for images
-    # Append SESSION_ID for preview mode. Should be removed when deploying
-    return f"Generated image: ./images/{session_id}/{image_name}"
+    return f"Generated image: {public_file_url(user_name, session_id, image_name)}"
 
 
 if __name__ == "__main__":

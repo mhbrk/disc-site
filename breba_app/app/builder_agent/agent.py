@@ -104,6 +104,7 @@ class BuilderAgent:
             strategy="last",
             token_counter=count_tokens_approximately,
             max_tokens=5000,
+            start_on=["user", "ai"],
             include_system=False,
         )
 

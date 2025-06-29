@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from collections import defaultdict
 from typing import Tuple, TypedDict, Union
 
+import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
 from google.cloud import storage
 from google.cloud.storage import Bucket, Blob
@@ -13,10 +16,24 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+USERS_BUCKET_NAME: str = os.getenv("USERS_BUCKET")
+CLOUDFLARE_ENDPOINT: str = os.getenv("CLOUDFLARE_ENDPOINT")
+CDN_BASE_URL = "https://cdn.breba.app"
+
 storage_client = storage.Client()
 
-private_bucket: Bucket = storage_client.get_bucket(os.getenv("USERS_BUCKET"))
+private_bucket: Bucket = storage_client.get_bucket(USERS_BUCKET_NAME)
 public_bucket: Bucket = storage_client.get_bucket(os.getenv("PUBLIC_BUCKET"))
+
+session = boto3.session.Session()
+# Uses AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from the environment
+s3_client = session.client(
+    service_name='s3',
+    region_name='auto',
+    endpoint_url=CLOUDFLARE_ENDPOINT,
+)
+s3 = session.resource("s3", endpoint_url=CLOUDFLARE_ENDPOINT)
+s3_bucket = s3.Bucket(USERS_BUCKET_NAME)
 
 
 class FileMetadata(TypedDict):
@@ -25,6 +42,10 @@ class FileMetadata(TypedDict):
 
 DirTreeValue = Union[FileMetadata, "DirTree"]
 DirTree = dict[str, DirTreeValue]
+
+
+def public_file_url(user_name: str, session_id: str, file_name: str) -> str:
+    return f"{CDN_BASE_URL}/{user_name}/{session_id}/{file_name}"
 
 
 def _copy_directory(
@@ -59,16 +80,40 @@ def _user_session_blob(user_name: str, session_id: str, relative_path: str, desc
 
 
 def save_image_to_private(user_name: str, session_id: str, image_name: str, content: bytes, description: str = None):
-    blob = _user_session_blob(user_name, session_id, f"images/{image_name}", description)
-    blob.upload_from_string(content, "image/png")
+    key = f"{user_name}/{session_id}/{image_name}"
+
+    try:
+        s3_client.put_object(
+            Bucket=USERS_BUCKET_NAME,
+            Key=key,
+            Body=content,
+            ContentType="image/png",
+            Metadata={"description": description} if description else {}
+        )
+        logger.info(f"Uploaded image to {USERS_BUCKET_NAME}/{key}")
+    except (BotoCoreError, ClientError) as e:
+        logger.error(f"Error uploading image: {e}")
+        raise
 
 
 def save_image_file_to_private(user_name: str, session_id: str, file_name: str, file_path: str,
                                description: str = None):
-    relative_path = f"images/{file_name}"
-    blob = _user_session_blob(user_name, session_id, relative_path, description)
-    blob.upload_from_filename(file_path)
-    return relative_path
+    key = f"{user_name}/{session_id}/{file_name}"
+
+    try:
+        s3_client.upload_file(
+            Filename=file_path,
+            Bucket=USERS_BUCKET_NAME,
+            Key=key,
+            ExtraArgs={
+                "Metadata": {"description": description} if description else {}
+            }
+        )
+        logger.info(f"Uploaded file to {USERS_BUCKET_NAME}/{key}")
+        return public_file_url(user_name, session_id, file_name)
+    except (BotoCoreError, ClientError) as e:
+        logger.info(f"Error uploading file: {e}")
+        raise
 
 
 def save_spec(user_name: str, session_id: str, spec: str):
@@ -119,13 +164,34 @@ def register_file(parts: list[str], tree: DirTree):
     return current
 
 
+def list_s3_structured(user_name: str, session_id: str) -> DirTree:
+    prefix = f"{user_name}/{session_id}/"
+    files = make_dir_tree()
+
+    for obj_summary in s3_bucket.objects.filter(Prefix=prefix):
+        full_key = obj_summary.key
+        relative_path = full_key[len(prefix):]
+        parts = relative_path.split("/")
+        file_name = parts[-1]
+
+        # You need to explicitly fetch the object to get metadata
+        obj = s3_bucket.Object(full_key)
+        obj_metadata = obj.metadata
+        description = obj_metadata.get("description", "No description")
+
+        file = register_file(parts, files)
+        file[file_name] = {"__description__": description}
+
+    return files
+
+
 def list_files_structured(user_name: str, session_id: str) -> DirTree:
     prefix = f"{user_name}/{session_id}"
     blobs = private_bucket.list_blobs(prefix=prefix)
     files = make_dir_tree()
 
     for blob in blobs:
-        parts = blob.name[len(prefix) + 1:].split("/")  # skip session_id prefix
+        parts = blob.name[len(prefix) + 1:].split("/")
         file_name = parts[-1]
 
         file = register_file(parts, files)
@@ -152,8 +218,10 @@ def format_tree(tree: DirTree, indent=0):
 
 
 def list_files_in_private(user_name: str, session_id: str):
-    structured = list_files_structured(user_name, session_id)
-    return "\n".join(format_tree(structured))
+    structured = list_s3_structured(user_name, session_id)
+    files_prefix = public_file_url(user_name, session_id, "")
+    file_list = "\n".join(format_tree(structured))
+    return f"{files_prefix} contains the following files:\n{file_list}"
 
 
 def get_public_url(site_name: str) -> str:
@@ -171,22 +239,11 @@ def upload_site(user_name: str, session_id: str, site_name: str):
     :return: public url of deployed site
     """
     # Sanitize site name
-    site_name = site_name.lower().replace(" ", "-").strip()
+    site_name = re.sub("[^0-9a-zA-Z]+", "-", site_name).strip(" -")
     # TODO: when empty dir is being uploaded, should pass back an error message
     _copy_directory(
         source_bucket_name=private_bucket.name,
         target_bucket_name=public_bucket.name, prefix=f"{user_name}/{session_id}", target_prefix=site_name
     )
-
-    # TODO: when using CDN, this garbage should be removed, we don't need to modify index.html
-    public_index_path = f"{site_name}/index.html"
-    blob = public_bucket.blob(public_index_path)
-
-    if blob.exists():
-        content = blob.download_as_text()
-        updated_content = content.replace(f"{session_id}/", "")
-        blob.upload_from_string(updated_content, content_type="text/html")
-    else:
-        print(f"Warning: {public_index_path} not found in public bucket.")
 
     return get_public_url(site_name)

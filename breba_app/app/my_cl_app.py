@@ -28,16 +28,17 @@ async def create_product_for(user_name: str, product_id: str, product_spec: str)
     product_name = await get_product_name(product_spec)
     product = Product(product_id=product_id, user=user_obj, name=product_name)
     await product.insert()
+    return product
 
 
 async def builder_completed(payload: str):
-    session_id = cl.user_session.get("id")
-    user_name = cl.user_session.get("user").identifier
     product_id = cl.user_session.get("product_id")
-    if not product_id:
-        product_id = session_id
-        cl.user_session.set("product_id", product_id)
-        await User.create_product_for(user_name, product_id, payload)
+    user_name = cl.user_session.get("user").identifier
+    product_name = cl.user_session.get("product_name")
+    # The only time product_name is empty is when we are creating a new product
+    if not product_name:
+        product = await create_product_for(user_name, product_id, payload)
+        cl.user_session.set("product_name", product.name)
 
     save_file_to_private(user_name, product_id, "spec.txt", payload.encode("utf-8"), "text/plain")
     builder_message = {"method": "to_builder", "body": payload}
@@ -77,10 +78,13 @@ async def main():
         product_id = user_obj.products[-1].product_id
         product_name = user_obj.products[-1].name
         cl.user_session.set("product_id", product_id)
+        cl.user_session.set("product_name", product_name)
         await cl.Message(
             content=f"Welcome back, here is your last project: {product_name}.").send()
         await populate_from_cloud_storage(user_name, product_id)
     else:
+        # When starting a new project, set the product_id to session_id
+        cl.user_session.set("product_id", cl.user_session.get("id"))
         await cl.Message(
             content="Hello, I'm here to assist you with building your website. We can build it together one step at a time,"
                     " or you can give me the full specification, and I will have it built.").send()
@@ -123,9 +127,7 @@ async def respond(message: Message):
         blob_image_path = save_image_file_to_private(user_name, product_id, message.elements[0].name,
                                                      message.elements[0].path,
                                                      message.content)
-        # TODO: remove this when using CDN
-        image_path_for_preview = blob_image_path.replace("images/", f"images/{product_id}/")
-        message.content = f"Given: ./{image_path_for_preview} \n {message.content}"
+        message.content = f"Given: {blob_image_path} \n {message.content}"
     await to_builder(user_name, product_id, message.content, builder_completed, ask_user, process_generator_message)
 
 
