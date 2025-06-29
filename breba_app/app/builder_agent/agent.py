@@ -105,7 +105,7 @@ class BuilderAgent:
             token_counter=count_tokens_approximately,
             max_tokens=5000,
             start_on=["user", "ai"],
-            include_system=False,
+            include_system=True,
         )
 
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
