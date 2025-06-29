@@ -51,7 +51,6 @@
         }
 
         #builder-panel {
-            display: none;
             position: absolute;
             top: 1rem;
             left: 74px;
@@ -67,7 +66,21 @@
         }
 
         #deploy-panel {
-            display: none;
+            position: absolute;
+            top: 1rem;
+            left: 74px;
+            width: 33%;
+            height: 95vh;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 0.5rem;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        #templates-panel {
             position: absolute;
             top: 1rem;
             left: 74px;
@@ -91,6 +104,9 @@
             <div class="sidebar">
                 <button id="toggle-builder" title="Open Builder">&#x1F4C4;</button>
                 <button id="toggle-deploy" title="Deploy App">&#x1F680;</button>
+                <button id="toggle-templates" type="button" class="btn btn-link text-white fs-4" title="Templates">
+                    &#x1F4C1;
+                </button>
             </div>
         </div>
         <div class="col-md-4">
@@ -106,40 +122,57 @@
     </div>
 
     <!-- Builder panel outside of grid -->
-    <div id="builder-panel">
+    <div id="builder-panel" class="d-none">
         {% include "builder.html" %}
     </div>
 
-    <div id="deploy-panel">
+    <div id="deploy-panel" class="d-none">
         {% include "deploy.html" %}
+    </div>
+    <div id="templates-panel" class="d-none">
+        {% include "templates.html" %}
     </div>
 </div>
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const builderPanel = document.getElementById("builder-panel");
-        const toggleButton = document.getElementById("toggle-builder");
-
-        const deployButton = document.getElementById("toggle-deploy")
         const deployPanel = document.getElementById("deploy-panel");
+        const templatesPanel = document.getElementById("templates-panel");
 
-        toggleButton.addEventListener("click", () => {
-            const builderVisible = builderPanel.style.display === "block";
-            builderPanel.style.display = builderVisible ? "none" : "block";
-            deployPanel.style.display = "none";
+        const toggleBuilder = document.getElementById("toggle-builder");
+        const toggleDeploy = document.getElementById("toggle-deploy");
+        const toggleTemplates = document.getElementById("toggle-templates");
+
+        function showOnly(panelToShow) {
+            [builderPanel, deployPanel, templatesPanel].forEach(panel => {
+                if (panel === panelToShow) {
+                    panel.classList.remove("d-none");
+                } else {
+                    panel.classList.add("d-none");
+                }
+            });
+        }
+
+        toggleBuilder.addEventListener("click", () => {
+            const isVisible = !builderPanel.classList.contains("d-none");
+            showOnly(isVisible ? null : builderPanel);
         });
 
-        deployButton.addEventListener("click", () => {
-            const deployVisible = deployPanel.style.display === "block";
-            deployPanel.style.display = deployVisible ? "none" : "block";
-            builderPanel.style.display = "none"
+        toggleDeploy.addEventListener("click", () => {
+            const isVisible = !deployPanel.classList.contains("d-none");
+            showOnly(isVisible ? null : deployPanel);
         });
 
-        // Close all panels on Escape key press
+        toggleTemplates.addEventListener("click", () => {
+            const isVisible = !templatesPanel.classList.contains("d-none");
+            showOnly(isVisible ? null : templatesPanel);
+        });
+
+// Escape key closes all panels
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape" || event.key === "Esc") {
-                builderPanel.style.display = "none";
-                deployPanel.style.display = "none";
+                showOnly(null);
             }
         });
     });

@@ -1,55 +1,37 @@
-<div id="template-cards" class="container mt-4">
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        <div class="col">
-            <div class="card h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">Landing Page</h5>
-                    <p class="card-text">Great way to start a landing page for your company.</p>
-                    <button class="btn btn-primary mt-auto start-template" data-template="landing">Start</button>
-                </div>
+<div id="template-cards" class="d-flex flex-wrap gap-3 justify-content-start mt-2">
+    <div class="card p-2" style="width: clamp(200px, 20vw, 240px); aspect-ratio: 1; overflow: hidden;">
+        <div class="card-body d-flex flex-column">
+            <div class="mb-2">
+                <h6 class="card-title text-wrap">Landing Page With Google Form</h6>
+                <p class="card-text small text-wrap mb-0">
+                    Great for collecting user input on your landing page.
+                </p>
             </div>
-        </div>
-        <div class="col">
-            <div class="card h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">Landing Page With Google Form</h5>
-                    <p class="card-text">Great for collecting user input on your landing page.</p>
-                    <button class="btn btn-primary mt-auto start-template" data-template="landing_with_form">Start</button>
-                </div>
-            </div>
-        </div>
-        <div class="col">
-            <div class="card h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">Landing Page With Calendly Scheduling</h5>
-                    <p class="card-text">Let users schedule appointments directly on your site.</p>
-                    <button class="btn btn-primary mt-auto start-template" data-template="calendly">Start</button>
-                </div>
-            </div>
+            <button class="btn btn-primary btn-sm mt-auto start-template" data-template="landing_with_form">Start
+            </button>
         </div>
     </div>
-</div>
 
-<script>
-    document.querySelectorAll(".start-template").forEach(button => {
-        button.addEventListener("click", async () => {
-            const templateName = button.dataset.template;
+    <script>
+        document.querySelectorAll(".start-template").forEach(button => {
+            button.addEventListener("click", async () => {
+                const templateName = button.dataset.template;
 
-            const cards = document.getElementById("template-cards");
-            const iframe = document.getElementById("generator-frame");
+                const cards = document.getElementById("template-cards");
+                const iframe = document.getElementById("generator-frame");
 
-            // Hide cards and show iframe
-            if (cards) cards.style.display = "none";
-            if (iframe) iframe.style.display = "block";
+                // Hide cards and show iframe
+                if (cards) cards.style.display = "none";
+                if (iframe) iframe.style.display = "block";
 
-            // Optional: Notify the Chainlit agent
-            const chat = document.getElementById('chainlit');
-            if (chat) {
-                chat.contentWindow.postMessage({
-                    method: "load_template",
-                    body: templateName
-                }, '*');
-            }
+                // Optional: Notify the Chainlit agent
+                const chat = document.getElementById('chainlit');
+                if (chat) {
+                    chat.contentWindow.postMessage({
+                        method: "load_template",
+                        body: templateName
+                    }, '*');
+                }
+            });
         });
-    });
-</script>
+    </script>
