@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from collections import defaultdict
 from typing import Tuple, TypedDict, Union
 
@@ -238,7 +239,7 @@ def upload_site(user_name: str, session_id: str, site_name: str):
     :return: public url of deployed site
     """
     # Sanitize site name
-    site_name = site_name.lower().replace(" ", "-").strip()
+    site_name = re.sub("[^0-9a-zA-Z]+", "-", site_name).strip(" -")
     # TODO: when empty dir is being uploaded, should pass back an error message
     _copy_directory(
         source_bucket_name=private_bucket.name,
