@@ -42,8 +42,6 @@ app.add_middleware(
 
 templates = Jinja2Templates(directory="templates")
 
-IMAGE_DIR = Path("./images")
-
 app.mount("/public", StaticFiles(directory="public"), name="public")
 
 
@@ -87,16 +85,6 @@ async def index(request: Request):
     Home page route. This just renders the HTML. All communication with the server is done through chianlit.
     """
     return templates.TemplateResponse("base.html", {"request": request})
-
-
-# @app.post("/act")
-# async def act(payload: str = Body(...)):
-#     """
-#     Endpoint to run the Act Agent
-#     """
-#     logger.info(payload)
-#     response = await invoke_act_agent(payload)
-#     return response
 
 
 current_file_dir = Path(__file__).parent
