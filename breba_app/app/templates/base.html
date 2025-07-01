@@ -50,52 +50,7 @@
             cursor: pointer;
         }
 
-        #builder-panel {
-            position: absolute;
-            top: 1rem;
-            left: 74px;
-            width: 33%;
-            height: 95vh;
-            background-color: white;
-            border: 1px solid #ccc;
-            border-radius: 0.5rem;
-            z-index: 10;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            overflow-y: auto;
-            padding: 1rem;
-        }
-
-        #deploy-panel {
-            position: absolute;
-            top: 1rem;
-            left: 74px;
-            width: 33%;
-            height: 95vh;
-            background-color: white;
-            border: 1px solid #ccc;
-            border-radius: 0.5rem;
-            z-index: 10;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            overflow-y: auto;
-            padding: 1rem;
-        }
-
-        #templates-panel {
-            position: absolute;
-            top: 1rem;
-            left: 74px;
-            width: 33%;
-            height: 95vh;
-            background-color: white;
-            border: 1px solid #ccc;
-            border-radius: 0.5rem;
-            z-index: 10;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            overflow-y: auto;
-            padding: 1rem;
-        }
-
-        #products-panel {
+        .side-panel {
             position: absolute;
             top: 1rem;
             left: 74px;
@@ -140,17 +95,17 @@
     </div>
 
     <!-- Builder panel outside of grid -->
-    <div id="builder-panel" class="d-none">
+    <div id="builder-panel" class="side-panel d-none">
         {% include "builder.html" %}
     </div>
 
-    <div id="deploy-panel" class="d-none">
+    <div id="deploy-panel" class="side-panel d-none">
         {% include "deploy.html" %}
     </div>
-    <div id="templates-panel" class="d-none">
+    <div id="templates-panel" class="side-panel d-none">
         {% include "templates.html" %}
     </div>
-    <div id="products-panel" class="d-none">
+    <div id="products-panel" class="side-panel d-none">
         {% include "products.html" %}
     </div>
 </div>
