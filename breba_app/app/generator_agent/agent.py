@@ -92,7 +92,7 @@ class HTMLAgent:
         config = {"configurable": {"thread_id": session_id}}
         structured_response = ResponseFormat(status="completed", html_output=html_output)
         self.graph.update_state(config, {"structured_response": structured_response,
-                                         "messages": [("ai", html_output)]})
+                                         "messages": [("user", html_output)]})
 
     def get_agent_response(self, config):
         current_state = self.graph.get_state(config)
