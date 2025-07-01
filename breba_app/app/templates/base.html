@@ -94,6 +94,21 @@
             overflow-y: auto;
             padding: 1rem;
         }
+
+        #products-panel {
+            position: absolute;
+            top: 1rem;
+            left: 74px;
+            width: 33%;
+            height: 95vh;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 0.5rem;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            padding: 1rem;
+        }
     </style>
 
 </head>
@@ -102,6 +117,9 @@
     <div class="row g-3">
         <div class="col-auto">
             <div class="sidebar">
+                <button id="toggle-products" type="button" class="btn btn-link text-white fs-4" title="Products">
+                    &#x1F5C2;
+                </button>
                 <button id="toggle-builder" title="Open Builder">&#x1F4C4;</button>
                 <button id="toggle-deploy" title="Deploy App">&#x1F680;</button>
                 <button id="toggle-templates" type="button" class="btn btn-link text-white fs-4" title="Templates">
@@ -132,6 +150,9 @@
     <div id="templates-panel" class="d-none">
         {% include "templates.html" %}
     </div>
+    <div id="products-panel" class="d-none">
+        {% include "products.html" %}
+    </div>
 </div>
 
 <script>
@@ -143,9 +164,11 @@
         const toggleBuilder = document.getElementById("toggle-builder");
         const toggleDeploy = document.getElementById("toggle-deploy");
         const toggleTemplates = document.getElementById("toggle-templates");
+        const productsPanel = document.getElementById("products-panel");
+        const toggleProducts = document.getElementById("toggle-products");
 
         function showOnly(panelToShow) {
-            [builderPanel, deployPanel, templatesPanel].forEach(panel => {
+            [builderPanel, deployPanel, templatesPanel, productsPanel].forEach(panel => {
                 if (panel === panelToShow) {
                     panel.classList.remove("d-none");
                 } else {
@@ -154,6 +177,7 @@
             });
         }
 
+        // TODO: extract template selection
         toggleBuilder.addEventListener("click", () => {
             const isVisible = !builderPanel.classList.contains("d-none");
             showOnly(isVisible ? null : builderPanel);
@@ -169,7 +193,12 @@
             showOnly(isVisible ? null : templatesPanel);
         });
 
-// Escape key closes all panels
+        toggleProducts.addEventListener("click", () => {
+            const isVisible = !productsPanel.classList.contains("d-none");
+            showOnly(isVisible ? null : productsPanel);
+        });
+
+        // Escape key closes all panels
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape" || event.key === "Esc") {
                 showOnly(null);
