@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, AsyncIterable, Literal
 
 from langchain_community.tools import TavilySearchResults
-from langchain_core.messages import trim_messages
+from langchain_core.messages import trim_messages, HumanMessage
 from langchain_core.messages.utils import count_tokens_approximately
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
@@ -29,7 +29,7 @@ def pre_model_hook(state):
         strategy="last",
         token_counter=count_tokens_approximately,
         max_tokens=10000,
-        start_on = ["user", "ai"],
+        start_on = [HumanMessage],
         include_system=True,
     )
     # You can return updated messages either under `llm_input_messages` or

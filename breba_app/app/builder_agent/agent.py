@@ -4,7 +4,7 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from langchain_core.messages import SystemMessage, trim_messages
+from langchain_core.messages import SystemMessage, trim_messages, HumanMessage
 from langchain_core.messages.utils import count_tokens_approximately
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
@@ -89,12 +89,16 @@ class BuilderAgent:
         """
         This is a shortcut to structured output without using an extra LLM invokation.
         """
-        message = state["messages"][-1].content
+        last_message = state["messages"][-1]
+        message = last_message.content
         split_message = message.split("::final prompt result::")
         prompt = ""
         if len(split_message) > 1:
             prompt = split_message[1]
-        return {"prompt": prompt}
+            # By setting id we are making sure that we replace the last message
+            last_message = {"id": last_message.id, "role": "user", "content": f"This the full spec for my site: {prompt}"}
+
+        return {"prompt": prompt, "messages": [last_message]}
 
     async def agent(self, state: State, config: RunnableConfig) -> State:
         # TODO: use callback or class to get files, probably usersessioncontext class to get userid, user time, and zone
@@ -104,7 +108,7 @@ class BuilderAgent:
             strategy="last",
             token_counter=count_tokens_approximately,
             max_tokens=5000,
-            start_on=["user", "ai"],
+            start_on=[HumanMessage],
             include_system=True,
         )
 
