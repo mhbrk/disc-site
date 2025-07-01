@@ -166,10 +166,9 @@
         if (chat) {
             const prompt = {
                 method: "to_builder",
-                body: "After viewing the HTML page, regarding the following text on the page: " + selection + ". " +
-                    query + ". \n\n" +
-                    "Remember to update the website specification. " +
-                    "Try to accommodate this request without asking questions. Ask questions *ONLY* if the request is unclear."
+                body: "Given the generated HTML page, the user selected the following text: " + selection + ". " +
+                    "The user comment regarding this text is:  " + query + ". " +
+                    "Do not ask questions, just do it."
             };
             chat.contentWindow.postMessage(prompt, '*');
         }
