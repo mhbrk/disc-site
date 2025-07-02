@@ -43,6 +43,18 @@ async def create_blank_product_for(user_name: str):
     return product
 
 
+async def set_product_active(user_name: str, product_id: str):
+    user_obj = await User.find_one(User.username == user_name)
+
+    # Clear all active products
+    await Product.find(Product.user.id == user_obj.id, Product.active == True).update(
+        Set({Product.active: False})
+    )
+
+    product = await Product.find_one(Product.product_id == product_id)
+    await product.update(Set({Product.active: True}))
+
+
 async def create_or_update_product_for(user_name: str, product_id: str | None = None, product_spec: str = "",
                                        product_name: str | None = None):
     user_obj = await User.find_one(User.username == user_name)
@@ -103,11 +115,16 @@ async def ask_user(message: str):
     await cl.Message(content=message).send()
 
 
+async def update_products_list(products: list[Product]):
+    products_list = [{"product_id": product.product_id, "name": product.name, "active": product.active} for product in products]
+    await cl.send_window_message({"method": "update_products_list", "body": products_list})
+
+
 @cl.on_chat_start
 async def main():
     user_name = cl.user_session.get("user").identifier
 
-    user = await User.find_one(User.username == user_name)
+    user = await User.find_one(User.username == user_name, fetch_links=True)
 
     active_product = None
     if user:
@@ -121,6 +138,8 @@ async def main():
             active_product = await Product.find(
                 Product.user.id == user.id
             ).sort([("_id", SortDirection.DESCENDING)]).first_or_none()
+
+        asyncio.create_task(update_products_list(user.products))
 
     if active_product:
         has_storage = await has_cloud_storage(user_name, active_product.product_id)
@@ -174,6 +193,9 @@ async def window_message(message: str | dict):
                              cl.send_window_message({"method": "deploy_status", "body": message_text}))
     elif method == "create_new_product":
         await create_blank_product_for(user_name)
+        await cl.send_window_message({"method": "reload_product"})
+    elif method == "product_selected":
+        await set_product_active(user_name, message.get("body"))
         await cl.send_window_message({"method": "reload_product"})
     else:
         # TODO: remove this, it is replaced by the "ask_user" function callback
