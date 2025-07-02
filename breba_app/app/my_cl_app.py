@@ -1,6 +1,8 @@
 import asyncio
 
 import chainlit as cl
+from beanie import SortDirection
+from beanie.odm.operators.update.general import Set
 from chainlit import Message
 
 from auth import verify_password
@@ -10,6 +12,11 @@ from llm_utils import get_product_name
 from models.product import Product
 from models.user import User
 from orchestrator import get_generator_response, to_builder, update_builder_spec, set_generator_response
+
+
+async def has_cloud_storage(user_name: str, session_id: str):
+    spec = read_spec_text(user_name, session_id)
+    return spec is not None
 
 
 async def populate_from_cloud_storage(user_name: str, session_id: str):
@@ -23,11 +30,38 @@ async def populate_from_cloud_storage(user_name: str, session_id: str):
                          process_generator_message("__completed__"))
 
 
-async def create_product_for(user_name: str, product_id: str, product_spec: str):
+async def create_blank_product_for(user_name: str):
     user_obj = await User.find_one(User.username == user_name)
-    product_name = await get_product_name(product_spec)
-    product = Product(product_id=product_id, user=user_obj, name=product_name)
+
+    # Clear all active products
+    await Product.find(Product.user.id == user_obj.id, Product.active == True).update(
+        Set({Product.active: False})
+    )
+
+    product = Product(user=user_obj, active=True)
     await product.insert()
+    return product
+
+
+async def create_or_update_product_for(user_name: str, product_id: str | None = None, product_spec: str = "",
+                                       product_name: str | None = None):
+    user_obj = await User.find_one(User.username == user_name)
+
+    # Clear all active products
+    await Product.find(Product.user.id == user_obj.id, Product.active == True).update(
+        Set({Product.active: False})
+    )
+
+    # Insert new active product
+    product = Product(product_id=product_id, user=user_obj, name=product_name, active=True)
+    await Product.find_one(Product.product_id == product_id).upsert(
+        Set({
+            Product.name: product_name,
+            Product.user: user_obj.id,
+            Product.active: True
+        }),
+        on_insert=product
+    )
     return product
 
 
@@ -37,7 +71,8 @@ async def builder_completed(payload: str):
     product_name = cl.user_session.get("product_name")
     # The only time product_name is empty is when we are creating a new product
     if not product_name:
-        product = await create_product_for(user_name, product_id, payload)
+        product_name = await get_product_name(payload)
+        product = await create_or_update_product_for(user_name, product_id, payload, product_name)
         cl.user_session.set("product_name", product.name)
 
     save_file_to_private(user_name, product_id, "spec.txt", payload.encode("utf-8"), "text/plain")
@@ -71,23 +106,48 @@ async def ask_user(message: str):
 @cl.on_chat_start
 async def main():
     user_name = cl.user_session.get("user").identifier
-    user_obj = await User.find_one(User.username == user_name, fetch_links=True)
 
-    if len(user_obj.products) > 0:
-        # TODO: handle if product is in mongo, but not cloud storage
-        product_id = user_obj.products[-1].product_id
-        product_name = user_obj.products[-1].name
-        cl.user_session.set("product_id", product_id)
-        cl.user_session.set("product_name", product_name)
-        await cl.Message(
-            content=f"Welcome back, here is your last project: {product_name}.").send()
-        await populate_from_cloud_storage(user_name, product_id)
+    user = await User.find_one(User.username == user_name)
+
+    active_product = None
+    if user:
+        # First try to get the active product
+        active_product = await Product.find_one(
+            Product.user.id == user.id, Product.active == True
+        )
+
+        # Fallback to most recently created product
+        if not active_product:
+            active_product = await Product.find(
+                Product.user.id == user.id
+            ).sort([("_id", SortDirection.DESCENDING)]).first_or_none()
+
+    if active_product:
+        has_storage = await has_cloud_storage(user_name, active_product.product_id)
+        product_id = active_product.product_id
+        cl.user_session.set("product_id", active_product.product_id)
+        # Newly created product don't hav e product_name until the first spec is generated
+        product_name = active_product.name
+        if product_name:
+            cl.user_session.set("product_name", product_name)
+
+        if has_storage:
+            await cl.Message(
+                content=f"Welcome back, here is your last project: {product_name}.").send()
+            await populate_from_cloud_storage(user_name, product_id)
+            return
+        else:
+            # We are starting a new project
+            await cl.Message(content="Let's build you new product. We can build it together one step at a time,"
+                                     " or you can give me the full specification, and I will have it built.").send()
+            return
     else:
-        # When starting a new project, set the product_id to session_id
+        # When starting a new project for the first time, set the product_id to session_id
         cl.user_session.set("product_id", cl.user_session.get("id"))
-        await cl.Message(
-            content="Hello, I'm here to assist you with building your website. We can build it together one step at a time,"
-                    " or you can give me the full specification, and I will have it built.").send()
+
+    await cl.Message(
+        content="Hello, I'm here to assist you with building your website. We can build it together one step at a time,"
+                " or you can give me the full specification, and I will have it built.").send()
 
 
 @cl.on_window_message
@@ -112,6 +172,9 @@ async def window_message(message: str | dict):
         message_text = f"Deployed your website to: {url}"
         await asyncio.gather(cl.Message(content=message_text).send(),
                              cl.send_window_message({"method": "deploy_status", "body": message_text}))
+    elif method == "create_new_product":
+        await create_blank_product_for(user_name)
+        await cl.send_window_message({"method": "reload_product"})
     else:
         # TODO: remove this, it is replaced by the "ask_user" function callback
         await cl.Message(content=message).send()

@@ -1,11 +1,36 @@
-<div class="d-flex justify-between align-items-start mb-3">
+<div class="d-flex justify-content-between align-items-start mb-3">
     <h5 class="mb-0">Your Products</h5>
-    <button type="button" class="btn btn-primary ms-auto">Create</button>
+    <button type="button" id="create-btn" class="btn btn-primary ms-auto d-flex align-items-center">
+        <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+        <span>Create</span>
+    </button>
 </div>
 
 <ul class="list-group">
-    <!-- Placeholder items. Replace with Jinja loop in future -->
-    <li class="list-group-item">Product A</li>
-    <li class="list-group-item">Product B</li>
-    <li class="list-group-item">Product C</li>
+    {% for product in products %}
+        <li class="list-group-item">{{ product.name }}</li>
+    {% endfor %}
 </ul>
+
+<script>
+    const button = document.getElementById("create-btn");
+    const spinner = button.querySelector(".spinner-border");
+    const text = button.querySelector("span:last-child");
+
+    button.addEventListener("click", () => {
+        const chat = document.getElementById('chainlit');
+        if (chat) {
+            // Disable button
+            button.disabled = true;
+
+            // Show spinner
+            spinner.classList.remove("d-none");
+
+            // Send message
+            chat.contentWindow.postMessage({
+                method: "create_new_product",
+                body: ""
+            }, '*');
+        }
+    });
+</script>

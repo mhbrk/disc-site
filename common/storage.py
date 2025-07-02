@@ -9,6 +9,7 @@ from typing import Tuple, TypedDict, Union
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
+from google.api_core.exceptions import NotFound
 from google.cloud import storage
 from google.cloud.storage import Bucket, Blob
 
@@ -121,9 +122,12 @@ def save_spec(user_name: str, session_id: str, spec: str):
     blob.upload_from_string(spec)
 
 
-def read_spec_text(user_name: str, session_id: str) -> str:
-    blob = _user_session_blob(user_name, session_id, "spec.txt")
-    return blob.download_as_string().decode("utf-8")
+def read_spec_text(user_name: str, session_id: str) -> str | None:
+    try:
+        blob = _user_session_blob(user_name, session_id, "spec.txt")
+        return blob.download_as_string().decode("utf-8")
+    except NotFound:
+        return None
 
 
 def read_index_html(user_name: str, session_id: str) -> str:

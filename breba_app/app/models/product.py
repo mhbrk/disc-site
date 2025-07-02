@@ -12,6 +12,7 @@ class Product(Document):
     product_id: str = Field(default_factory=lambda: uuid4().hex)
     name: Optional[str] = None
     user: Link[User]
+    active: bool = False
     created_at: datetime.datetime = Field(default_factory=lambda: datetime.datetime.now(datetime.UTC))
 
     # Back-reference to deployments
