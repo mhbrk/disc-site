@@ -13,7 +13,9 @@ from models.product import Product
 from models.user import User
 from orchestrator import get_generator_response, to_builder, update_builder_spec, set_generator_response
 
+PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
 
+# TODO: move this and others to storage module of some kind
 async def has_cloud_storage(user_name: str, session_id: str):
     spec = read_spec_text(user_name, session_id)
     return spec is not None
@@ -38,7 +40,7 @@ async def create_blank_product_for(user_name: str):
         Set({Product.active: False})
     )
 
-    product = Product(user=user_obj, active=True)
+    product = Product(user=user_obj, name=PRODUCT_NAME_PLACEHOLDER, active=True)
     await product.insert()
     return product
 
@@ -57,7 +59,7 @@ async def set_product_active(user_name: str, product_id: str):
 
 async def create_or_update_product_for(user_name: str, product_id: str | None = None, product_spec: str = "",
                                        product_name: str | None = None):
-    user_obj = await User.find_one(User.username == user_name)
+    user_obj = await User.find_one(User.username == user_name, fetch_links=False)
 
     # Clear all active products
     await Product.find(Product.user.id == user_obj.id, Product.active == True).update(
@@ -69,7 +71,6 @@ async def create_or_update_product_for(user_name: str, product_id: str | None = 
     await Product.find_one(Product.product_id == product_id).upsert(
         Set({
             Product.name: product_name,
-            Product.user: user_obj.id,
             Product.active: True
         }),
         on_insert=product
@@ -82,7 +83,7 @@ async def builder_completed(payload: str):
     user_name = cl.user_session.get("user").identifier
     product_name = cl.user_session.get("product_name")
     # The only time product_name is empty is when we are creating a new product
-    if not product_name:
+    if not product_name or product_name == PRODUCT_NAME_PLACEHOLDER:
         product_name = await get_product_name(payload)
         product = await create_or_update_product_for(user_name, product_id, payload, product_name)
         cl.user_session.set("product_name", product.name)
