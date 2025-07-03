@@ -6,7 +6,6 @@ class TagAccumulator:
 
     def __init__(self):
         self.buffer = ""
-        self.started = False
         self.done = False
 
     def append_and_return_html(self, chunk: str) -> str:
