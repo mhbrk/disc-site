@@ -6,6 +6,7 @@ class TagAccumulator:
 
     def __init__(self):
         self.buffer = ""
+        self.started = False
         self.done = False
 
     def append_and_return_html(self, chunk: str) -> str:
@@ -17,6 +18,7 @@ class TagAccumulator:
         if self.done:
             return ""
         self.buffer += chunk
+        self.buffer = self.buffer.replace("::final html output::", "")
 
         matches = list(self.CLOSE_TAG_RE.finditer(self.buffer))
         if not matches:
