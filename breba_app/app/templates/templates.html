@@ -25,7 +25,6 @@
                 if (cards) cards.style.display = "none";
                 if (iframe) iframe.style.display = "block";
 
-                // Optional: Notify the Chainlit agent
                 const chat = document.getElementById('chainlit');
                 if (chat) {
                     chat.contentWindow.postMessage({
