@@ -17,6 +17,7 @@ class TagAccumulator:
         if self.done:
             return ""
         self.buffer += chunk
+        self.buffer = self.buffer.replace("::final html output::", "")
 
         matches = list(self.CLOSE_TAG_RE.finditer(self.buffer))
         if not matches:

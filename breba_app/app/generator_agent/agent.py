@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, AsyncIterable, Literal
+from typing import Any, Dict, AsyncIterable
 
 from langchain_community.tools import TavilySearchResults
 from langchain_core.messages import trim_messages, HumanMessage
@@ -7,7 +7,6 @@ from langchain_core.messages.utils import count_tokens_approximately
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
-from pydantic import BaseModel, Field
 
 from .generate_image import generate_image
 from .instruction_reader import get_instructions
@@ -18,10 +17,13 @@ logger = logging.getLogger(__name__)
 memory = MemorySaver()
 
 
-class ResponseFormat(BaseModel):
-    """Respond to the user in this format."""
-    status: Literal["input_required", "completed", "error"] = "input_required"
-    html_output: str = Field(description="The HTML content to be rendered as the final output.")
+def extract_html_content(content: str):
+    split_message = content.split("::final html output::")
+    if len(split_message) > 1:
+        return split_message[1]
+    else:
+        return ""
+
 
 def pre_model_hook(state):
     trimmed_messages = trim_messages(
@@ -29,12 +31,13 @@ def pre_model_hook(state):
         strategy="last",
         token_counter=count_tokens_approximately,
         max_tokens=10000,
-        start_on = [HumanMessage],
+        start_on=[HumanMessage],
         include_system=True,
     )
     # You can return updated messages either under `llm_input_messages` or
     # `messages` key (see the note below)
     return {"llm_input_messages": trimmed_messages}
+
 
 class HTMLAgent:
     SYSTEM_INSTRUCTION = get_instructions("generator_system_prompt")
@@ -49,8 +52,8 @@ class HTMLAgent:
         self.tools = [generate_image, search_tool]
 
         self.graph = create_react_agent(
-            self.model, tools=self.tools, pre_model_hook=pre_model_hook, checkpointer=memory, prompt=self.SYSTEM_INSTRUCTION,
-            response_format=ResponseFormat
+            self.model, tools=self.tools, pre_model_hook=pre_model_hook, checkpointer=memory,
+            prompt=self.SYSTEM_INSTRUCTION
         )
 
     def invoke(self, query, session_id):
@@ -85,45 +88,31 @@ class HTMLAgent:
     def get_last_html(self, session_id):
         config = {"configurable": {"thread_id": session_id}}
         current_state = self.graph.get_state(config)
-        structured_response = current_state.values.get('structured_response')
-        return structured_response.html_output
+        last_message = current_state.values.get('messages')[-1]
+        extracted_text = extract_html_content(last_message.content)
+        return extracted_text
 
     def set_last_html(self, session_id, html_output):
         config = {"configurable": {"thread_id": session_id}}
-        structured_response = ResponseFormat(status="completed", html_output=html_output)
-        self.graph.update_state(config, {"structured_response": structured_response,
-                                         "messages": [("user", html_output)]})
+        self.graph.update_state(config,
+                                {"messages": [("user", f"::final html output::{html_output}::final html output::")]})
 
     def get_agent_response(self, config):
         current_state = self.graph.get_state(config)
-        structured_response = current_state.values.get('structured_response')
-        if structured_response and isinstance(structured_response, ResponseFormat):
-            if structured_response.status == "input_required":
-                return {
-                    "is_task_complete": False,
-                    "require_user_input": True,
-                    "content": structured_response.message
-                }
-            elif structured_response.status == "error":
-                return {
-                    "is_task_complete": False,
-                    "require_user_input": True,
-                    "content": structured_response.message
-                }
-            elif structured_response.status == "completed":
-                return {
-                    "is_task_complete": True,
-                    "require_user_input": False,
-                    "content": structured_response.html_output
-                }
+        last_message = current_state.values.get('messages')[-1]
+        html_output = extract_html_content(last_message.content)
+        if html_output:
+            return {
+                "is_task_complete": True,
+                "require_user_input": False,
+                "content": html_output
+            }
 
         return {
             "is_task_complete": False,
             "require_user_input": True,
             "content": "We are unable to process your request at the moment. Please try again.",
         }
-
-    SUPPORTED_CONTENT_TYPES = ["text", "text/plain"]
 
 
 agent = HTMLAgent()
