@@ -42,20 +42,23 @@ async def start_streaming_task(user_name: str, session_id: str, query: str, gene
             await generator_callback(tag_html)
 
 
-async def to_builder(user_name: str, session_id: str, message: str, builder_completed_callback, ask_user_callback,
+async def to_builder(user_name: str, session_id: str, message: str, builder_completed_callback,
+                     message_to_user_callback,
                      generator_callback):
     agent_message = Message(role="user", parts=[TextPart(text=message)])
-
+    await message_to_user_callback("Builder is working on the specification...")
     agent_response = await builder_agent.invoke(user_name, session_id, agent_message)
     content = agent_response.get("content")
     is_task_completed = agent_response.get("is_task_complete")
 
     if is_task_completed:
         await builder_completed_callback(content)
+        await message_to_user_callback(
+            "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec")
         await start_streaming_task(user_name, session_id, content, generator_callback)
     else:
         logger.info(f"Waiting for user input: {content}")
-        await ask_user_callback(content)
+        await message_to_user_callback(content)
 
 
 async def update_builder_spec(session_id: str, message: str):
