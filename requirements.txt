@@ -13,7 +13,7 @@ starlette==0.41.3
 itsdangerous==2.2.0
 chainlit==2.5.5
 openai==1.82.0
-mcp~=1.9.2
+mcp~=1.10.1
 langchain-mcp-adapters
 google-cloud-storage>=3.1.0
 beanie==1.29.0
@@ -24,3 +24,4 @@ pytest~=8.4.0
 bcrypt
 passlib[bcrypt]
 boto3
+langchain_mcp_adapters~=0.1.8
