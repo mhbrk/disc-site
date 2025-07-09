@@ -4,9 +4,12 @@ from typing import Any, Dict, AsyncIterable
 from langchain_community.tools import TavilySearchResults
 from langchain_core.messages import trim_messages, HumanMessage
 from langchain_core.messages.utils import count_tokens_approximately
+from langchain_mcp_adapters.tools import load_mcp_tools
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
 
 from .generate_image import generate_image
 from .instruction_reader import get_instructions
@@ -43,18 +46,50 @@ class HTMLAgent:
     SYSTEM_INSTRUCTION = get_instructions("generator_system_prompt")
 
     def __init__(self):
-        search_tool = TavilySearchResults(
-            max_results=5,
-            include_images=True,
+        self.model = None
+        self.tools = None
+        self.graph = None
+        self._initialized = False
+        self._mcp_session = None
+        self._mcp_stream_ctx = None
+
+    async def ensure_initialized(self, pat: str):
+        if self._initialized:
+            return
+
+        search_tool = TavilySearchResults(max_results=5, include_images=True)
+        base_tools = [generate_image, search_tool]
+
+        headers = {"Authorization": f"Bearer {pat}"}
+
+        self._mcp_stream_ctx = streamablehttp_client(
+            url="https://api.githubcopilot.com/mcp/", headers=headers
         )
+        read, write, session_id_callback = await self._mcp_stream_ctx.__aenter__()
+        session = ClientSession(read, write)
+        await session.__aenter__()
+
+        await session.initialize()
+        mcp_tools = await load_mcp_tools(session)
 
         self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
-        self.tools = [generate_image, search_tool]
-
+        self.tools = base_tools + mcp_tools
         self.graph = create_react_agent(
-            self.model, tools=self.tools, pre_model_hook=pre_model_hook, checkpointer=memory,
+            self.model,
+            tools=self.tools,
+            pre_model_hook=pre_model_hook,
+            checkpointer=memory,
             prompt=self.SYSTEM_INSTRUCTION
         )
+
+        self._mcp_session = session
+        self._initialized = True
+
+    async def close(self):
+        if self._mcp_session:
+            await self._mcp_session.__aexit__(None, None, None)
+        if self._mcp_stream_ctx:
+            await self._mcp_stream_ctx.__aexit__(None, None, None)
 
     def invoke(self, query, session_id):
         # TODO: this is unused and outdated?

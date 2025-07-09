@@ -1,15 +1,11 @@
 import logging
 
-from builder_agent.agent import BuilderAgent
+from builder_agent.agent import agent as builder_agent
 from common.model import TextPart, Message
 from generator_agent.accumulator import TagAccumulator
-from generator_agent.agent import HTMLAgent
+from generator_agent.agent import agent as generator_agent
 
 logger = logging.getLogger(__name__)
-
-# TODO: should have the agents initialized per user session
-builder_agent = BuilderAgent()
-generator_agent = HTMLAgent()
 
 
 def get_generator_response(session_id: str):

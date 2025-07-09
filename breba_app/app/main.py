@@ -15,6 +15,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
 from starlette.staticfiles import StaticFiles
 
+from generator_agent.agent import agent
 from common.storage import read_image_from_private
 from config import init_db
 
@@ -28,7 +29,10 @@ PORT = int(os.environ.get("PORT", "8080"))
 @asynccontextmanager
 async def lifespan(app):
     await init_db()
+    pat = os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN")
+    await agent.ensure_initialized(pat)
     yield
+    await agent.close()
 
 
 app = FastAPI(lifespan=lifespan)
