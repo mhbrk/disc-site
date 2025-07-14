@@ -60,7 +60,11 @@ class HTMLAgent:
         search_tool = TavilySearchResults(max_results=5, include_images=True)
         base_tools = [generate_image, search_tool]
 
-        headers = {"Authorization": f"Bearer {pat}"}
+        headers = {
+            "Authorization": f"Bearer {pat}",
+            "X-MCP-Toolsets": "issues,users,pull_requests,orgs,repos",
+            "X-MCP-Readonly": "true"
+        }
 
         self._mcp_stream_ctx = streamablehttp_client(
             url="https://api.githubcopilot.com/mcp/", headers=headers
