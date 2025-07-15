@@ -21,4 +21,4 @@ typing_extensions>=4.14.0
 bcrypt
 passlib[bcrypt]
 boto3
-langchain_mcp_adapters~=0.1.8
+langchain_mcp_adapters~=0.1.9
