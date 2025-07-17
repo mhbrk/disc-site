@@ -16,7 +16,7 @@ openai==1.82.0
 mcp~=1.10.1
 langchain-mcp-adapters
 google-cloud-storage>=3.1.0
-beanie==1.29.0
+beanie~=1.30.0
 motor~=3.7.1
 protobuf~=5.29.5
 typing_extensions>=4.14.0
@@ -25,3 +25,4 @@ bcrypt
 passlib[bcrypt]
 boto3
 langchain_mcp_adapters~=0.1.9
+pytest-asyncio~=1.0.0
