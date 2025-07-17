@@ -33,7 +33,7 @@ def pre_model_hook(state):
         state["messages"],
         strategy="last",
         token_counter=count_tokens_approximately,
-        max_tokens=10000,
+        max_tokens=40000,
         start_on=[HumanMessage],
         include_system=True,
     )
