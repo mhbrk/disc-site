@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from beanie import Document, BackLink
 from pydantic import Field
+from pymongo import IndexModel
 
 
 class User(Document):
@@ -18,4 +19,7 @@ class User(Document):
 
     class Settings:
         name = "users"
+        indexes = [
+            IndexModel([("username", 1)], unique=True)
+        ]
 
