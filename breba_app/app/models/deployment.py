@@ -1,10 +1,10 @@
 import datetime
 import logging
 
-from beanie import Document, Link
+from beanie import Document, Link, PydanticObjectId
 from bson import DBRef
 from pydantic import Field
-from pymongo import IndexModel
+from pymongo import IndexModel, ReturnDocument
 
 from .product import Product
 from .user import User
@@ -28,7 +28,8 @@ class Deployment(Document):
         ]
 
     @classmethod
-    async def get_or_create(cls, deployment_id: str, product_id: str, username: str) -> tuple["Deployment", bool]:
+    async def get_or_create(cls, deployment_id: str, product_id: PydanticObjectId,
+                            user_id: PydanticObjectId) -> "Deployment":
         """
         Get existing deployment or create new one atomically using Beanie's upsert.
         Returns (deployment, created) where created is True if new deployment was created.
@@ -38,48 +39,29 @@ class Deployment(Document):
         - Product doesn't exist or doesn't belong to user
         - User does not exist
         """
-        # Find the user
-        user = await User.find_one(User.username == username)
-
-        if not user:
-            raise ValueError(f"User {username} does not exist")
-
-        # Verify product exists and belongs to the user
-        product = await Product.find_one(
-            Product.product_id == product_id,
-            Product.user.id == user.id,
-        )
-
-        if not product:
-            raise ValueError(f"Product {product_id} does not belong to user {username}")
-
-        # Create the document that would be inserted if not found
-        result = await Deployment.get_motor_collection().update_one(
+        # The key here is that we want to insert, only if it doesn't exist, but we don't want to update it if it exists.
+        # If it exists, we just want to return it after checking ownership
+        result = await Deployment.get_motor_collection().find_one_and_update(
             {"deployment_id": deployment_id},
             {
                 "$setOnInsert": {
                     "deployment_id": deployment_id,
-                    "user": user.id,
-                    "product": DBRef("products", product.id),
+                    "user": user_id,
+                    "product": DBRef("products", product_id),
                     "deployed_at": datetime.datetime.now(datetime.UTC)
                 }
             },
-            upsert=True
+            upsert=True,
+            return_document=ReturnDocument.AFTER
         )
 
-        deployment: None | cls = None
-        new_document = result.upserted_id is not None
-        # Check if it was inserted or already existed
-        if new_document:
-            deployment = await Deployment.get(result.upserted_id)
-        else:
-            deployment = await Deployment.find_one(Deployment.deployment_id == deployment_id)
-
-        if deployment is None:
+        if result is None:
             raise RuntimeError("Upsert operation failed unexpectedly")
 
-        # Check ownership
-        if deployment is not None and deployment.user.ref.id != user.id:
+        deployment = Deployment.model_validate(result, from_attributes=False)
+
+        # Check if this user owns it
+        if deployment.user.ref.id != user_id:
             raise ValueError(f"Deployment {deployment_id} exists but belongs to a different user")
 
-        return deployment, new_document
+        return deployment
