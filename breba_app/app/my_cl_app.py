@@ -1,20 +1,23 @@
 import asyncio
 
 import chainlit as cl
-from beanie import SortDirection
+from beanie import SortDirection, PydanticObjectId
 from beanie.odm.operators.update.general import Set
+from bson import DBRef
 from chainlit import Message
 
 from auth import verify_password
-from deployment_controller import run_deployment
 from common.storage import save_file_to_private, save_image_file_to_private, load_template, read_spec_text, \
-    read_index_html
+    read_index_html, get_public_url
+from deployment_controller import run_deployment
 from llm_utils import get_product_name
+from models.deployment import Deployment
 from models.product import Product
 from models.user import User
 from orchestrator import get_generator_response, to_builder, update_builder_spec, set_generator_response
 
 PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
+
 
 # TODO: move this and others to storage module of some kind
 async def has_cloud_storage(user_name: str, session_id: str):
@@ -117,8 +120,20 @@ async def ask_user(message: str):
     await cl.Message(content=message).send()
 
 
+async def update_deployments_list(product_id: PydanticObjectId):
+    deployments = await Deployment.find(Deployment.product == DBRef("products", product_id)).to_list()
+
+    if not deployments:
+        return  # Nothing do here
+
+    deployments_list = [{"id": str(deployment.id), "deployment_id": deployment.deployment_id,
+                         "url": get_public_url(deployment.deployment_id)} for deployment in deployments]
+    await cl.send_window_message({"method": "update_deployments_list", "body": deployments_list})
+
+
 async def update_products_list(products: list[Product]):
-    products_list = [{"product_id": product.product_id, "name": product.name, "active": product.active} for product in products]
+    products_list = [{"product_id": product.product_id, "name": product.name, "active": product.active} for product in
+                     products]
     await cl.send_window_message({"method": "update_products_list", "body": products_list})
 
 
@@ -144,6 +159,8 @@ async def main():
         asyncio.create_task(update_products_list(user.products))
 
     if active_product:
+        asyncio.create_task(update_deployments_list(active_product.id))
+
         has_storage = await has_cloud_storage(user_name, active_product.product_id)
         product_id = active_product.product_id
         cl.user_session.set("product_id", active_product.product_id)

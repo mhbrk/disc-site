@@ -11,6 +11,15 @@
     <!-- Status message -->
     <p id="deploy-status" class="form-text text-muted mt-2">
     </p>
+
+    <!-- List of known deployments -->
+    <div id="deploy-list" class="d-flex flex-column gap-2 mt-3"></div>
+    <template id="deploy-card-template">
+        <div class="card border rounded-3 shadow-sm px-3 py-2" data-id="">
+            <a class="fw-medium text-decoration-none text-primary text-break url-link" target="_blank"
+               rel="noopener noreferrer"></a>
+        </div>
+    </template>
 </div>
 
 <script>
@@ -55,6 +64,26 @@
         if (event.data.method === "deploy_status") {
             console.log('Deploy status message:', event.data);
             statusText.innerHTML = autoLink(event.data.body);
+        } else if (event.data.method === "update_deployments_list") {
+            const deployList = document.getElementById("deploy-list");
+            const template = document.getElementById("deploy-card-template");
+
+            deployList.innerHTML = "";
+
+            const deployments = event.data.body || [];
+
+            deployments.forEach(({id, url}) => {
+                const clone = template.content.cloneNode(true);
+
+                const card = clone.querySelector(".card");
+                const urlLink = clone.querySelector(".url-link");
+                urlLink.href = url;
+                urlLink.textContent = url;
+
+                card.dataset.id = id;
+
+                deployList.appendChild(clone);
+            });
         }
     });
 </script>
