@@ -6,7 +6,8 @@ from beanie.odm.operators.update.general import Set
 from chainlit import Message
 
 from auth import verify_password
-from common.storage import save_file_to_private, save_image_file_to_private, upload_site, load_template, read_spec_text, \
+from deployment_controller import run_deployment
+from common.storage import save_file_to_private, save_image_file_to_private, load_template, read_spec_text, \
     read_index_html
 from llm_utils import get_product_name
 from models.product import Product
@@ -188,8 +189,7 @@ async def window_message(message: str | dict):
         await populate_from_cloud_storage(user_name, product_id)
     elif method == "deploy":
         site_name = message.get("body")
-        url = upload_site(user_name, product_id, site_name)
-        message_text = f"Deployed your website to: {url}"
+        message_text = await run_deployment(user_name, product_id, site_name)
         await asyncio.gather(cl.Message(content=message_text).send(),
                              cl.send_window_message({"method": "deploy_status", "body": message_text}))
     elif method == "create_new_product":
