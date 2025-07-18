@@ -61,10 +61,6 @@ async def test_product(init_test_db, mock_user):
     await product.delete()
 
 
-# -------------------------------
-# 🧪 Function-based Test Versions
-# -------------------------------
-
 @pytest.mark.asyncio
 async def test_concurrent_get_or_create_same_deployment(mock_user, test_product):
     deployment_id = f"test-deployment-{uuid.uuid4().hex[:8]}"
