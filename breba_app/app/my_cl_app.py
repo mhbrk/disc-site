@@ -121,7 +121,7 @@ async def ask_user(message: str):
 
 
 async def update_deployments_list(product_id: PydanticObjectId):
-    deployments = await Deployment.find(Deployment.product == DBRef("products", product_id)).to_list()
+    deployments = await Deployment.find(Deployment.product == DBRef("products", product_id)).sort([("deployed_at", SortDirection.DESCENDING)]).to_list()
 
     if not deployments:
         return  # Nothing do here
@@ -206,9 +206,15 @@ async def window_message(message: str | dict):
         await populate_from_cloud_storage(user_name, product_id)
     elif method == "deploy":
         site_name = message.get("body")
-        message_text = await run_deployment(user_name, product_id, site_name)
+        # TODO: This needs to go awaay
+        # TODO: optimize this. Product_id should come with the request from the forntend
+        #  (in fact this is a bug that product is stored in session).
+        product = await Product.find_one(Product.product_id == product_id)
+        message_text = await run_deployment(user_name, product, site_name)
+
         await asyncio.gather(cl.Message(content=message_text).send(),
-                             cl.send_window_message({"method": "deploy_status", "body": message_text}))
+                             cl.send_window_message({"method": "deploy_status", "body": message_text}),
+                             update_deployments_list(product.id))
     elif method == "create_new_product":
         await create_blank_product_for(user_name)
         await cl.send_window_message({"method": "reload_product"})
