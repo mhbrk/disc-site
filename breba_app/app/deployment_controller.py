@@ -12,6 +12,8 @@ async def run_deployment(username: str, product: Product, deployment_id: str) ->
     try:
         deployment = await Deployment.get_or_create(deployment_id, product.id, user.id)
         url = upload_site(username, product.product_id, deployment.deployment_id)
+        # TODO: Why are we updating the timestamp? maybe instead of get_or create should update or create
+        await deployment.update_deployment_timestamp()
         return f"Deployed your website to: {url}"
     except Exception as e:
         return f"Could not deploy to {deployment_id}. It is probably already taken by another user"
