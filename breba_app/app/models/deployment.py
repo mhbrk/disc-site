@@ -27,6 +27,10 @@ class Deployment(Document):
             IndexModel([("product", 1)])
         ]
 
+    async def update_deployment_timestamp(self):
+        self.deployed_at = datetime.datetime.now(datetime.UTC)
+        await self.save()
+
     @classmethod
     async def get_or_create(cls, deployment_id: str, product_id: PydanticObjectId,
                             user_id: PydanticObjectId) -> "Deployment":
