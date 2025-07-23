@@ -1,4 +1,5 @@
 import logging
+import datetime
 from typing import Any, Dict, AsyncIterable
 
 from langchain_community.tools import TavilySearchResults
@@ -102,10 +103,12 @@ class HTMLAgent:
         return self.get_agent_response(config)
 
     async def stream(self, query: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # TODO: username needs to be used as a static parameter to the tool call
         #  For this need to redo the generator agent using custom graph or using baml
         inputs = {"messages": [("user", f"Your session id is: {session_id}."),
                                ("user", f"The user name for tool use is: {user_name}."),
+                               ("user", f"Current time is: {current_time}"),
                                ("user", query)]}
 
         config = {"configurable": {"thread_id": session_id}}
