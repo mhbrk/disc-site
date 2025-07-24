@@ -69,7 +69,7 @@ class BuilderAgent:
         """
         if len(state["messages"]) > 1:
             message = state["messages"][-1].content
-            split_message = message.split("::final prompt result::")
+            split_message = message.split("::final website specification::")
 
             if len(split_message) > 1 and split_message[1]:
                 return True
@@ -91,7 +91,7 @@ class BuilderAgent:
         """
         last_message = state["messages"][-1]
         message = last_message.content
-        split_message = message.split("::final prompt result::")
+        split_message = message.split("::final website specification::")
         prompt = ""
         if len(split_message) > 1:
             prompt = split_message[1]
@@ -107,7 +107,7 @@ class BuilderAgent:
             state["messages"],
             strategy="last",
             token_counter=count_tokens_approximately,
-            max_tokens=10000,
+            max_tokens=30000,
             start_on=[HumanMessage],
             include_system=True,
         )
@@ -191,7 +191,7 @@ class BuilderAgent:
         # Must add to messages in order to be able to continue conversation
         await self.app.aupdate_state(config, {"prompt": prompt, "messages": [
             ("user", f"Load the following spec: {prompt}"),
-            ("ai", f"::final prompt result::\n{prompt}\n::final prompt result::")]}, as_node="extract_prompt")
+            ("ai", f"::final website specification::\n{prompt}\n::final website specification::")]}, as_node="extract_prompt")
 
 
 if os.environ.get("OPENAI_API_KEY") is None:
