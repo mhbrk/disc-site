@@ -166,9 +166,8 @@
         if (chat) {
             const prompt = {
                 method: "to_generator",
-                body: "Given the generated HTML page, the user selected the following text: " + selection + ". " +
-                    "The user comment regarding this text is:  " + query + ". " +
-                    "Do not ask questions, just do it."
+                body: "Given the following text:" + selection + ".\n" +
+                    "Here is my comment: " + query
             };
             chat.contentWindow.postMessage(prompt, '*');
         }

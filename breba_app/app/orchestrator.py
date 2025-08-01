@@ -58,9 +58,9 @@ async def to_generator(user_name: str, session_id: str, message: str, builder_co
     new_html = generator_agent.get_last_html(session_id)
     diff = get_html_diff(old_html, new_html)
 
-    agent_message = Message(role="user", parts=[TextPart(text=f"After user left this: {message} \n"
+    agent_message = Message(role="user", parts=[TextPart(text=f"After I sent this message to the generator: {message} \n"
                                                               f"\n The generator modified the output according to this diff {diff}.\n"
-                                                              f"Modify website specification to accommodate user request, but only if the root cause of the problem stemmed from the insufficient website specification. \n"
+                                                              f"Modify website specification to accommodate my message, but only if the root cause of the problem stemmed from the insufficient website specification. \n"
                                                               f"IMPORTANT: If the diff shows that an the issued stemmed from a bug in the implementation, do not modify the website specification.")])
 
     # TODO: should probably ask user to confirm
