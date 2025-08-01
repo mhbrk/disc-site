@@ -1,5 +1,5 @@
-import logging
 import datetime
+import logging
 from typing import Any, Dict, AsyncIterable
 
 from langchain_community.tools import TavilySearchResults
@@ -9,6 +9,7 @@ from langchain_mcp_adapters.tools import load_mcp_tools
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
+from langgraph.prebuilt.chat_agent_executor import AgentState
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
@@ -41,6 +42,10 @@ def pre_model_hook(state):
     # You can return updated messages either under `llm_input_messages` or
     # `messages` key (see the note below)
     return {"llm_input_messages": trimmed_messages}
+
+
+class GeneratorState(AgentState):
+    specification: str
 
 
 class HTMLAgent:
@@ -82,6 +87,7 @@ class HTMLAgent:
         self.graph = create_react_agent(
             self.model,
             tools=self.tools,
+            state_schema=GeneratorState,
             pre_model_hook=pre_model_hook,
             checkpointer=memory,
             prompt=self.SYSTEM_INSTRUCTION
@@ -106,10 +112,13 @@ class HTMLAgent:
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # TODO: username needs to be used as a static parameter to the tool call
         #  For this need to redo the generator agent using custom graph or using baml
-        inputs = {"messages": [("user", f"Your session id is: {session_id}."),
-                               ("user", f"The user name for tool use is: {user_name}."),
-                               ("user", f"Current time is: {current_time}"),
-                               ("user", query)]}
+        inputs = {
+            "messages": [("user", f"Your session id is: {session_id}."),
+                         ("user", f"The user name for tool use is: {user_name}."),
+                         ("user", f"Current time is: {current_time}"),
+                         ("user", query)],
+            "specification": query
+        }
 
         config = {"configurable": {"thread_id": session_id}}
 
@@ -126,6 +135,38 @@ class HTMLAgent:
                 logger.info(data["messages"][-1].pretty_repr())
 
         yield self.get_agent_response(config)
+
+    async def editing_stream(self, query: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # TODO: username needs to be used as a static parameter to the tool call
+        #  For this need to redo the generator agent using custom graph or using baml
+        inputs = {"messages": [("user", f"Your session id is: {session_id}."),
+                               ("user", f"The user name for tool use is: {user_name}."),
+                               ("user", f"Current time is: {current_time}"),
+                               ("user", self.get_last_specification(session_id)),
+                               ("user", query)],
+                  }
+
+        config = {"configurable": {"thread_id": session_id}}
+
+        async for mode, data in self.graph.astream(inputs, config, stream_mode=["messages", "values"]):
+            if mode == "messages":
+                chunk, metadata = data
+                if metadata["langgraph_node"] == "agent" and chunk.content:
+                    yield {
+                        "is_task_complete": False,
+                        "require_user_input": False,
+                        "content": chunk.content,
+                    }
+            if mode == "values":
+                logger.info(data["messages"][-1].pretty_repr())
+
+        yield self.get_agent_response(config)
+
+    def get_last_specification(self, session_id):
+        config = {"configurable": {"thread_id": session_id}}
+        current_state = self.graph.get_state(config)
+        return current_state.values.get('specification')
 
     def get_last_html(self, session_id):
         config = {"configurable": {"thread_id": session_id}}
