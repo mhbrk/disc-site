@@ -14,7 +14,7 @@ from llm_utils import get_product_name
 from models.deployment import Deployment
 from models.product import Product
 from models.user import User
-from orchestrator import get_generator_response, to_builder, update_builder_spec, set_generator_response
+from orchestrator import get_generator_response, to_builder, update_builder_spec, set_generator_response, to_generator
 
 PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
 
@@ -121,7 +121,8 @@ async def ask_user(message: str):
 
 
 async def update_deployments_list(product_id: PydanticObjectId):
-    deployments = await Deployment.find(Deployment.product == DBRef("products", product_id)).sort([("deployed_at", SortDirection.DESCENDING)]).to_list()
+    deployments = await Deployment.find(Deployment.product == DBRef("products", product_id)).sort(
+        [("deployed_at", SortDirection.DESCENDING)]).to_list()
 
     if not deployments:
         return  # Nothing do here
@@ -201,6 +202,9 @@ async def window_message(message: str | dict):
         await to_builder(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
                          builder_completed,
                          ask_user, process_generator_message)
+    elif method == "to_generator":
+        await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
+                           builder_completed, process_generator_message, ask_user)
     elif method == "load_template":
         load_template(user_name, product_id, message.get("body"))
         await populate_from_cloud_storage(user_name, product_id)
