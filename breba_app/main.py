@@ -16,7 +16,7 @@ from starlette.responses import RedirectResponse
 from starlette.staticfiles import StaticFiles
 
 from generator_agent.agent import agent
-from common.storage import read_image_from_private
+from storage import read_image_from_private
 from config import init_db
 
 logging.basicConfig(level=logging.INFO, )
@@ -44,9 +44,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-templates = Jinja2Templates(directory="templates")
+app_path = Path(__file__).parent
 
-app.mount("/public", StaticFiles(directory="public"), name="public")
+templates = Jinja2Templates(directory=app_path / "templates")
+
+app.mount("/public",
+          StaticFiles(directory=app_path / "public"),
+          name="public")
 
 
 @app.get("/favicon.ico")

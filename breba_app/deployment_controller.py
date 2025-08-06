@@ -1,4 +1,4 @@
-from common.storage import upload_site
+from storage import upload_site
 from models.deployment import Deployment
 from models.product import Product
 from models.user import User

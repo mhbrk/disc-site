@@ -143,7 +143,7 @@ class HTMLAgent:
         inputs = {"messages": [("user", f"Your session id is: {session_id}."),
                                ("user", f"The user name for tool use is: {user_name}."),
                                ("user", f"Current time is: {current_time}"),
-                               ("user", self.get_last_specification(session_id)),
+                               ("user", f"Current specification is: {self.get_last_specification(session_id)}"),
                                ("user", query)],
                   }
 
