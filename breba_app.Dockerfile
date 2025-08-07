@@ -12,9 +12,10 @@ RUN apt-get update && apt-get install -y \
 
 # Copy the entire app into the image
 COPY breba_app ./breba_app
+COPY ./requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r breba_app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Command to run the app with uvicorn
 CMD ["python", "breba_app/main.py"]

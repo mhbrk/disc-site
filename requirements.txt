@@ -26,3 +26,4 @@ passlib[bcrypt]
 boto3
 langchain_mcp_adapters~=0.1.9
 pytest-asyncio~=1.0.0
+unidiff
