@@ -2,7 +2,7 @@ import difflib
 import logging
 
 from builder_agent.agent import agent as builder_agent
-from common.model import TextPart, Message
+from agent_model import TextPart, Message
 from generator_agent.accumulator import TagAccumulator
 from generator_agent.agent import agent as generator_agent
 

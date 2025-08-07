@@ -1,7 +1,7 @@
 from collections import defaultdict
 from unittest.mock import Mock, patch
 
-from common.storage import list_files_structured, register_file, make_dir_tree, format_tree, list_files_in_private
+from breba_app.storage import list_files_structured, register_file, make_dir_tree, format_tree, list_files_in_private
 
 
 class MockBlob:
@@ -46,7 +46,7 @@ def test_list_files_structured_single_file():
         mock_bucket.list_blobs.return_value = [mock_blob]
 
         # Patch the private_bucket in the storage module
-        with patch('common.storage.private_bucket', mock_bucket):
+        with patch('breba_app.storage.private_bucket', mock_bucket):
             result = list_files_structured("test_session")
 
         expected = defaultdict(dict, {
@@ -69,7 +69,7 @@ def test_list_files_structured_nested():
         ]
         mock_bucket.list_blobs.return_value = mock_blobs
 
-        with patch('common.storage.private_bucket', mock_bucket):
+        with patch('breba_app.storage.private_bucket', mock_bucket):
             result = list_files_structured("test_session")
 
         expected = defaultdict(dict, {
@@ -93,7 +93,7 @@ def test_list_files_structured_no_metadata():
         mock_blob = MockBlob("test_session/images/no_meta.png")
         mock_bucket.list_blobs.return_value = [mock_blob]
 
-        with patch('common.storage.private_bucket', mock_bucket):
+        with patch('breba_app.storage.private_bucket', mock_bucket):
             result = list_files_structured("test_session")
 
         expected = defaultdict(dict, {
@@ -114,7 +114,7 @@ def test_list_files_structured_multiple_sessions():
         ]
         mock_bucket.list_blobs.return_value = mock_blobs
 
-        with patch('common.storage.private_bucket', mock_bucket):
+        with patch('breba_app.storage.private_bucket', mock_bucket):
             result = list_files_structured("session1")
 
         # Assert list_blobs was called with the correct prefix
@@ -156,7 +156,7 @@ def test_list_files_in_private():
     ]
     mock_bucket.list_blobs.return_value = mock_blobs
 
-    with patch('common.storage.private_bucket', mock_bucket):
+    with patch('breba_app.storage.private_bucket', mock_bucket):
         result = list_files_in_private("test_session")
 
     expected = (
@@ -177,7 +177,7 @@ def test_list_files_in_private_no_metadata():
     ]
     mock_bucket.list_blobs.return_value = mock_blobs
 
-    with patch('common.storage.private_bucket', mock_bucket):
+    with patch('breba_app.storage.private_bucket', mock_bucket):
         result = list_files_in_private("test_session")
 
     expected = (

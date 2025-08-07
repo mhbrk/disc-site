@@ -13,8 +13,8 @@ from langgraph.constants import START, END
 from langgraph.graph import StateGraph, MessagesState
 from langgraph.types import interrupt, Command
 
-from common.model import Message
-from common.storage import list_files_in_private
+from breba_app.agent_model import Message
+from breba_app.storage import list_files_in_private
 from .instruction_reader import get_instructions
 
 

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from langchain_core.tools import tool
 from openai import AsyncOpenAI
 
-from common.storage import save_image_to_private, public_file_url
+from breba_app.storage import save_image_to_private, public_file_url
 
 logger = logging.getLogger(__name__)
 

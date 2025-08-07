@@ -7,7 +7,7 @@ from bson import DBRef
 from chainlit import Message
 
 from auth import verify_password
-from common.storage import save_file_to_private, save_image_file_to_private, load_template, read_spec_text, \
+from storage import save_file_to_private, save_image_file_to_private, load_template, read_spec_text, \
     read_index_html, get_public_url
 from deployment_controller import run_deployment
 from llm_utils import get_product_name
