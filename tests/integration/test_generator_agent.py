@@ -15,7 +15,7 @@ from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
-from breba_app.app.generator_agent.agent import HTMLAgent  # Adjust this import
+from breba_app.generator_agent.agent import HTMLAgent  # Adjust this import
 
 
 def normalize_kwargs(args):
@@ -79,16 +79,17 @@ async def test_stream_has_current_date(tmp_path):
     user_name = "test-user"
     fixed_dt = datetime.datetime(2023, 1, 1, 15, 30, 0)
 
+    agent = HTMLAgent()
+
     try:
-        with patch("breba_app.app.generator_agent.agent.ChatOpenAI",
+        with patch("breba_app.generator_agent.agent.ChatOpenAI",
                    lambda *args, **kwargs: RecordingChatOpenAI("test_stream_has_current_date", *args, **kwargs)), \
-                patch("breba_app.app.generator_agent.agent.datetime") as mock_datetime:
+                patch("breba_app.generator_agent.agent.datetime") as mock_datetime:
             # TODO: datetime should come form some sort of context getter, and we would mock the getter
             # We want to make sure the timestamp is the same across all calls.
             mock_datetime.datetime.now.return_value = fixed_dt
             mock_datetime.datetime.strftime = datetime.datetime.strftime
 
-            agent = HTMLAgent()
             await agent.ensure_initialized(os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN"))
 
             # Run the agent's stream method

@@ -8,9 +8,9 @@ from beanie import init_beanie
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from breba_app.app.models.deployment import Deployment
-from breba_app.app.models.product import Product
-from breba_app.app.models.user import User
+from breba_app.models.deployment import Deployment
+from breba_app.models.product import Product
+from breba_app.models.user import User
 
 
 @pytest.fixture(scope="session")
