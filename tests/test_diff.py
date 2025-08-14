@@ -47,13 +47,13 @@ def test_apply_diff_correct(original_html, modified_html, valid_diff):
 
 
 def test_apply_diff_context_not_found(original_html, valid_diff):
-    modified_content = original_html.replace("<h1>Hello World</h1>", "<h1>Hi Universe</h1>")
+    modified_content = original_html.replace("<div class=\"center-message\">", "<h1>Hi Universe</h1>")
     with pytest.raises(PatchApplyError):
         apply_diff(modified_content, valid_diff)
 
 
 def test_apply_diff_add_remove_not_found(original_html, valid_diff):
-    modified_content = original_html.replace("<p>This is the original HTML content.</p>", "<p>Changed content.</p>")
+    modified_content = original_html.replace("Hello World", "<p>Changed content.</p>")
     with pytest.raises(PatchApplyError):
         apply_diff(modified_content, valid_diff)
 
