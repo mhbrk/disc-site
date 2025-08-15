@@ -1,8 +1,9 @@
 import difflib
 import logging
 
-from builder_agent.agent import agent as builder_agent
 from agent_model import TextPart, Message
+from breba_app.diff import PatchApplyError
+from builder_agent.agent import agent as builder_agent
 from generator_agent.accumulator import TagAccumulator
 from generator_agent.agent import agent as generator_agent
 
@@ -55,9 +56,16 @@ async def start_streaming_task(user_name: str, session_id: str, query: str, gene
 
 
 async def start_editing_task(user_name: str, session_id: str, query: str, generator_callback):
-    accumulator = TagAccumulator()
-    async for chunk in generator_agent.editing_stream(query, user_name, session_id):
-        await process_chunk(accumulator, chunk, generator_callback)
+    try:
+        update = await generator_agent.diffing_update(query, session_id)
+        # TODO: this is funky. Using generator_callback like this needs to be codified. Maybe use a class instead of a function
+        await generator_callback(update)
+        await generator_callback("__completed__")
+    except PatchApplyError as e:
+        logger.error(f"Error applying patch: {e}")
+        accumulator = TagAccumulator()
+        async for chunk in generator_agent.editing_stream(query, user_name, session_id):
+            await process_chunk(accumulator, chunk, generator_callback)
 
 
 async def to_generator(user_name: str, session_id: str, message: str, builder_completed_callback, generator_callback,
@@ -66,6 +74,7 @@ async def to_generator(user_name: str, session_id: str, message: str, builder_co
     await message_to_user_callback("Generator is processing your request...")
     await start_editing_task(user_name, session_id, message, generator_callback)
     new_html = generator_agent.get_last_html(session_id)
+    # TODO: use diff module
     diff = get_html_diff(old_html, new_html)
 
     agent_message = Message(role="user", parts=[TextPart(text=f"{message} \n"
@@ -74,7 +83,8 @@ async def to_generator(user_name: str, session_id: str, message: str, builder_co
                                                               f"IMPORTANT: If the diff shows that an the issue stemmed from a bug in the implementation, do not modify the website specification.")])
 
     # TODO: should probably ask user to confirm
-    await message_to_user_callback("Rebuilding the specification... Please wait for completion before doing anything else")
+    await message_to_user_callback(
+        "Rebuilding the specification... Please wait for completion before doing anything else")
     agent_response = await builder_agent.invoke(user_name, session_id, agent_message)
     await message_to_user_callback("Rebuild specification task is now complete.")
 

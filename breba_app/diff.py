@@ -1,7 +1,5 @@
 import difflib
 
-from unidiff import PatchSet
-
 
 class PatchApplyError(Exception):
     pass
@@ -69,10 +67,6 @@ def validate_diff(diff_text: str):
         else:
             # Invalid line in hunk
             raise PatchApplyError(f"Invalid line in hunk: {line!r}")
-
-    # Check if the last hunk had content
-    if in_hunk and not hunk_has_content:
-        raise PatchApplyError("Last hunk is empty")
 
 
 def apply_diff_no_line_numbers(original_text: str, diff_text: str) -> str:
