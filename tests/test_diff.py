@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from breba_app.diff import apply_diff, get_diff, PatchApplyError
+from breba_app.diff import get_diff, PatchApplyError, apply_diff_no_line_numbers
 
 
 @pytest.fixture(scope="session")
@@ -42,25 +42,25 @@ def invalid_diff():
 
 
 def test_apply_diff_correct(original_html, modified_html, valid_diff):
-    result = apply_diff(original_html, valid_diff)
+    result = apply_diff_no_line_numbers(original_html, valid_diff)
     assert result == modified_html
 
 
 def test_apply_diff_context_not_found(original_html, valid_diff):
     modified_content = original_html.replace("<div class=\"center-message\">", "<h1>Hi Universe</h1>")
     with pytest.raises(PatchApplyError):
-        apply_diff(modified_content, valid_diff)
+        apply_diff_no_line_numbers(modified_content, valid_diff)
 
 
 def test_apply_diff_add_remove_not_found(original_html, valid_diff):
     modified_content = original_html.replace("Hello World", "<p>Changed content.</p>")
     with pytest.raises(PatchApplyError):
-        apply_diff(modified_content, valid_diff)
+        apply_diff_no_line_numbers(modified_content, valid_diff)
 
 
 def test_apply_diff_invalid_diff(original_html, invalid_diff):
     with pytest.raises(PatchApplyError):
-        apply_diff(original_html, invalid_diff)
+        apply_diff_no_line_numbers(original_html, invalid_diff)
 
 
 def test_generated_diff_format(valid_diff):
