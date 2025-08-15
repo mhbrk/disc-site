@@ -127,7 +127,7 @@ def find_hunk_start(original_lines, hunk_lines):
             lines_to_match.append(line[1:])  # remove the prefix
 
     if not lines_to_match:
-        raise PatchApplyError("Hunk has no context or removed lines to match against")
+        raise PatchApplyError(f"Hunk has no context or removed lines to match against: {hunk_lines}")
 
     # Find where this sequence appears in the original
     for i in range(len(original_lines) - len(lines_to_match) + 1):

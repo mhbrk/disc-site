@@ -140,6 +140,7 @@ class HTMLAgent:
 
     async def diffing_update(self, query: str, session_id: str):
         html = self.get_last_html(session_id)
+        # Will raise an exception if the diff is too long
         diff = await diff_text(html, query)
         modified = apply_diff_no_line_numbers(html, diff)
         self.set_last_html(session_id, modified)

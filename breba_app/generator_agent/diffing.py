@@ -26,13 +26,23 @@ async def diff_stream(html: str, prompt: str):
         ],
     )
 
-    async for event in stream:
-        if event.type == "response.output_text.delta":
-            yield event.delta
+    try:
+        async for event in stream:
+            if event.type == "response.output_text.delta":
+                yield event.delta
+    finally:
+        await stream.close()  # ensure connection closes
 
 
-async def diff_text(html: str, prompt: str):
+async def diff_text(html: str, prompt: str, max_lines: int = 100):
     diff = ""
-    async for chunk in diff_stream(html, prompt):
-        diff += chunk
+    agen = diff_stream(html, prompt)
+    try:
+        async for chunk in agen:
+            diff += chunk
+            if len(diff.splitlines()) > max_lines:
+                raise Exception("Diff too long")
+    except:
+        await agen.aclose()  # Ensure cleanup in diff_stream runs
+        raise
     return diff
