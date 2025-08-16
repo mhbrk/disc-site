@@ -15,6 +15,7 @@ COPY breba_app ./breba_app
 COPY ./requirements.txt .
 # Public direcotry is used by chainlit to get files. Needs to be on the level of working directory
 COPY breba_app/public ./public
+COPY breba_app/.chainlit ./.chainlit
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
