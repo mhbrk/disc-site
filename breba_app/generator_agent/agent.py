@@ -13,6 +13,8 @@ from langgraph.prebuilt.chat_agent_executor import AgentState
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
+from breba_app.diff import apply_diff_no_line_numbers
+from .diffing import diff_text
 from .generate_image import generate_image
 from .instruction_reader import get_instructions
 
@@ -135,6 +137,14 @@ class HTMLAgent:
                 logger.info(data["messages"][-1].pretty_repr())
 
         yield self.get_agent_response(config)
+
+    async def diffing_update(self, query: str, session_id: str):
+        html = self.get_last_html(session_id)
+        # Will raise an exception if the diff is too long
+        diff = await diff_text(html, query)
+        modified = apply_diff_no_line_numbers(html, diff)
+        self.set_last_html(session_id, modified)
+        return modified
 
     async def editing_stream(self, query: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
