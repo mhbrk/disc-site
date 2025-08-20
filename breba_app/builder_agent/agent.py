@@ -52,6 +52,11 @@ class BuilderAgent:
 
         # Define transitions: agent → tools, then loop back to agent
         graph.add_edge(START, "agent")
+        # TODO: this logic is a bit outdated. Sometimes when editing, the task may not not required a final prompt (e.g. generator providing diff that results in no updates)
+        #  This can be fixed by:
+        #  1) using a different graph or agent for editing
+        #  2) using a different entry point
+        #  3) Changing the graph to check for question explicitly. e.g. "Is this a final prompt or is a question?"
         graph.add_conditional_edges("agent", self.is_final_prompt, {True: "extract_prompt", False: "get_user_input"})
         graph.add_edge("get_user_input", "agent")
         graph.add_edge("extract_prompt", END)
@@ -137,6 +142,7 @@ class BuilderAgent:
     async def invoke(self, user_name: str, session_id: str, user_input: Message):
         config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id})
         # Preset the state
+        # TODO: this should be only done once
         await self.app.aupdate_state(config, {"user_name": user_name}, as_node="extract_prompt")
         # if the agent is waiting for user input
         if self.is_waiting_for_user_input(config):
