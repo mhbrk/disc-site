@@ -61,7 +61,7 @@ async def start_editing_task(user_name: str, session_id: str, query: str, genera
         # TODO: this is funky. Using generator_callback like this needs to be codified. Maybe use a class instead of a function
         await generator_callback(update)
         await generator_callback("__completed__")
-    except PatchApplyError as e:
+    except Exception as e:
         logger.error(f"Error applying patch: {e}")
         accumulator = TagAccumulator()
         async for chunk in generator_agent.editing_stream(query, user_name, session_id):
