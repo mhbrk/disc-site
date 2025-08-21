@@ -46,6 +46,7 @@ async def diff_text(html: str, prompt: str, max_lines: int = 100):
             diff += chunk
             if len(diff.splitlines()) > max_lines:
                 logger.info(f"Diff is longer than {max_lines} lines, aborting. Prompt: {prompt}")
+                logger.info(f"Diff: {diff}")
                 raise Exception("Diff too long")
     except:
         await agen.aclose()  # Ensure cleanup in diff_stream runs

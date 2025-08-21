@@ -38,9 +38,9 @@ def validate_diff(diff_text: str):
             break  # We found at least one hunk header
 
     if not has_minus_header:
-        raise PatchApplyError("Missing '--- ' header line")
+        pass  # raise PatchApplyError("Missing '--- ' header line") -- Sometimes this header is missing
     if not has_plus_header:
-        raise PatchApplyError("Missing '+++ ' header line")
+        pass  # raise PatchApplyError("Missing '+++ ' header line") -- Sometimes this header is missing
     if not has_hunk_header:
         raise PatchApplyError("Missing '@@ ... @@' hunk header")
 
@@ -51,7 +51,7 @@ def validate_diff(diff_text: str):
     for line in lines:
         if line.startswith("@@"):
             if in_hunk and not hunk_has_content:
-                raise PatchApplyError("Empty hunk found")
+                pass  # raise PatchApplyError("Empty hunk found") -- Sometimes at the end there is an empty hunk
             in_hunk = True
             hunk_has_content = False
             continue
