@@ -9,12 +9,14 @@
     /* Breba Brand Colors - New Color Palette */
     --breba-primary: #5F31EB;      /* Primary brand color - Purple */
     --breba-secondary: #EAE7F2;    /* Secondary brand color - Light Purple */
+    --breba-secondary-bg: #A696C8;    /* Secondary brand color - Light Purple */
+    --breba-secondary-bg2: #373640;    /* Secondary brand color - Light Purple */
     --breba-accent: #EDD9DA;       /* Accent color - Light Pink */
     --breba-dark: #212529;         /* Dark color - Almost Black */
     --breba-success: #10b981;      /* Success green */
     --breba-warning: #f59e0b;      /* Warning yellow */
     --breba-error: #ef4444;        /* Error red */
-    
+
     /* Neutral Colors */
     --white: #ffffff;
     --gray-50: #f9fafb;
@@ -27,19 +29,19 @@
     --gray-700: #374151;
     --gray-800: #1f2937;
     --gray-900: #111827;
-    
+
     /* Breba Gradients */
     --gradient-primary: linear-gradient(135deg, var(--breba-primary) 0%, #7c3aed 100%);
     --gradient-secondary: linear-gradient(135deg, var(--breba-secondary) 0%, var(--breba-accent) 100%);
     --gradient-hero: linear-gradient(135deg, var(--breba-primary) 0%, var(--breba-accent) 100%);
     --gradient-card: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-    
+
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    
+
     /* Typography */
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-size-xs: 0.75rem;
@@ -57,7 +59,7 @@
 body {
     font-family: var(--font-family);
     line-height: 1.6;
-    color: var(--gray-800);
+    color: var(--breba-secondary);
     background-color: var(--white);
 }
 
@@ -200,7 +202,7 @@ body {
 /* Hero Section */
 .hero {
     padding: 8rem 0 4rem;
-    background: linear-gradient(135deg, var(--breba-dark) 0%, #2d3748 50%, #4a5568 100%);
+    background: linear-gradient(0deg, var(--breba-dark) 0%, #2d3748 50%, #4a5568 100%);
     color: var(--white);
     position: relative;
     overflow: hidden;
@@ -521,25 +523,25 @@ section {
     font-size: var(--font-size-4xl);
     font-weight: 700;
     margin-bottom: 1rem;
-    color: var(--gray-900);
+    color: var(--breba-secondary);
 }
 
 .section-header p {
     font-size: var(--font-size-xl);
-    color: var(--gray-600);
+    color: var(--breba-secondary);
     max-width: 600px;
     margin: 0 auto;
 }
 
 /* Features Section */
 .features {
-    background: var(--gray-50);
+    background: var(--breba-dark);
 }
 
 /* Why Breba Section */
 .why-breba {
     padding: 6rem 0;
-    background: var(--white);
+    background: var(--breba-dark);
 }
 
 .why-breba-content {
@@ -553,7 +555,7 @@ section {
 .how-it-works h2 {
     font-size: var(--font-size-3xl);
     font-weight: 700;
-    color: var(--breba-dark);
+    color: var(--breba-secondary);
     margin-bottom: 2rem;
 }
 
@@ -568,7 +570,7 @@ section {
     align-items: center;
     gap: 1rem;
     padding: 1rem;
-    background: var(--gray-50);
+    background: var(--breba-secondary-bg);
     border-radius: 0.75rem;
     border: 1px solid var(--gray-200);
     transition: all 0.3s ease;
@@ -604,7 +606,7 @@ section {
     align-items: flex-start;
     gap: 1.5rem;
     padding: 1.5rem;
-    background: var(--gray-50);
+    background: var(--breba-secondary-bg);
     border-radius: 1rem;
     border: 1px solid var(--gray-200);
     transition: all 0.3s ease;
@@ -650,7 +652,7 @@ section {
 }
 
 .feature-card {
-    background: var(--white);
+    background: var(--breba-secondary-bg);
     border-radius: 1rem;
     padding: 2rem;
     box-shadow: var(--shadow-md);
@@ -671,11 +673,11 @@ section {
 }
 
 .progress-screen {
-    background: var(--white);
+    background: var(--breba-secondary-bg2);
     border: 1px solid var(--breba-accent);
     border-radius: 0.75rem;
     padding: 1.5rem;
-    color: var(--breba-dark);
+    color: var(--breba-secondary);
     width: 100%;
     box-shadow: var(--shadow-md);
 }
@@ -686,7 +688,6 @@ section {
     gap: 0.75rem;
     margin-bottom: 1rem;
     font-size: var(--font-size-sm);
-    color: var(--breba-dark);
 }
 
 .progress-item.completed i {
@@ -694,7 +695,7 @@ section {
 }
 
 .dashboard-preview {
-    background: var(--white);
+    background: var(--breba-secondary-bg2);
     border: 1px solid var(--gray-200);
     border-radius: 0.75rem;
     padding: 1.5rem;
@@ -710,7 +711,8 @@ section {
 
 .dashboard-header h4 {
     font-weight: 600;
-    color: var(--gray-900);
+    color: var(--breba-secondary);
+
 }
 
 .dashboard-stats {
@@ -721,7 +723,7 @@ section {
 }
 
 .stat-card {
-    background: var(--gray-50);
+    background: var(--breba-secondary-bg);
     padding: 1rem;
     border-radius: 0.5rem;
     text-align: center;
@@ -729,14 +731,13 @@ section {
 
 .stat-card h5 {
     font-size: var(--font-size-xs);
-    color: var(--gray-600);
+    color: var(--breba-dark);
     margin-bottom: 0.5rem;
 }
 
 .stat-number {
     font-size: var(--font-size-lg);
     font-weight: 700;
-    color: var(--primary-blue);
 }
 
 .chart-container {
@@ -744,20 +745,8 @@ section {
     justify-content: center;
 }
 
-.pie-chart {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: conic-gradient(
-        var(--primary-blue) 0deg 90deg,
-        var(--primary-purple) 90deg 180deg,
-        var(--primary-pink) 180deg 270deg,
-        var(--accent-green) 270deg 360deg
-    );
-}
-
 .deployment-screen {
-    background: var(--gradient-primary);
+    background: var(--breba-secondary-bg2);
     border-radius: 0.75rem;
     padding: 1.5rem;
     color: var(--white);
@@ -798,7 +787,7 @@ section {
 
 /* Testimonials Section */
 .testimonials {
-    background: var(--white);
+    background: var(--breba-dark);
 }
 
 .testimonials-grid {
@@ -860,7 +849,7 @@ section {
 
 /* Pricing Section */
 .pricing {
-    background: var(--gray-50);
+    background: var(--breba-dark);
 }
 
 .pricing-grid {
@@ -869,10 +858,11 @@ section {
     gap: 2rem;
     max-width: 800px;
     margin: 0 auto;
+    color: var(--breba-dark);
 }
 
 .pricing-card {
-    background: var(--white);
+    background: var(--breba-secondary-bg);
     border-radius: 1rem;
     padding: 2rem;
     box-shadow: var(--shadow-md);
@@ -894,7 +884,6 @@ section {
     font-size: var(--font-size-2xl);
     font-weight: 600;
     margin-bottom: 1rem;
-    color: var(--gray-900);
 }
 
 .price {
@@ -907,18 +896,15 @@ section {
 
 .currency {
     font-size: var(--font-size-xl);
-    color: var(--gray-600);
 }
 
 .amount {
     font-size: var(--font-size-5xl);
     font-weight: 700;
-    color: var(--primary-blue);
 }
 
 .period {
     font-size: var(--font-size-lg);
-    color: var(--gray-600);
 }
 
 .pricing-features {
@@ -931,21 +917,18 @@ section {
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1rem;
-    color: var(--gray-700);
 }
 
-.pricing-features i {
-    color: var(--accent-green);
-}
 
 /* FAQ Section */
 .faq {
-    background: var(--white);
+    background: var(--breba-dark);
 }
 
 .faq-grid {
     max-width: 800px;
     margin: 0 auto;
+    color: var(--breba-secondary);
 }
 
 .faq-item {
@@ -965,17 +948,12 @@ section {
 .faq-question h3 {
     font-size: var(--font-size-lg);
     font-weight: 600;
-    color: var(--gray-900);
 }
 
 .faq-question i {
-    color: var(--gray-500);
     transition: transform 0.3s ease;
 }
 
-.faq-question:hover {
-    color: var(--primary-blue);
-}
 
 .faq-question:hover i {
     transform: rotate(180deg);
@@ -983,7 +961,6 @@ section {
 
 .faq-answer {
     padding-bottom: 1.5rem;
-    color: var(--gray-600);
     line-height: 1.6;
 }
 
@@ -1379,11 +1356,11 @@ section {
     .platform-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .visual-grid {
         grid-template-columns: 1fr 1fr;
     }
-    
+
     .ai-models-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -1556,8 +1533,8 @@ section {
 
 /* Footer */
 .footer {
-    background: var(--gray-900);
-    color: var(--white);
+    background: var(--breba-secondary);
+    color: var(--breba-dark);
     padding: 4rem 0 2rem;
 }
 
@@ -1572,11 +1549,9 @@ section {
     font-size: var(--font-size-2xl);
     font-weight: 700;
     margin-bottom: 1rem;
-    color: var(--breba-primary);
 }
 
 .footer-section p {
-    color: var(--gray-400);
     line-height: 1.7;
     max-width: 500px;
 }
@@ -1590,7 +1565,6 @@ section {
 .footer-column h4 {
     font-weight: 600;
     margin-bottom: 1rem;
-    color: var(--gray-300);
 }
 
 .footer-column ul {
@@ -1602,9 +1576,9 @@ section {
 }
 
 .footer-column a {
-    color: var(--gray-400);
     text-decoration: none;
     transition: color 0.3s ease;
+    color: var(--breba-primary);
 }
 
 .footer-column a:hover {
@@ -1615,7 +1589,22 @@ section {
     border-top: 1px solid var(--gray-800);
     padding-top: 2rem;
     text-align: center;
-    color: var(--gray-500);
+}
+
+
+.footer-bottom .footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+
+    flex: 0 0 auto;
+}
+
+.footer-logo img {
+    max-height: 40px;
+    width: auto;
+    display: block;
 }
 
 /* Responsive Design */
@@ -1623,74 +1612,74 @@ section {
     .nav-menu {
         display: none;
     }
-    
+
     .hamburger {
         display: flex;
     }
-    
+
     .hero-container {
         grid-template-columns: 1fr;
         text-align: center;
         gap: 2rem;
     }
-    
+
     .hero-title {
         font-size: var(--font-size-4xl);
     }
-    
+
     .hero-actions {
         justify-content: center;
     }
-    
+
     .hero-stats {
         justify-content: center;
         gap: 2rem;
     }
-    
+
     .hero-showcase {
         max-width: 400px;
         margin: 0 auto;
     }
-    
+
     .feature-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .testimonials-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .pricing-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .footer-content {
         grid-template-columns: 1fr;
         gap: 2rem;
     }
-    
+
     .footer-links {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
-    
+
     .example-tags {
         justify-content: center;
     }
-    
+
     .dashboard-stats {
         grid-template-columns: 1fr;
     }
-    
+
     .why-breba-content {
         grid-template-columns: 1fr;
         gap: 3rem;
     }
-    
+
     .benefit-item {
         padding: 0.75rem;
     }
-    
+
     .step-item {
         padding: 1rem;
     }
@@ -1700,23 +1689,23 @@ section {
     .hero-title {
         font-size: var(--font-size-3xl);
     }
-    
+
     .section-header h2 {
         font-size: var(--font-size-3xl);
     }
-    
+
     .cta-content h2 {
         font-size: var(--font-size-3xl);
     }
-    
+
     .container {
         padding: 0 0.5rem;
     }
-    
+
     .floating-card {
         padding: 1.5rem;
     }
-    
+
     .suggestions {
         flex-direction: column;
     }
