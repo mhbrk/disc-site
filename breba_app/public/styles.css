@@ -143,12 +143,14 @@ body {
     align-items: center;
     gap: 0.75rem;
     text-decoration: none;
+
+    flex: 0 0 auto;
 }
 
-.nav-logo h2 {
-    color: var(--breba-primary);
-    font-weight: 700;
-    font-size: var(--font-size-2xl);
+.nav-logo img {
+    max-height: 40px;
+    width: auto;
+    display: block;
 }
 
 .logo-icon {
