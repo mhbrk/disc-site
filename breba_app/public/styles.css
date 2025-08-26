@@ -7,15 +7,15 @@
 
 :root {
     /* Breba Brand Colors - New Color Palette */
-    --breba-primary: #5F31EB;      /* Primary brand color - Purple */
-    --breba-secondary: #EAE7F2;    /* Secondary brand color - Light Purple */
-    --breba-secondary-bg: #A696C8;    /* Secondary brand color - Light Purple */
-    --breba-secondary-bg2: #373640;    /* Secondary brand color - Light Purple */
-    --breba-accent: #EDD9DA;       /* Accent color - Light Pink */
-    --breba-dark: #212529;         /* Dark color - Almost Black */
-    --breba-success: #10b981;      /* Success green */
-    --breba-warning: #f59e0b;      /* Warning yellow */
-    --breba-error: #ef4444;        /* Error red */
+    --breba-primary: #5F31EB; /* Primary brand color - Purple */
+    --breba-secondary: #EAE7F2; /* Secondary brand color - Light Purple */
+    --breba-secondary-bg: #A696C8; /* Secondary brand color - Light Purple */
+    --breba-secondary-bg2: #373640; /* Secondary brand color - Light Purple */
+    --breba-accent: #EDD9DA; /* Accent color - Light Pink */
+    --breba-dark: #212529; /* Dark color - Almost Black */
+    --breba-success: #10b981; /* Success green */
+    --breba-warning: #f59e0b; /* Warning yellow */
+    --breba-error: #ef4444; /* Error red */
 
     /* Neutral Colors */
     --white: #ffffff;
@@ -34,7 +34,7 @@
     --gradient-primary: linear-gradient(135deg, var(--breba-primary) 0%, #7c3aed 100%);
     --gradient-secondary: linear-gradient(135deg, var(--breba-secondary) 0%, var(--breba-accent) 100%);
     --gradient-hero: linear-gradient(135deg, var(--breba-primary) 0%, var(--breba-accent) 100%);
-    --gradient-card: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    --gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -785,68 +785,6 @@ section {
     line-height: 1.7;
 }
 
-/* Testimonials Section */
-.testimonials {
-    background: var(--breba-dark);
-}
-
-.testimonials-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-}
-
-.testimonial-card {
-    background: var(--gray-50);
-    border-radius: 1rem;
-    padding: 2rem;
-    border: 1px solid var(--gray-200);
-    transition: all 0.3s ease;
-}
-
-.testimonial-card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-lg);
-}
-
-.testimonial-content {
-    margin-bottom: 1.5rem;
-}
-
-.testimonial-content p {
-    color: var(--gray-700);
-    font-style: italic;
-    line-height: 1.6;
-}
-
-.testimonial-author {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.author-avatar {
-    width: 40px;
-    height: 40px;
-    background: var(--gradient-primary);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--white);
-}
-
-.author-info h4 {
-    font-weight: 600;
-    color: var(--gray-900);
-    margin-bottom: 0.25rem;
-}
-
-.author-info span {
-    font-size: var(--font-size-sm);
-    color: var(--gray-500);
-}
-
 /* Pricing Section */
 .pricing {
     background: var(--breba-dark);
@@ -1522,8 +1460,12 @@ section {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .automation-count {
@@ -1642,10 +1584,6 @@ section {
     }
 
     .feature-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .testimonials-grid {
         grid-template-columns: 1fr;
     }
 
