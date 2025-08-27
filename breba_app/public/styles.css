@@ -113,11 +113,6 @@ body {
     font-size: var(--font-size-base);
 }
 
-.btn-secondary:hover {
-    background: var(--gray-50);
-    border-color: var(--gray-400);
-}
-
 .btn-large {
     padding: 1rem 2rem;
     font-size: var(--font-size-lg);
@@ -138,6 +133,23 @@ body {
     border-bottom: 1px solid var(--gray-200);
     z-index: 1000;
     padding: 1rem 0;
+}
+
+.breba-navbar .btn-secondary {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.5rem;
+    color: var(--breba-light-text);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    text-decoration: none;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    font-size: var(--font-size-base);
 }
 
 .nav-container {
@@ -338,6 +350,7 @@ body {
 }
 
 .hero-actions .btn-secondary {
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -346,13 +359,17 @@ body {
     font-weight: 600;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.5rem;
     color: var(--breba-light-text);
     backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    text-decoration: none;
 }
 
 .hero-actions .btn-secondary:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: translateY(-2px);
+    border-color: var(--gray-400);
 }
 
 .hero-stats {
