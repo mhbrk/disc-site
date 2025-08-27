@@ -1,11 +1,11 @@
 // Mobile Navigation Toggle
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const hamburger = document.querySelector('.hamburger');
     const navMenu = document.querySelector('.nav-menu');
     const navActions = document.querySelector('.nav-actions');
 
     if (hamburger) {
-        hamburger.addEventListener('click', function() {
+        hamburger.addEventListener('click', function () {
             hamburger.classList.toggle('active');
             navMenu.classList.toggle('active');
             navActions.classList.toggle('active');
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const otherItem = otherQuestion.parentElement;
                     const otherAnswer = otherItem.querySelector('.faq-answer');
                     const otherIcon = otherQuestion.querySelector('i');
-                    
+
                     otherAnswer.style.maxHeight = null;
                     otherIcon.style.transform = 'rotate(0deg)';
                     otherItem.classList.remove('active');
@@ -59,11 +59,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Smooth scrolling for navigation links
     const navLinksSmooth = document.querySelectorAll('a[href^="#"]');
     navLinksSmooth.forEach(link => {
-        link.addEventListener('click', function(e) {
+        link.addEventListener('click', function (e) {
             e.preventDefault();
             const targetId = this.getAttribute('href');
             const targetSection = document.querySelector(targetId);
-            
+
             if (targetSection) {
                 const offsetTop = targetSection.offsetTop - 80; // Account for fixed navbar
                 window.scrollTo({
@@ -78,14 +78,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const copyButtons = document.querySelectorAll('.btn-secondary');
     copyButtons.forEach(button => {
         if (button.textContent.includes('Copy')) {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function () {
                 const urlText = this.previousElementSibling.textContent;
                 navigator.clipboard.writeText(urlText).then(() => {
                     const originalText = this.textContent;
                     this.textContent = 'Copied!';
                     this.style.background = '#10b981';
                     this.style.color = 'white';
-                    
+
                     setTimeout(() => {
                         this.textContent = originalText;
                         this.style.background = '';
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const scrolled = window.pageYOffset;
         const hero = document.querySelector('.hero');
         const floatingCard = document.querySelector('.floating-card');
-        
+
         if (hero && floatingCard) {
             const rate = scrolled * -0.5;
             floatingCard.style.transform = `translateY(${rate}px)`;
@@ -136,9 +136,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Form handling for the app input
     const appInput = document.querySelector('.app-input');
     const submitButton = document.querySelector('.showcase-card .btn-primary');
-    
+
     if (appInput && submitButton) {
-        appInput.addEventListener('keypress', function(e) {
+        appInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 handleAppCreation();
@@ -151,12 +151,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleAppCreation() {
         const input = document.querySelector('.app-input');
         const value = input.value.trim();
-        
+
         if (value) {
             // Show loading state
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             submitButton.disabled = true;
-            
+
             // Simulate app creation process
             setTimeout(() => {
                 // Show success message
@@ -245,15 +245,15 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Add some interactive hover effects
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Add hover effects to cards
     const cards = document.querySelectorAll('.feature-card, .testimonial-card, .pricing-card');
     cards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
+        card.addEventListener('mouseenter', function () {
             this.style.transform = 'translateY(-10px) scale(1.02)';
         });
-        
-        card.addEventListener('mouseleave', function() {
+
+        card.addEventListener('mouseleave', function () {
             this.style.transform = 'translateY(0) scale(1)';
         });
     });
@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const text = heroTitle.textContent;
         heroTitle.textContent = '';
         heroTitle.style.borderRight = '2px solid white';
-        
+
         let i = 0;
         const typeWriter = () => {
             if (i < text.length) {
@@ -275,8 +275,83 @@ document.addEventListener('DOMContentLoaded', function() {
                 heroTitle.style.borderRight = 'none';
             }
         };
-        
+
         // Start typing effect after a short delay
         setTimeout(typeWriter, 500);
     }
+});
+
+
+// Waitlist Modal logic
+function openWaitlistModal() {
+    var waitlistModal = new bootstrap.Modal(document.getElementById('waitlistModal'));
+    waitlistModal.show();
+}
+
+document.querySelectorAll('.join-waitlist-btn').forEach(btn => {
+    btn.addEventListener('click', openWaitlistModal);
+});
+// Optional: Close modal on ESC
+document.addEventListener('keydown', function (e) {
+    if (e.key === "Escape") {
+        var modalEl = document.getElementById('waitlistModal');
+        if (modalEl && modalEl.classList.contains('show')) {
+            bootstrap.Modal.getInstance(modalEl).hide();
+        }
+    }
+});
+
+
+document.getElementById("brebaWaitlistForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const data = {
+        email: form.email.value,
+        alphaAccess: form.alphaAccess?.value || "",
+        privateCloud: form.privateCloud?.value || "",
+        comments: form.comments.value
+    };
+
+    const alertBox = document.getElementById("formAlert");
+    const submitBtn = document.getElementById("submitBtn");
+    const spinner = document.getElementById("submitSpinner");
+    const submitText = document.getElementById("submitText");
+
+    alertBox.classList.add("d-none");
+    spinner.classList.remove("d-none");
+    submitText.textContent = "Submitting...";
+
+    try {
+        const response = await fetch("https://script.google.com/macros/s/AKfycbwCbKjWjO4ZkDWzFCeh7zo7e1rnHu6OP-ydwlJVJRyp-AjGav1gaG_5N1yEzOArvklW/exec", {
+            method: "POST",
+            mode: "no-cors",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        });
+
+        form.reset();
+        alertBox.className = "alert alert-success";
+        alertBox.textContent = "🎉 Thank you! Your response has been recorded.";
+        alertBox.classList.remove("d-none");
+
+        // Wait 1.5s then close modal
+        setTimeout(() => {
+            const modal = bootstrap.Modal.getInstance(document.getElementById("waitlistModal"));
+            modal.hide();
+            alertBox.classList.add("d-none"); // hide alert after closing
+        }, 1000);
+
+    } catch (error) {
+        alertBox.className = "alert alert-danger";
+        alertBox.textContent = "❌ There was an error submitting the form. Please try again.";
+        alertBox.classList.remove("d-none");
+        console.error("Submission failed", error);
+    }
+
+    spinner.classList.add("d-none");
+    submitText.textContent = "Submit";
+
 });
