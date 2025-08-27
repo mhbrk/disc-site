@@ -156,7 +156,7 @@
             <p class="hero-subtitle">Transform your ideas into fully-functional applications instantly. No coding
                 required, just describe what you want and watch it come to life.</p>
             <div class="hero-actions">
-                <button class="btn-primary btn-large">
+                <button class="btn-primary btn-large join-waitlist-btn">
                     <span>Book Demo</span>
                 </button>
                 <button class="btn-secondary btn-large">
@@ -522,7 +522,9 @@
                     <li><i class="fas fa-check"></i> Integration with Popular Tools</li>
                     <li><i class="fas fa-check"></i> Built-in hosting</li>
                 </ul>
-                <button class="btn-primary">Book Demo</button>
+                <div class="d-flex justify-content-center">
+                    <button class="btn btn-primary join-waitlist-btn">Book Demo</button>
+                </div>
             </div>
 
             <div class="pricing-card paid">
@@ -588,37 +590,38 @@
 <div id="waitlist"></div>
 <!-- Modal for Waitlist Form -->
 <div class="modal fade" id="waitlistModal" tabindex="-1" aria-labelledby="waitlistModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="waitlistModalLabel">Join the Waitlist</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div id="formAlert" class="alert d-none" role="alert"></div>
-      <div class="modal-body w-100">
-        <form id="brebaWaitlistForm" class="w-100 px-2">
-          <div class="mb-4 text-start w-100">
-            <label for="email" class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
-            <input type="email" class="form-control" id="email" name="email" required>
-          </div>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="waitlistModalLabel">Book Demo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div id="formAlert" class="alert d-none" role="alert"></div>
+            <div class="modal-body w-100">
+                <form id="brebaWaitlistForm" class="w-100 px-2">
+                    <div class="mb-4 text-start w-100">
+                        <label for="email" class="form-label fw-semibold">Email Address <span
+                            class="text-danger">*</span></label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
 
 
-          <div class="mb-4 text-start w-100">
-            <label for="comments" class="form-label fw-semibold">Comments/Suggestions/Feedback</label>
-            <textarea class="form-control" id="comments" name="comments" rows="3"></textarea>
-          </div>
+                    <div class="mb-4 text-start w-100">
+                        <label for="comments" class="form-label fw-semibold">Comments/Suggestions/Feedback</label>
+                        <textarea class="form-control" id="comments" name="comments" rows="3"></textarea>
+                    </div>
 
-          <div class="text-center mt-4">
-            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
               <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"
                     id="submitSpinner"></span>
-              <span id="submitText">Submit</span>
-            </button>
-          </div>
-        </form>
-      </div>
+                            <span id="submitText">Submit</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <!-- Footer -->
