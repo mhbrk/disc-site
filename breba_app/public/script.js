@@ -258,26 +258,27 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Add typing effect to hero title
-    const heroTitle = document.querySelector('.hero-title');
-    if (heroTitle) {
-        const text = heroTitle.textContent;
-        heroTitle.textContent = '';
-        heroTitle.style.borderRight = '2px solid white';
+    // typing effect (target the overlay span, not the H1)
+    const typingEl = document.getElementById('heroTyping');
+    const ghostEl = document.getElementById('heroGhost');
+
+    if (typingEl && ghostEl) {
+        const text = ghostEl.textContent.trim(); // plain text for typing
+        typingEl.textContent = '';
+        typingEl.style.borderRight = '2px solid rgba(255,255,255,.9)';
 
         let i = 0;
-        const typeWriter = () => {
+        const step = () => {
             if (i < text.length) {
-                heroTitle.textContent += text.charAt(i);
-                i++;
-                setTimeout(typeWriter, 50);
+                typingEl.textContent += text.charAt(i++);
+                setTimeout(step, 50);
             } else {
-                heroTitle.style.borderRight = 'none';
+                typingEl.style.borderRight = 'none';
+                // swap to the final HTML so your gradient span appears
+                typingEl.innerHTML = ghostEl.innerHTML;
             }
         };
-
-        // Start typing effect after a short delay
-        setTimeout(typeWriter, 500);
+        setTimeout(step, 500);
     }
 });
 

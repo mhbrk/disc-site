@@ -149,9 +149,14 @@
             <div class="hero-badge">
                 <span> AI-Powered Platform</span>
             </div>
-            <h1 class="hero-title">
-                Build Apps with
-                <span class="gradient-text">Natural Language</span>
+            <h1 class="hero-title position-relative">
+                <!-- typing target (overlays; doesn't affect layout) -->
+                <span id="heroTyping" class="position-absolute top-0 start-0 w-100"></span>
+
+                <!-- ghost copy (keeps space; matches final markup) -->
+                <span id="heroGhost" class="invisible d-block" aria-hidden="true">
+                    Build Apps with <span class="gradient-text">Natural Language</span>
+                </span>
             </h1>
             <p class="hero-subtitle">Transform your ideas into fully-functional applications instantly. No coding
                 required, just describe what you want and watch it come to life.</p>
