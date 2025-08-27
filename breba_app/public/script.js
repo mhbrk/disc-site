@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         .success-message h4 {
             margin-bottom: 0.5rem;
-            color: var(--white);
+            color: var(--breba-light-text);
         }
         
         .success-message p {
