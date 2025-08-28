@@ -572,7 +572,7 @@ section {
     padding: 1rem;
     background: var(--breba-background2);
     border-radius: 0.75rem;
-    border: 1px solid var(--gray-200);
+    border: none;
     transition: all 0.3s ease;
 }
 
@@ -608,7 +608,7 @@ section {
     padding: 1.5rem;
     background: var(--breba-background2);
     border-radius: 1rem;
-    border: 1px solid var(--gray-200);
+    border: none;
     transition: all 0.3s ease;
 }
 
@@ -771,7 +771,7 @@ section {
     padding: 2rem;
     box-shadow: var(--shadow-md);
     transition: all 0.3s ease;
-    border: 1px solid var(--gray-200);
+    border: none;
 }
 
 .pricing-card:hover {
