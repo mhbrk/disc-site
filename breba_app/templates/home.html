@@ -124,28 +124,38 @@
 </head>
 <body>
 <!-- Navigation -->
-<nav class="breba-navbar">
-    <div class="nav-container">
-        <div class="nav-logo">
-            <a href="#product"><img src="public/logo_dark.png" alt="Breba"></a>
-        </div>
-        <div class="nav-menu">
-            <a href="#product" class="nav-link">Product</a>
-            <a href="#pricing" class="nav-link">Pricing</a>
-            <a href="#faq" class="nav-link">FAQ</a>
-        </div>
-        <div class="nav-actions">
+<nav class="navbar navbar-expand-md navbar-dark breba-navbar fixed-top">
+  <div class="container">
+    <!-- Brand -->
+    <a class="navbar-brand d-flex align-items-center gap-2" href="#product">
+      <img src="public/logo_dark.png" alt="Breba" height="40">
+    </a>
 
-            <button class="btn btn-primary join-waitlist-btn">Book Demo</button>
-            <a href="/login" class="btn btn-secondary">Login</a>
-        </div>
-        <div class="hamburger">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
+    <!-- Toggler -->
+    <button class="navbar-toggler" type="button"
+            data-bs-toggle="collapse" data-bs-target="#mainNav"
+            aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Collapsible area -->
+    <div class="collapse navbar-collapse" id="mainNav">
+      <!-- Left menu -->
+      <ul class="navbar-nav flex-column flex-md-row me-md-auto mb-3 mb-md-0 gap-md-3">
+        <li class="nav-item"><a class="nav-link py-2" href="#product">Product</a></li>
+        <li class="nav-item"><a class="nav-link py-2" href="#pricing">Pricing</a></li>
+        <li class="nav-item"><a class="nav-link py-2" href="#faq">FAQ</a></li>
+      </ul>
+
+      <!-- Right actions: stack on mobile, inline on desktop -->
+      <div class="d-grid gap-2 d-md-inline-flex">
+        <button class="btn btn-primary join-waitlist-btn">Book Demo</button>
+        <a href="/login" class="btn btn-outline-breba">Login</a>
+      </div>
     </div>
+  </div>
 </nav>
+
 
 <!-- Hero Section -->
 <section class="hero" id="product">

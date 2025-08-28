@@ -135,21 +135,22 @@ body {
     padding: 1rem 0;
 }
 
-.breba-navbar .btn-secondary {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.btn-outline-breba {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 0.5rem;
     color: var(--breba-light-text);
     backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
-    text-decoration: none;
+    border-radius: 0.5rem;
     padding: 0.75rem 1.5rem;
     font-weight: 500;
     font-size: var(--font-size-base);
+    transition: all 0.3s ease;
+}
+
+.btn-outline-breba:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: var(--breba-light-text);
 }
 
 .nav-container {
