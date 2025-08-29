@@ -187,7 +187,11 @@
                 <button class="btn-primary btn-large join-waitlist-btn">
                     <span>Try Beta</span>
                 </button>
-                <a href="https://www.youtube.com/watch?v=Txv-lUdk1LM" target="_blank" class="btn-secondary btn-large">
+                <a href="#"
+                   class="btn-secondary btn-large"
+                   data-bs-toggle="modal"
+                   data-bs-target="#demoModal"
+                   data-video="https://www.youtube.com/embed/Txv-lUdk1LM?rel=0&autoplay=1">
                     <i class="fas fa-play"></i>
                     <span>Watch Demo</span>
                 </a>
@@ -640,6 +644,29 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Demo Video Modal -->
+<div class="modal fade" id="demoModal" tabindex="-1" aria-labelledby="demoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title mb-0" id="demoModalLabel">Breba Demo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Responsive 16:9 video -->
+            <div class="ratio ratio-16x9">
+                <iframe id="demoVideo"
+                        src=""
+                        title="Breba Demo"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen>
+                </iframe>
             </div>
         </div>
     </div>

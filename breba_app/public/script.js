@@ -250,3 +250,21 @@ document.getElementById('waitlistModal').addEventListener('shown.bs.modal', func
         emailInput.focus();
     }
 });
+
+
+const modal = document.getElementById('demoModal');
+const frame = document.getElementById('demoVideo');
+
+// When the trigger is clicked, set the iframe src (with autoplay)
+document.querySelectorAll('[data-bs-target="#demoModal"]').forEach(el => {
+    el.addEventListener('click', function () {
+        const url = this.getAttribute('data-video')
+            || 'https://www.youtube.com/embed/Txv-lUdk1LM?rel=0&autoplay=1&rel=0';
+        frame.src = url;
+    });
+});
+
+// When modal closes, stop the video by clearing src
+modal.addEventListener('hidden.bs.modal', function () {
+    frame.src = '';
+});
