@@ -207,19 +207,6 @@ body {
     align-items: center;
 }
 
-.hamburger {
-    display: none;
-    flex-direction: column;
-    cursor: pointer;
-}
-
-.hamburger span {
-    width: 25px;
-    height: 3px;
-    background: var(--gray-600);
-    margin: 3px 0;
-    transition: 0.3s;
-}
 
 /* Hero Section */
 .hero {
@@ -508,6 +495,7 @@ body {
     font-size: var(--font-size-sm);
     color: var(--gray-300);
     font-family: 'Monaco', 'Menlo', monospace;
+    width: 100%;
 }
 
 /* Sections */
@@ -1500,9 +1488,6 @@ section {
         display: none;
     }
 
-    .hamburger {
-        display: flex;
-    }
 
     .hero-container {
         grid-template-columns: 1fr;

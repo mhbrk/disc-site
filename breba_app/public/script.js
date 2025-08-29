@@ -1,22 +1,13 @@
 // Mobile Navigation Toggle
 document.addEventListener('DOMContentLoaded', function () {
-    const hamburger = document.querySelector('.hamburger');
     const navMenu = document.querySelector('.nav-menu');
     const navActions = document.querySelector('.nav-actions');
 
-    if (hamburger) {
-        hamburger.addEventListener('click', function () {
-            hamburger.classList.toggle('active');
-            navMenu.classList.toggle('active');
-            navActions.classList.toggle('active');
-        });
-    }
 
     // Close mobile menu when clicking on a link
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
         link.addEventListener('click', () => {
-            hamburger.classList.remove('active');
             navMenu.classList.remove('active');
             navActions.classList.remove('active');
         });
@@ -132,116 +123,6 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('load', () => {
         document.body.classList.add('loaded');
     });
-
-    // Form handling for the app input
-    const appInput = document.querySelector('.app-input');
-    const submitButton = document.querySelector('.showcase-card .btn-primary');
-
-    if (appInput && submitButton) {
-        appInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                handleAppCreation();
-            }
-        });
-
-        submitButton.addEventListener('click', handleAppCreation);
-    }
-
-    function handleAppCreation() {
-        const input = document.querySelector('.app-input');
-        const value = input.value.trim();
-
-        if (value) {
-            // Show loading state
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            submitButton.disabled = true;
-
-            // Simulate app creation process
-            setTimeout(() => {
-                // Show success message
-                const cardContent = document.querySelector('.showcase-card .card-content');
-                cardContent.innerHTML = `
-                    <div class="success-message">
-                        <i class="fas fa-check-circle" style="color: #10b981; font-size: 2rem; margin-bottom: 1rem;"></i>
-                        <h4>App Created Successfully!</h4>
-                        <p>Your "${value}" app is ready to use.</p>
-                        <button class="btn-primary" onclick="location.reload()">Create Another</button>
-                    </div>
-                `;
-            }, 3000);
-        }
-    }
-
-    // Add CSS for animations
-    const style = document.createElement('style');
-    style.textContent = `
-        .animate-in {
-            animation: fadeInUp 0.6s ease-out forwards;
-        }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .success-message {
-            text-align: center;
-            padding: 1rem;
-        }
-        
-        .success-message h4 {
-            margin-bottom: 0.5rem;
-            color: var(--breba-light-text);
-        }
-        
-        .success-message p {
-            margin-bottom: 1rem;
-            opacity: 0.9;
-        }
-        
-        .loaded {
-            opacity: 1;
-        }
-        
-        body {
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .nav-menu.active,
-        .nav-actions.active {
-            display: flex;
-            flex-direction: column;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 1px solid var(--gray-200);
-            padding: 1rem;
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .hamburger.active span:nth-child(1) {
-            transform: rotate(-45deg) translate(-5px, 6px);
-        }
-        
-        .hamburger.active span:nth-child(2) {
-            opacity: 0;
-        }
-        
-        .hamburger.active span:nth-child(3) {
-            transform: rotate(45deg) translate(-5px, -6px);
-        }
-    `;
-    document.head.appendChild(style);
 });
 
 // Add some interactive hover effects
@@ -354,5 +235,18 @@ document.getElementById("brebaWaitlistForm").addEventListener("submit", async fu
 
     spinner.classList.add("d-none");
     submitText.textContent = "Submit";
+});
 
+
+document.getElementById("buildAppBtn").addEventListener("click", function () {
+    const idea = document.getElementById("buildAppInput").value; // get input value
+    const textarea = document.getElementById("comments");
+    textarea.value = idea; // put into textarea
+});
+
+document.getElementById('waitlistModal').addEventListener('shown.bs.modal', function () {
+    const emailInput = document.querySelector('#waitlistModal input[name="email"]');
+    if (emailInput) {
+        emailInput.focus();
+    }
 });
