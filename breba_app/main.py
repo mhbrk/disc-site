@@ -90,9 +90,34 @@ async def custom_static_handler(session_id: str, file_path: str, request: Reques
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """
+    Home page route.
+    If cookie "X-Chainlit-Session-id" is set, render home.html
+    otherwise render base.html
+    """
+    session_cookie = request.cookies.get("X-Chainlit-Session-id")
+
+    if session_cookie:
+        # Cookie missing → render base.html
+        return templates.TemplateResponse("base.html", {"request": request})
+    else:
+        # Cookie exists → render home.html
+        return templates.TemplateResponse("home.html", {"request": request})
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login(request: Request):
+    """
     Home page route. This just renders the HTML. All communication with the server is done through chianlit.
     """
     return templates.TemplateResponse("base.html", {"request": request})
+
+
+@app.get("/home", response_class=HTMLResponse)
+async def home(request: Request):
+    """
+    Home page route. This just renders the HTML. All communication with the server is done through chianlit.
+    """
+    return templates.TemplateResponse("home.html", {"request": request})
 
 
 current_file_dir = Path(__file__).parent
