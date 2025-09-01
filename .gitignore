@@ -1,0 +1,58 @@
+# === PYTHON ===
+__pycache__/
+*.py[cod]
+*.so
+*.pyo
+*.pyd
+*.log
+
+# Virtualenv
+.venv/
+venv/
+env/
+
+# === ENV FILES ===
+*.env
+.env
+**/.env
+!sample.env
+
+# === MACOS ===
+.DS_Store
+
+# === VSCODE ===
+.vscode/
+.history/
+
+# === DOCKER ===
+*.pid
+*.seed
+*.swp
+docker-compose.override.yml
+
+# === PYTHON TOOLS ===
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# === CHAINLIT CONFIG ===
+.chainlit/
+
+# === SITE/STATIC ===
+breba_app/sites/
+breba_app/public/*.html
+breba_app/public/*.css
+breba_app/public/*.js
+breba_app/public/*.png
+breba_app/public/*.ico
+breba_app/public/*.json
+
+# === MEDIA / TEMP ===
+*.mp4
+*.webm
+*.avi
+
+# === IDEs ===
+.idea/
+*.iml
