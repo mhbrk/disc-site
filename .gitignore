@@ -1,58 +1,51 @@
-# === PYTHON ===
+# === Python ===
 __pycache__/
 *.py[cod]
 *.so
-*.pyo
-*.pyd
-*.log
+*.egg-info/
+*.egg
+dist/
+build/
 
-# Virtualenv
+# === Virtual envs ===
 .venv/
 venv/
 env/
 
-# === ENV FILES ===
-*.env
+# === Environment files ===
 .env
-**/.env
-!sample.env
+.env.* 
+*.env
+!.env.example
 
-# === MACOS ===
-.DS_Store
-
-# === VSCODE ===
-.vscode/
-.history/
-
-# === DOCKER ===
+# === Docker ===
 *.pid
 *.seed
 *.swp
 docker-compose.override.yml
 
-# === PYTHON TOOLS ===
-*.egg-info/
-.eggs/
-dist/
-build/
-
-# === CHAINLIT CONFIG ===
+# === Chainlit ===
 .chainlit/
 
-# === SITE/STATIC ===
-breba_app/sites/
-breba_app/public/*.html
-breba_app/public/*.css
-breba_app/public/*.js
-breba_app/public/*.png
-breba_app/public/*.ico
-breba_app/public/*.json
-
-# === MEDIA / TEMP ===
-*.mp4
-*.webm
-*.avi
-
-# === IDEs ===
+# === JetBrains IDEs ===
 .idea/
-*.iml
+
+# === VS Code ===
+.vscode/
+.history/
+
+# === macOS ===
+.DS_Store
+
+# === Windows ===
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# === Logs / DBs / Misc ===
+*.log
+*.sqlite3
+*.db
+.cache/
+*.pid
