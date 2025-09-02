@@ -95,7 +95,7 @@ cot = "full"
 # custom_js_attributes = "async type = \"module\""
 
 # Custom login page image, relative to public directory or external URL
-# login_page_image = "/public/custom-background.jpg"
+login_page_image = "https://cdn.breba.app/yason/dc22325d7f4d4d7a90928be835bf518e/hero.jpg"
 
 # Custom login page image filter (Tailwind internal filters, no dark/light variants)
 # login_page_image_filter = "brightness-50 grayscale"

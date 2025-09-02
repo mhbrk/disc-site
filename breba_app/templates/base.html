@@ -64,7 +64,7 @@
 <div class="container-fluid mt-3">
     <div class="row g-3 align-items-stretch">
         <!-- Sidebar Column -->
-        <div class="col-12 col-md-auto px-2 px-md-0 mt-0 mt-md-3">
+        <div id="sidebar-buttons" class="col-12 col-md-auto px-2 px-md-0 mt-0 mt-md-3 d-none">
             <div
                 class="d-flex flex-md-column flex-row bg-dark rounded gap-2 h-100 px-1 pt-md-2 w-100 w-md-auto">
                 <a href="/home" class="btn fs-4" title="Home"><img src="public/breba_icon_dark.png" alt="Home" width="24" height="24"></a>
@@ -75,12 +75,12 @@
                 <button id="toggle-templates" class="btn text-white fs-4" title="Templates">&#x1F4C1;</button>
             </div>
         </div>
-        <div class="col-md-4 mt-0 mt-md-3">
+        <div id="left-panel" class="mt-0 mt-md-3">
             <div id="input-panel" class="panel">
                 {% include "input.html" %}
             </div>
         </div>
-        <div class="col-md-7">
+        <div id="right-panel" class="col-md-7 d-none">
             <div id="generator-panel" class="panel">
                 {% include "generator.html" %}
             </div>
@@ -155,10 +155,16 @@
     });
 
     window.addEventListener('message', (event) => {
-        if (event.data.method === "reload_product") {
-            document.location.reload();
-        }
-    })
+    if (event.data.method === "reload_product") {
+        document.location.reload();
+    } else if (event.data.method === "logged_in") {
+        // Reveal generator + sidebar buttons
+
+        document.getElementById("left-panel").classList.add("col-md-4");
+        document.getElementById("right-panel").classList.remove("d-none");
+        document.getElementById("sidebar-buttons").classList.remove("d-none");
+    }
+});
 
 
 </script>

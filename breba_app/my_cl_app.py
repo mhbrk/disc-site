@@ -146,6 +146,7 @@ async def main():
 
     active_product = None
     if user:
+        await cl.send_window_message({"method": "logged_in"})
         # First try to get the active product
         active_product = await Product.find_one(
             Product.user.id == user.id, Product.active == True
