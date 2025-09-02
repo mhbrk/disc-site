@@ -1,0 +1,51 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+
+# === Virtual envs ===
+.venv/
+venv/
+env/
+
+# === Environment files ===
+.env
+.env.* 
+*.env
+!.env.example
+
+# === Docker ===
+*.pid
+*.seed
+*.swp
+docker-compose.override.yml
+
+# === Chainlit ===
+.chainlit/
+
+# === JetBrains IDEs ===
+.idea/
+
+# === VS Code ===
+.vscode/
+.history/
+
+# === macOS ===
+.DS_Store
+
+# === Windows ===
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# === Logs / DBs / Misc ===
+*.log
+*.sqlite3
+*.db
+.cache/
+*.pid
