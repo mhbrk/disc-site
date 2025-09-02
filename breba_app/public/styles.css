@@ -816,47 +816,30 @@ section {
 
 
 /* FAQ Section */
-.faq {
-    background: var(--breba-dark);
-}
-
-.faq-grid {
+.faq .accordion {
     max-width: 800px;
     margin: 0 auto;
-    color: var(--breba-light-text);
+    --bs-accordion-bg: transparent;
+    --bs-accordion-border-color: transparent;
+    --bs-accordion-border-radius: 0;
+    --bs-accordion-btn-color: var(--breba-light-text);
+    --bs-accordion-btn-focus-box-shadow: none;
+    --bs-accordion-active-bg: transparent;
+    --bs-accordion-active-color: var(--breba-light-text);
 }
 
-.faq-item {
-    border-bottom: 1px solid var(--gray-200);
+.faq .accordion-item {
+    border-bottom: 1px solid var(--breba-light-text);
     margin-bottom: 1rem;
+
 }
 
-.faq-question {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem 0;
-    cursor: pointer;
-    transition: all 0.3s ease;
+.faq .accordion-button::after {
+    filter: invert(1) brightness(2);
 }
 
-.faq-question h3 {
-    font-size: var(--font-size-lg);
-    font-weight: 600;
-}
-
-.faq-question i {
-    transition: transform 0.3s ease;
-}
-
-
-.faq-question:hover i {
-    transform: rotate(180deg);
-}
-
-.faq-answer {
-    padding-bottom: 1.5rem;
-    line-height: 1.6;
+.faq .accordion-body {
+    color: var(--breba-light-text);
 }
 
 /* CTA Section */

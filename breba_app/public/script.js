@@ -13,39 +13,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // FAQ Accordion
-    const faqQuestions = document.querySelectorAll('.faq-question');
-    faqQuestions.forEach(question => {
-        question.addEventListener('click', () => {
-            const faqItem = question.parentElement;
-            const answer = faqItem.querySelector('.faq-answer');
-            const icon = question.querySelector('i');
-
-            // Close other FAQ items
-            faqQuestions.forEach(otherQuestion => {
-                if (otherQuestion !== question) {
-                    const otherItem = otherQuestion.parentElement;
-                    const otherAnswer = otherItem.querySelector('.faq-answer');
-                    const otherIcon = otherQuestion.querySelector('i');
-
-                    otherAnswer.style.maxHeight = null;
-                    otherIcon.style.transform = 'rotate(0deg)';
-                    otherItem.classList.remove('active');
-                }
-            });
-
-            // Toggle current FAQ item
-            if (faqItem.classList.contains('active')) {
-                answer.style.maxHeight = null;
-                icon.style.transform = 'rotate(0deg)';
-                faqItem.classList.remove('active');
-            } else {
-                answer.style.maxHeight = answer.scrollHeight + 'px';
-                icon.style.transform = 'rotate(180deg)';
-                faqItem.classList.add('active');
-            }
-        });
-    });
 
     // Smooth scrolling for navigation links
     const navLinksSmooth = document.querySelectorAll('a[href^="#"]');
