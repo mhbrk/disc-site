@@ -574,37 +574,53 @@
             <h2>FAQs</h2>
         </div>
 
-        <div class="faq-grid">
-            <div class="faq-item">
-                <div class="faq-question">
-                    <h3>What is Breba?</h3>
-                    <i class="fas fa-chevron-down"></i>
+        <div class="accordion" id="faqAccordion">
+            <div class="accordion-item">
+                <div class="accordion-header" id="headingOne">
+                    <button class="accordion-button collapsed px-0" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                        <h5>What is Breba?</h5>
+                    </button>
                 </div>
-                <div class="faq-answer">
-                    <p>Breba is an AI-powered platform that lets you turn any idea into a fully-functional custom app,
-                        without the need for any coding experience.</p>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">
-                    <h3>Do I need coding experience to use Breba?</h3>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">
-                    <p>No. Our platform is designed to be easily accessible to non-technical users. Just describe your
-                        software needs in plain language, and our AI will handle the technical implementation.</p>
+                <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne">
+                    <div class="accordion-body px-0">
+                        <p>Breba is an AI-powered platform that lets you turn any idea into a fully-functional
+                            custom app,
+                            without the need for any coding experience.</p>
+                    </div>
                 </div>
             </div>
 
-            <div class="faq-item">
-                <div class="faq-question">
-                    <h3>What types of applications can I build with Breba?</h3>
-                    <i class="fas fa-chevron-down"></i>
+            <div class="accordion-item">
+                <div class="accordion-header" id="headingTwo">
+                    <button class="accordion-button collapsed px-0" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                        <h5>Do I need coding experience to use Breba?</h5>
+                    </button>
                 </div>
-                <div class="faq-answer">
-                    <p>Breba is focused on creating small websites at this time, but we plan to expand in the
-                        future.</p>
+                <div id="collapseTwo" class="accordion-collapse collapse px-0" aria-labelledby="headingTwo">
+                    <div class="accordion-body px-0">
+                        <p>No. Our platform is designed to be easily accessible to non-technical users. Just
+                            describe your
+                            software needs in plain language, and our AI will handle the technical implementation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <div class="accordion-header" id="headingThree">
+                    <button class="accordion-button collapsed px-0" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                        <h5>What types of applications can I build with Breba?</h5>
+                    </button>
+                </div>
+                <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
+                    <div class="accordion-body px-0">
+                        <p>Breba is focused on creating small websites at this time, but we plan to expand in
+                            the future.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
