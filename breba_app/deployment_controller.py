@@ -1,7 +1,7 @@
 from storage import upload_site
-from models.deployment import Deployment
-from models.product import Product
-from models.user import User
+from breba_app.models.deployment import Deployment
+from breba_app.models.product import Product
+from breba_app.models.user import User
 
 
 async def run_deployment(username: str, product: Product, deployment_id: str) -> str:
