@@ -191,7 +191,7 @@ document.getElementById("brebaWaitlistForm").addEventListener("submit", async fu
             const modal = bootstrap.Modal.getInstance(document.getElementById("waitlistModal"));
             modal.hide();
             alertBox.classList.add("d-none"); // hide alert after closing
-        }, 1000);
+        }, 5000);
 
     } catch (error) {
         alertBox.className = "alert alert-danger";
