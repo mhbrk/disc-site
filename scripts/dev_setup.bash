@@ -5,7 +5,7 @@ MONGO_CONTAINER="breba-mongo"
 MONGO_PORT=27017
 MONGO_DB="breba-dev"
 MONGO_IMAGE="mongo:8.0"   # Pin to MongoDB 8.0 release
-ENV_FILE=".env"
+ENV_FILE="./breba_app/.env"
 OPENAI_API_KEY=""
 read -r -p "OpenAI API Key: " OPENAI_API_KEY
 echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> "$ENV_FILE"
