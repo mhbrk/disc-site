@@ -2,7 +2,9 @@
 set -euo pipefail
 
 # -------- Config you can edit --------
-ENV_FILE=".env"
+: "${ENV_FILE:=.env}"
+
+echo "Using ENV_FILE=$ENV_FILE"
 
 echo "=== Setting up GitHub PAT ==="
 echo "Instructions:"
