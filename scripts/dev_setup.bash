@@ -71,10 +71,10 @@ fi
 .venv/bin/pip install --quiet chainlit
 
 # Generate CHAINLIT_AUTH_SECRET if missing
-if ! grep -q "CHAINLIT_AUTH_SECRET" .env 2>/dev/null; then
+if ! grep -q "CHAINLIT_AUTH_SECRET" "$ENV_FILE" 2>/dev/null; then
   echo "Generating CHAINLIT_AUTH_SECRET..."
   SECRET=$(.venv/bin/chainlit create-secret | grep CHAINLIT_AUTH_SECRET | cut -d= -f2- | tr -d '"')
-  echo "CHAINLIT_AUTH_SECRET=$SECRET" >> .env
+  echo "CHAINLIT_AUTH_SECRET=$SECRET" >> $ENV_FILE
   echo "Added CHAINLIT_AUTH_SECRET to .env"
 fi
 
@@ -86,5 +86,10 @@ source ./scripts/pat_validation.bash
 
 # Creating User
 source ./scripts/create_user.bash
+
+echo "CLOUDFLARE_ENDPOINT=https://c0e7f083e56fe64be2af84fa3f82e689.r2.cloudflarestorage.com" >> "$ENV_FILE"
+echo "USERS_BUCKET=dev-breba-users" >> "$ENV_FILE"
+echo "PUBLIC_BUCKET=breba-public" >> "$ENV_FILE"
+echo "CDN_BASE_URL=https://dev-cdn.breba.app" >> "$ENV_FILE"
 
 ok "Done."
