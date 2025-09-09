@@ -28,6 +28,35 @@ else
   echo "ℹ️ OPENAI_API_KEY already exists in $ENV_FILE, skipping..."
 fi
 
+# Check if TAVILY_API_KEY is already in file
+if ! grep -q '^TAVILY_API_KEY=' "$ENV_FILE"; then
+  read -r -p "TAVILY API Key: " TAVILY_API_KEY
+  echo "TAVILY_API_KEY=$TAVILY_API_KEY" >> "$ENV_FILE"
+  echo "✅ Added TAVILY_API_KEY to $ENV_FILE"
+else
+  echo "ℹ️ TAVILY_API_KEY already exists in $ENV_FILE, skipping..."
+fi
+
+
+# Check if AWS_ACCESS_KEY_ID is already in file
+if ! grep -q '^AWS_ACCESS_KEY_ID=' "$ENV_FILE"; then
+  read -r -p "AWS ACCESS API Key: " OPENAI_API_KEY
+  echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> "$ENV_FILE"
+  echo "✅ Added AWS_ACCESS_KEY_ID to $ENV_FILE"
+else
+  echo "ℹ️ AWS_ACCESS_KEY_ID already exists in $ENV_FILE, skipping..."
+fi
+
+
+# Check if AWS_SECRET_ACCESS_KEY is already in file
+if ! grep -q '^AWS_SECRET_ACCESS_KEY=' "$ENV_FILE"; then
+  read -r -p "AWS SECRET API Key: " AWS_SECRET_ACCESS_KEY
+  echo "OPENAI_API_KEY=$AWS_SECRET_ACCESS_KEY" >> "$ENV_FILE"
+  echo "✅ Added AWS_SECRET_ACCESS_KEY to $ENV_FILE"
+else
+  echo "ℹ️ AWS_SECRET_ACCESS_KEY already exists in $ENV_FILE, skipping..."
+fi
+
 read -r -p "Ready to install MongoDb. Do you need to install it? [Y/n] " response
 if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
   echo "Installing MongoDb..."
