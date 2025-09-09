@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 set -e  # stop on error
 
-# Go to the script's directory (project root)
-cd "$(dirname "$0")"
-
 # Check if .venv exists
 if [ ! -d ".venv" ]; then
   echo ".venv not found. Creating virtual environment..."
@@ -17,4 +14,7 @@ fi
 
 echo "Starting app..."
 # Run app with project root in PYTHONPATH
-PYTHONPATH=$(pwd) .venv/bin/python breba_app/main.py
+(
+  cd breba_app
+  PYTHONPATH=$(pwd)/.. ../.venv/bin/python main.py
+)

@@ -34,7 +34,6 @@ if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
   . scripts/install_mongodb.bash
 else
   echo "Skipping MongoDb installation."
-  exit 0
 fi
 
 echo "=== Setting up Chainlit environment ==="
