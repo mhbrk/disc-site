@@ -1,10 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# -------- Config you can edit --------
+# Only set ENV_FILE if not already set
 : "${ENV_FILE:=.env}"
-
+touch "$ENV_FILE"
 echo "Using ENV_FILE=$ENV_FILE"
+
+# ---------------------------------------
+# Check for existing token at the beginning
+# ---------------------------------------
+if grep -q '^GITHUB_PERSONAL_ACCESS_TOKEN=' "$ENV_FILE" 2>/dev/null; then
+  warn "GITHUB_PERSONAL_ACCESS_TOKEN already present in ${ENV_FILE}."
+  read -r -p "Do you want to replace it? [y/N] " ans
+  if [[ "$ans" =~ ^[Yy]$ ]]; then
+    warn "Proceeding to replace existing token."
+    # fall through → continue script (will prompt for new token, validate, and overwrite later)
+  else
+    ok "Keeping existing token. Exiting."
+    exit 0
+  fi
+fi
+
 
 echo "=== Setting up GitHub PAT ==="
 echo "Instructions:"
@@ -90,10 +106,13 @@ else
   fi
 fi
 
-# Write to .env if missing
-if ! grep -q '^GITHUB_PERSONAL_ACCESS_TOKEN=' "$ENV_FILE" 2>/dev/null; then
+# Write or override token in .env
+if grep -q '^GITHUB_PERSONAL_ACCESS_TOKEN=' "$ENV_FILE" 2>/dev/null; then
+  # Replace the existing line
+  sed -i "s|^GITHUB_PERSONAL_ACCESS_TOKEN=.*|GITHUB_PERSONAL_ACCESS_TOKEN=${TOKEN}|" "$ENV_FILE"
+  ok "Replaced token in ${ENV_FILE}"
+else
+  # Append new line
   echo "GITHUB_PERSONAL_ACCESS_TOKEN=${TOKEN}" >> "$ENV_FILE"
   ok "Saved token to ${ENV_FILE}"
-else
-  warn "GITHUB_PERSONAL_ACCESS_TOKEN already present in ${ENV_FILE} (not overwritten)."
 fi

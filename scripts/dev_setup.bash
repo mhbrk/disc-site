@@ -1,14 +1,23 @@
 #!/usr/bin/env bash
 set -e  # Exit on error
 
-MONGO_CONTAINER="breba-mongo"
-MONGO_PORT=27017
-MONGO_DB="breba-dev"
-MONGO_IMAGE="mongo:8.0"   # Pin to MongoDB 8.0 release
+# --- Python version check ---
+REQUIRED_PYTHON="3.12"
+CURRENT_PYTHON=$(python3 -V 2>&1 | awk '{print $2}')
+
+# Compare versions
+if [ "$(printf '%s\n' "$REQUIRED_PYTHON" "$CURRENT_PYTHON" | sort -V | head -n1)" != "$REQUIRED_PYTHON" ]; then
+  echo "❌ Python $REQUIRED_PYTHON or higher is required (found $CURRENT_PYTHON)."
+  exit 1
+fi
+
+echo "✅ Python version $CURRENT_PYTHON OK"
+
 ENV_FILE="./breba_app/.env"
 
 # Ensure ENV_FILE exists
 touch "$ENV_FILE"
+
 
 # Check if OPENAI_API_KEY is already in file
 if ! grep -q '^OPENAI_API_KEY=' "$ENV_FILE"; then
@@ -19,48 +28,14 @@ else
   echo "ℹ️ OPENAI_API_KEY already exists in $ENV_FILE, skipping..."
 fi
 
-echo "=== Setting up local MongoDB with Docker ==="
-
-# Check if Docker is installed
-if ! command -v docker &> /dev/null; then
-  echo "❌ Docker not found. Please install Docker first."
-  exit 1
-fi
-
-# Start Mongo container if not running
-if [ ! "$(docker ps -q -f name=$MONGO_CONTAINER)" ]; then
-  if [ "$(docker ps -aq -f status=exited -f name=$MONGO_CONTAINER)" ]; then
-    echo "Starting existing MongoDB container..."
-    docker start $MONGO_CONTAINER
-  else
-    echo "Creating new MongoDB container with image $MONGO_IMAGE..."
-    docker run -d \
-      --name $MONGO_CONTAINER \
-      -p $MONGO_PORT:27017 \
-      -v "$(pwd)/mongo-data:/data/db" \
-      $MONGO_IMAGE
-  fi
+read -r -p "Ready to install MongoDb. Do you need to install it? [Y/n] " response
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+  echo "Installing MongoDb..."
+  . scripts/install_mongodb.bash
 else
-  echo "MongoDB container already running."
+  echo "Skipping MongoDb installation."
+  exit 0
 fi
-
-# Wait until Mongo is ready
-echo "Waiting for MongoDB to be ready..."
-until docker exec $MONGO_CONTAINER mongosh --quiet --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
-  sleep 1
-done
-
-echo "✅ MongoDB is running on localhost:$MONGO_PORT"
-
-# Add MONGO_URI to .env if missing
-if ! grep -q "MONGO_URI" "$ENV_FILE" 2>/dev/null; then
-  echo "Adding MONGO_URI to $ENV_FILE"
-  echo "MONGO_URI=mongodb://localhost:$MONGO_PORT/$MONGO_DB" >> "$ENV_FILE"
-else
-  echo "MONGO_URI already present in $ENV_FILE"
-fi
-
-echo "👉 Your local MONGO_URI is: mongodb://localhost:$MONGO_PORT/$MONGO_DB"
 
 echo "=== Setting up Chainlit environment ==="
 echo "========================================"
@@ -75,7 +50,7 @@ if [ ! -d ".venv" ]; then
   fi
 fi
 
-# Ensure Chainlit is installed (in case it's not in requirements.txt yet)
+echo "Installing Chainlit..."
 .venv/bin/pip install --quiet chainlit
 
 # Generate CHAINLIT_AUTH_SECRET if missing
