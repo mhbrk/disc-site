@@ -70,14 +70,18 @@ def public_file_url(user_name: str, session_id: str, file_name: str) -> str:
 #         logger.info(f"Copied {blob.name} -> {new_name}")
 
 def _copy_directory_s3(source_bucket, target_bucket, prefix: str, target_prefix: str = None):
-    for obj_summary in source_bucket.objects.filter(Prefix=prefix):
-        relative_path = obj_summary.key[len(prefix):]
-        new_prefix = target_prefix if target_prefix else prefix
-        new_key = f"{new_prefix}{relative_path}"
+    try:
+        for obj_summary in source_bucket.objects.filter(Prefix=prefix):
+            relative_path = obj_summary.key[len(prefix):]
+            new_prefix = target_prefix if target_prefix else prefix
+            new_key = f"{new_prefix}{relative_path}"
 
-        copy_source = {"Bucket": source_bucket.name, "Key": obj_summary.key}
-        target_bucket.copy(copy_source, new_key)
-        logger.info(f"Copied {obj_summary.key} -> {new_key}")
+            copy_source = {"Bucket": source_bucket.name, "Key": obj_summary.key}
+            target_bucket.copy(copy_source, new_key)
+            logger.info(f"Copied {obj_summary.key} -> {new_key}")
+    except Exception as e:
+        logger.error(f"Error copying directory from {source_bucket.name} to {target_bucket.name}: {e}")
+        raise
 
 
 # def _user_session_blob(user_name: str, session_id: str, relative_path: str, description: str | None = None) -> Blob:
