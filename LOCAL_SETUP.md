@@ -2,6 +2,7 @@
 
 ### Prerequisites
 - Docker (https://docs.docker.com/get-docker/)
+- Python 3.12 or higher
 - Get the following keys from Yason
    - `OPENAI_API_KEY`
    - `TAVILY_API_KEY`
@@ -23,5 +24,13 @@
 2. Run the stet up script
    ```shell
    cd disc-site
-   ./scripts/dev-setup-scripts
+   ./scripts/dev_setup.bash
    ```
+   Check that the `.env` file is created inside `breba_app` folder and that it doesn't have duplicates.
+
+3. Run the app
+    ```shell
+    ./start.bash
+    ```
+   Then use the name and password you created in step 2 to log in.
+
