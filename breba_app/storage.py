@@ -218,13 +218,13 @@ def get_public_url(site_name: str) -> str:
 # TODO: user_name/session_id are state for the entire request, should probably create a user_cloud_storage class
 def upload_site(user_name: str, session_id: str, site_name: str):
     """
-    #     Uploads site to google cloud
-    #     Example: upload_site("/Users/yason/breba/disc-site/sites/test-site", "test-site")
-    #     :param user_name: username
-    #     :param session_id: session id used for locating site files
-    #     :param site_name: site name where all the files will be stored
-    #     :return: public url of deployed site
-    #     """
+    Uploads site to google cloud
+    Example: upload_site("/Users/yason/breba/disc-site/sites/test-site", "test-site")
+    :param user_name: username
+    :param session_id: session id used for locating site files
+    :param site_name: site name where all the files will be stored
+    :return: public url of deployed site
+    """
     site_name = re.sub("[^0-9a-zA-Z]+", "-", site_name).strip(" -")
 
     # TODO: convert to async because GCP is a blocking call, we don't want to have to wait
