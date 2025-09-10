@@ -11,9 +11,9 @@ from storage import save_file_to_private, save_image_file_to_private, load_templ
     read_index_html, get_public_url
 from deployment_controller import run_deployment
 from llm_utils import get_product_name
-from models.deployment import Deployment
-from models.product import Product
-from models.user import User
+from breba_app.models.deployment import Deployment
+from breba_app.models.product import Product
+from breba_app.models.user import User
 from orchestrator import get_generator_response, to_builder, update_builder_spec, set_generator_response, to_generator
 
 PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
