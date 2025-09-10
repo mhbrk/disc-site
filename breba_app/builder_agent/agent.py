@@ -45,20 +45,18 @@ class BuilderAgent:
         # Create a state graph
         graph = StateGraph(state_schema=State)
 
-        # Add the agent and tools nodes
-        graph.add_node("agent", self.agent)
+        graph.add_node("new_spec_agent", self.new_spec_agent)
         graph.add_node("extract_prompt", self.extract_prompt)
         graph.add_node("get_user_input", self.get_user_input)
 
-        # Define transitions: agent → tools, then loop back to agent
-        graph.add_edge(START, "agent")
+        graph.add_edge(START, "new_spec_agent")
         # TODO: this logic is a bit outdated. Sometimes when editing, the task may not not required a final prompt (e.g. generator providing diff that results in no updates)
         #  This can be fixed by:
         #  1) using a different graph or agent for editing
         #  2) using a different entry point
         #  3) Changing the graph to check for question explicitly. e.g. "Is this a final prompt or is a question?"
-        graph.add_conditional_edges("agent", self.is_final_prompt, {True: "extract_prompt", False: "get_user_input"})
-        graph.add_edge("get_user_input", "agent")
+        graph.add_conditional_edges("new_spec_agent", self.is_final_prompt, {True: "extract_prompt", False: "get_user_input"})
+        graph.add_edge("get_user_input", "new_spec_agent")
         graph.add_edge("extract_prompt", END)
 
         self.graph = graph
@@ -68,9 +66,9 @@ class BuilderAgent:
 
     def is_final_prompt(self, state: State) -> bool:
         """
-        Checks if agent has decided to produce final prompt in its last message.
-        :param state: agent state that contains messages
-        :return: boolean indicating if agent has decided to produce final prompt in the last message
+        Checks if the last message has a final prompt in its last message.
+        :param state: graph state that contains messages
+        :return: True if last message has a final prompt
         """
         if len(state["messages"]) > 1:
             message = state["messages"][-1].content
@@ -82,8 +80,8 @@ class BuilderAgent:
 
     def get_user_input(self, state: State) -> State:
         """
-        Use interrupt mechanism from langgraph. The client will need to re-invoke the agent to continue
-        :param state: state of the agent just before the interrupt.
+        Use interrupt mechanism from langgraph. The client will need to re-invoke the graph to continue
+        :param state: state of the graph just before the interrupt.
         :return: state updated with the message from the client.
         """
         question = state["messages"][-1].content
@@ -105,7 +103,7 @@ class BuilderAgent:
 
         return {"prompt": prompt, "messages": [last_message]}
 
-    async def agent(self, state: State, config: RunnableConfig) -> State:
+    async def new_spec_agent(self, state: State, config: RunnableConfig) -> State:
         # TODO: use callback or class to get files, probably usersessioncontext class to get userid, user time, and zone
 
         trimmed_messages = trim_messages(
@@ -144,7 +142,7 @@ class BuilderAgent:
         # Preset the state
         # TODO: this should be only done once
         await self.app.aupdate_state(config, {"user_name": user_name}, as_node="extract_prompt")
-        # if the agent is waiting for user input
+        # if the graph is waiting for user input
         if self.is_waiting_for_user_input(config):
             await self.app.ainvoke(Command(resume=user_input), config)
         else:
@@ -156,9 +154,9 @@ class BuilderAgent:
 
     def is_waiting_for_user_input(self, config: dict):
         """
-        Helper function to check if the agent is waiting for user input, to facilitate human in the loop
-        :param config: agent config used to get state.
-        :return: True, if the next agent node is "get_user_input" indicate interrupt was triggered.
+        Helper function to check if the graph is waiting for user input, to facilitate human in the loop
+        :param config: graph config used to get state.
+        :return: True, if the next graph node is "get_user_input" indicate interrupt was triggered.
                  False, otherwise.
         """
         state_snapshot = self.app.get_state(config)
