@@ -33,6 +33,8 @@ def normalize_line_endings(text):
 # Helper function to generate a diff
 @pytest.fixture
 def valid_diff(original_html, modified_html):
+    # TODO: this generates diff that is different from the ai generated diff.
+    #       We should create a fixture with the ai generated diff
     return get_diff(normalize_line_endings(original_html), normalize_line_endings(modified_html))
 
 
