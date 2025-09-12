@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 class BuilderAgent:
 
     def __init__(self):
-        self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
+        self.model = ChatOpenAI(model="gpt-5", reasoning_effort="minimal")
 
         # Create a checkpointer, could use MongoDB checkpointer in the future
         checkpointer = MemorySaver()
@@ -173,6 +173,7 @@ class BuilderAgent:
             diff = split_message[1]
             if not diff:
                 raise f"Cloud not extract diff, something went wrong: {diff}"
+            logger.info(f"Diff: {diff}")
             new_prompt = apply_diff_no_line_numbers(state["prompt"], diff)
             # In this case we are not replacing the last message to preserve the context of the diff
             last_message = {"role": "user", "content": f"This the full spec for my site: {new_prompt}"}
