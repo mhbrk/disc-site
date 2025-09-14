@@ -147,9 +147,15 @@ class HTMLAgent:
         return modified
 
     async def editing_stream(self, query: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
+        """
+        Stream inline editing query. The input is not a full specification, but a query to be applied to the current
+        specification.
+        """
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # TODO: username needs to be used as a static parameter to the tool call
         #  For this need to redo the generator agent using custom graph or using baml
+        # The difference between editing and regular stream is that this function gets the last specification to work with
+        # that last specification was set by the original stream call
         inputs = {"messages": [("user", f"Your session id is: {session_id}."),
                                ("user", f"The user name for tool use is: {user_name}."),
                                ("user", f"Current time is: {current_time}"),

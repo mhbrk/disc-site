@@ -134,8 +134,8 @@ def find_hunk_start(original_lines, hunk_lines):
         if original_lines[i:i + len(lines_to_match)] == lines_to_match:
             return i
 
-    raise PatchApplyError(f"Could not find matching sequence in original file.\n"
-                          f"Looking for: {lines_to_match}")
+    raise PatchApplyError(f"Could not find context lines. The following text was not found in the original text\n"
+                          f"{" ".join(lines_to_match)}")
 
 
 def apply_hunk(original_lines, hunk_lines):
