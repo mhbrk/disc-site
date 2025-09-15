@@ -40,7 +40,7 @@ fi
 
 # Check if AWS_ACCESS_KEY_ID is already in file
 if ! grep -q '^AWS_ACCESS_KEY_ID=' "$ENV_FILE"; then
-  read -r -p "AWS ACCESS API Key: " OPENAI_API_KEY
+  read -r -p "AWS ACCESS API Key ID: " AWS_ACCESS_KEY_ID
   echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> "$ENV_FILE"
   echo "✅ Added AWS_ACCESS_KEY_ID to $ENV_FILE"
 else
@@ -51,7 +51,7 @@ fi
 # Check if AWS_SECRET_ACCESS_KEY is already in file
 if ! grep -q '^AWS_SECRET_ACCESS_KEY=' "$ENV_FILE"; then
   read -r -p "AWS SECRET API Key: " AWS_SECRET_ACCESS_KEY
-  echo "OPENAI_API_KEY=$AWS_SECRET_ACCESS_KEY" >> "$ENV_FILE"
+  echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> "$ENV_FILE"
   echo "✅ Added AWS_SECRET_ACCESS_KEY to $ENV_FILE"
 else
   echo "ℹ️ AWS_SECRET_ACCESS_KEY already exists in $ENV_FILE, skipping..."
@@ -100,7 +100,7 @@ source ./scripts/create_user.bash
 
 echo "CLOUDFLARE_ENDPOINT=https://c0e7f083e56fe64be2af84fa3f82e689.r2.cloudflarestorage.com" >> "$ENV_FILE"
 echo "USERS_BUCKET=dev-breba-users" >> "$ENV_FILE"
-echo "PUBLIC_BUCKET=breba-public" >> "$ENV_FILE"
+echo "PUBLIC_BUCKET=dev-breba-public" >> "$ENV_FILE"
 echo "CDN_BASE_URL=https://dev-cdn.breba.app" >> "$ENV_FILE"
 
 ok "Done."
