@@ -135,7 +135,7 @@ def find_hunk_start(original_lines, hunk_lines):
             return i
 
     raise PatchApplyError(f"Could not find context lines. The following text was not found in the original text\n"
-                          f"{" ".join(lines_to_match)}")
+                          f"{"\n".join(lines_to_match)}")
 
 
 def apply_hunk(original_lines, hunk_lines):

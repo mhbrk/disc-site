@@ -39,7 +39,8 @@ logger = logging.getLogger(__name__)
 class BuilderAgent:
 
     def __init__(self):
-        self.model = ChatOpenAI(model="gpt-5", reasoning_effort="minimal")
+        self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
+        self.editing_model = ChatOpenAI(model="gpt-5", reasoning_effort="minimal")
 
         # Create a checkpointer, could use MongoDB checkpointer in the future
         checkpointer = MemorySaver()
@@ -47,13 +48,15 @@ class BuilderAgent:
         # Create a state graph
         graph = StateGraph(state_schema=State)
 
+        graph.add_node("determine_agent_mode", self.determine_agent_mode)
         graph.add_node("new_spec_agent", self.new_spec_agent)
         graph.add_node("editing_spec_agent", self.editing_spec_agent)
         graph.add_node("extract_prompt", self.extract_prompt)
         graph.add_node("get_user_input", self.get_user_input)
         graph.add_node("apply_diff", self.apply_diff)
 
-        graph.add_conditional_edges(START, self.is_new_spec, {True: "new_spec_agent", False: "editing_spec_agent"})
+        graph.add_edge(START, "determine_agent_mode")
+        graph.add_conditional_edges("determine_agent_mode", self.route_to_agent_mode)
         # TODO: this logic is a bit outdated. Sometimes when editing, the task may not not required a final prompt (e.g. generator providing diff that results in no updates)
         #  This can be fixed by:
         #  1) using a different graph or agent for editing
@@ -74,14 +77,25 @@ class BuilderAgent:
 
         self.final_state: State | None = None
 
+    async def determine_agent_mode(self, state: State) -> State:
+        # Need to make sure that we have a current agent, if not we default to new_spec_agent
+        if state["current_agent"]:
+            return {"current_agent": state["current_agent"]}
+        return {"current_agent": "new_spec_agent"}
 
-    def is_new_spec(self, state: State) -> bool:
+
+    async def get_last_spec(self, session_id) -> str:
+        config = {"configurable": {"thread_id": session_id}}
+        current_state = await self.app.aget_state(config)
+        return current_state.values.get('prompt')
+
+    def route_to_agent_mode(self, state: State) -> str:
         """
-        Checks if we already have a website specification
+        This works using a predetermined routing. The client is in control of which mode the agent is operating in
         :param state: graph state that contains messages
-        :return: True if we don't have a website specification, otherwise False
+        :return: routes to the appropriate agent. Defaults to new_spec_agent
         """
-        return state["prompt"] is None
+        return state["current_agent"] or "new_spec_agent"
 
     def is_diff_present(self, state: State) -> bool:
         """
@@ -92,12 +106,15 @@ class BuilderAgent:
 
         if len(state["messages"]) > 1:
             message = state["messages"][-1].content
+            # builder is a special case when LLM decides that it needs to rebuild the spec
+            if message == "builder":
+                # TODO: hand off should be explicit not through raising an exception
+                raise Exception("Not an editing task, need to rebuild the spec")
             split_message = message.split("::final diff::")
 
             if len(split_message) > 1 and split_message[1]:
                 return True
         return False
-
 
     def is_final_prompt(self, state: State) -> bool:
         """
@@ -134,7 +151,8 @@ class BuilderAgent:
         if len(split_message) > 1:
             prompt = split_message[1]
             # By setting id we are making sure that we replace the last message
-            last_message = {"id": last_message.id, "role": "user", "content": f"This the full spec for my site: {prompt}"}
+            last_message = {"id": last_message.id, "role": "user",
+                            "content": f"This the full spec for my site: {prompt}"}
 
         return {"prompt": prompt, "messages": [last_message]}
 
@@ -197,7 +215,7 @@ class BuilderAgent:
                                                                                             config['configurable'][
                                                                                                 "thread_id"]),
                                                                 current_time=current_time))
-        response = await self.model.ainvoke([system_message] + trimmed_messages)
+        response = await self.editing_model.ainvoke([system_message] + trimmed_messages)
         return {"messages": [response], "current_agent": "editing_spec_agent"}
 
     def visualize(self):
@@ -215,17 +233,27 @@ class BuilderAgent:
 
     async def invoke(self, user_name: str, session_id: str, user_input: Message):
         config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id})
-        # Preset the state
-        # TODO: this should be only done once
-        await self.app.aupdate_state(config, {"user_name": user_name}, as_node="extract_prompt")
-        # if the graph is waiting for user input
         if self.is_waiting_for_user_input(config):
             await self.app.ainvoke(Command(resume=user_input), config)
         else:
             # This happens in only with the first task request, if task is being continued this will not work
             logger.info(f"Invoking builder agent with user input: {user_input}")
-            await self.app.ainvoke({"messages": [{"role": user_input.role, "content": user_input.parts[0].text}]},
+            await self.app.ainvoke({"messages": [{"role": user_input.role, "content": user_input.parts[0].text}],
+                                    "user_name": user_name, "current_agent": "new_spec_agent"},
                                    config)
+        return await self.get_agent_response(config)
+
+    async def edit_invoke(self, user_name: str, session_id: str, user_input: Message):
+        config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id})
+        if self.is_waiting_for_user_input(config):
+            await self.app.ainvoke(Command(resume=user_input), config)
+        else:
+            # This happens in only with the first task request, if task is being continued this will not work
+            logger.info(f"Invoking builder agent with user input: {user_input}")
+            await self.app.ainvoke(
+                {"messages": [{"role": user_input.role, "content": user_input.parts[0].text}], "user_name": user_name,
+                 "current_agent": "editing_spec_agent"},
+                config)
         return await self.get_agent_response(config)
 
     def is_waiting_for_user_input(self, config: dict):
