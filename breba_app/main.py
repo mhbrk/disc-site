@@ -46,7 +46,15 @@ app.add_middleware(
 
 app_path = Path(__file__).parent
 
+import time
+DEV_MODE = os.getenv("DEV_MODE", "true").lower() == "true"
+
+def asset_url(filename):
+    base = f"/public/{filename}"
+    return f"{base}?asset_version={int(time.time())}"
+
 templates = Jinja2Templates(directory=app_path / "templates")
+templates.env.globals['asset'] = asset_url
 
 app.mount("/public",
           StaticFiles(directory=app_path / "public"),
