@@ -49,7 +49,7 @@ async def process_chunk(accumulator: TagAccumulator, chunk: dict, generator_call
         await generator_callback(tag_html)
 
 
-async def start_streaming_task(user_name: str, session_id: str, query: str, generator_callback):
+async def generator_task(user_name: str, session_id: str, query: str, generator_callback):
     accumulator = TagAccumulator()
     async for chunk in generator_agent.stream(query, user_name, session_id):
         await process_chunk(accumulator, chunk, generator_callback)
@@ -128,7 +128,7 @@ async def to_builder(user_name: str, session_id: str, message: str, builder_comp
         await builder_completed_callback(spec)
         await message_to_user_callback(
             "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec")
-        await start_streaming_task(user_name, session_id, spec, generator_callback)
+        await generator_task(user_name, session_id, spec, generator_callback)
     else:
         message = agent_response.get("content")
         logger.info(f"Waiting for user input: {message}")

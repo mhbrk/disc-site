@@ -110,7 +110,7 @@ class HTMLAgent:
         self.graph.invoke({"messages": [("user", query)]}, config)
         return self.get_agent_response(config)
 
-    async def stream(self, query: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
+    async def stream(self, spec: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # TODO: username needs to be used as a static parameter to the tool call
         #  For this need to redo the generator agent using custom graph or using baml
@@ -118,8 +118,8 @@ class HTMLAgent:
             "messages": [("user", f"Your session id is: {session_id}."),
                          ("user", f"The user name for tool use is: {user_name}."),
                          ("user", f"Current time is: {current_time}"),
-                         ("user", query)],
-            "specification": query
+                         ("user", spec)],
+            "specification": spec
         }
 
         config = {"configurable": {"thread_id": session_id}}
@@ -139,6 +139,9 @@ class HTMLAgent:
         yield self.get_agent_response(config)
 
     async def diffing_update(self, query: str, session_id: str):
+        """
+        This method is used to update only the parts of the html that need to be updated.
+        """
         html = self.get_last_html(session_id)
         # Will raise an exception if the diff is too long
         diff = await diff_text(html, query)
@@ -149,7 +152,7 @@ class HTMLAgent:
     async def editing_stream(self, query: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
         """
         Stream inline editing query. The input is not a full specification, but a query to be applied to the current
-        specification.
+        specification. This method is used when diffing update fails and we will generate the full html for the website.
         """
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # TODO: username needs to be used as a static parameter to the tool call
