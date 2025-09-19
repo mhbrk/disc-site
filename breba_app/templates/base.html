@@ -105,45 +105,46 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        const builderPanel = document.getElementById("builder-panel");
-        const deployPanel = document.getElementById("deploy-panel");
-        const templatesPanel = document.getElementById("templates-panel");
-
-        const toggleBuilder = document.getElementById("toggle-builder");
-        const toggleDeploy = document.getElementById("toggle-deploy");
-        const toggleTemplates = document.getElementById("toggle-templates");
-        const productsPanel = document.getElementById("products-panel");
-        const toggleProducts = document.getElementById("toggle-products");
-
         function showOnly(panelToShow) {
-            [builderPanel, deployPanel, templatesPanel, productsPanel].forEach(panel => {
-                if (panel === panelToShow) {
-                    panel.classList.remove("d-none");
-                } else {
-                    panel.classList.add("d-none");
-                }
+            document.querySelectorAll('.side-panel').forEach(panel => {
+                (panel === panelToShow) ? panel.classList.remove("d-none") : panel.classList.add("d-none");
             });
         }
 
-        // TODO: extract template selection
-        toggleBuilder.addEventListener("click", () => {
-            const isVisible = !builderPanel.classList.contains("d-none");
-            showOnly(isVisible ? null : builderPanel);
+        function togglePanel(panel) {
+            const isVisible = !panel.classList.contains("d-none");
+            showOnly(isVisible ? null : panel);
+        }
+
+        // Generic toggle for all panel buttons
+        document.querySelectorAll('[id^="toggle-"]').forEach(button => {
+            button.addEventListener("click", () => {
+                const panelName = button.id.replace('toggle-', '');
+                const panel = document.getElementById(panelName + '-panel');
+                if (panel) togglePanel(panel);
+            });
         });
 
-        toggleDeploy.addEventListener("click", () => {
-            const isVisible = !deployPanel.classList.contains("d-none");
-            showOnly(isVisible ? null : deployPanel);
-        });
+        // Template selection logic
+        document.querySelectorAll(".start-template").forEach(button => {
+            button.addEventListener("click", async () => {
+                const templateName = button.dataset.template;
 
-        toggleTemplates.addEventListener("click", () => {
-            const isVisible = !templatesPanel.classList.contains("d-none");
-            showOnly(isVisible ? null : templatesPanel);
-        });
+                const cards = document.getElementById("template-cards");
+                const iframe = document.getElementById("generator-frame");
 
-        toggleProducts.addEventListener("click", () => {
-            const isVisible = !productsPanel.classList.contains("d-none");
-            showOnly(isVisible ? null : productsPanel);
+                // Hide cards and show iframe
+                if (cards) cards.style.display = "none";
+                if (iframe) iframe.style.display = "block";
+
+                const chat = document.getElementById('chainlit');
+                if (chat) {
+                    chat.contentWindow.postMessage({
+                        method: "load_template",
+                        body: templateName
+                    }, '*');
+                }
+            });
         });
 
         // Escape key closes all panels
