@@ -48,26 +48,17 @@ app_path = Path(__file__).parent
 
 import time
 
-DEV_MODE = os.getenv("DEV_MODE", "true").lower() == "true"
-
-# In dev, use dynamic timestamp; in prod, use max mtime of public files on startup
-if DEV_MODE:
-    ASSET_VERSION = None  # Will use time.time() dynamically
+# Compute static asset version based on max mtime of public files on startup
+public_dir = app_path / "public"
+if public_dir.exists():
+    mtimes = [f.stat().st_mtime for f in public_dir.rglob('*') if f.is_file()]
+    ASSET_VERSION = str(int(max(mtimes))) if mtimes else "1"
 else:
-    public_dir = app_path / "public"
-    if public_dir.exists():
-        mtimes = [f.stat().st_mtime for f in public_dir.rglob('*') if f.is_file()]
-        ASSET_VERSION = str(int(max(mtimes))) if mtimes else "1"
-    else:
-        ASSET_VERSION = "1"
+    ASSET_VERSION = "1"
 
 def asset_url(filename):
     base = f"/public/{filename}"
-    if DEV_MODE:
-        v = int(time.time())
-    else:
-        v = ASSET_VERSION
-    return f"{base}?v={v}"
+    return f"{base}?v={ASSET_VERSION}"
 
 templates = Jinja2Templates(directory=app_path / "templates")
 templates.env.globals['asset'] = asset_url
