@@ -46,7 +46,22 @@ app.add_middleware(
 
 app_path = Path(__file__).parent
 
+import time
+
+# Compute static asset version based on max mtime of public files on startup
+public_dir = app_path / "public"
+if public_dir.exists():
+    mtimes = [f.stat().st_mtime for f in public_dir.rglob('*') if f.is_file()]
+    ASSET_VERSION = str(int(max(mtimes))) if mtimes else "1"
+else:
+    ASSET_VERSION = "1"
+
+def asset_url(filename):
+    base = f"/public/{filename}"
+    return f"{base}?v={ASSET_VERSION}"
+
 templates = Jinja2Templates(directory=app_path / "templates")
+templates.env.globals['asset'] = asset_url
 
 app.mount("/public",
           StaticFiles(directory=app_path / "public"),
