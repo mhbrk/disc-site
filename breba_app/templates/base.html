@@ -96,6 +96,11 @@
                 }
             }
 
+            /* Small screens: left column ~2/3 only when input panel is visible */
+            @media (max-width: 767.98px) {
+                #left-panels.min-66 { min-height: 66vh; }
+            }
+
             #right-panel {
                 height: auto;
                 /* small screens: let content define height */
@@ -141,29 +146,29 @@
                     </div>
                 </div>
                 <!-- Left Panels (inputs)-->
-                <div id="left-panels" class="col-12 col-md-4 d-flex flex-column h-100">
+                <div id="left-panels" class="col-12 col-md-4 d-flex flex-column">
                     <div id="input-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto">
                         {% include "input.html" %}
                     </div>
 
                     <!-- Side panels positioned relative to #left-panels -->
-                    <div id="builder-panel" class="panel left-panel d-none">
+                    <div id="builder-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
                         {% include "builder.html" %}
                     </div>
 
-                    <div id="deploy-panel" class="panel left-panel d-none">
+                    <div id="deploy-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
                         {% include "deploy.html" %}
                     </div>
-                    <div id="templates-panel" class="panel left-panel d-none">
+                    <div id="templates-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
                         {% include "templates.html" %}
                     </div>
-                    <div id="products-panel" class="panel left-panel d-none">
+                    <div id="products-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
                         {% include "products.html" %}
                     </div>
                 </div>
 
                 <!-- Generator Panel (with a generated website)-->
-                <div id="right-panel" class="col-12 col-md d-flex flex-column h-100">
+                <div id="right-panel" class="col-12 col-md d-flex flex-column">
                     <div id="generator-panel" class="panel flex-fill d-flex flex-column overflow-auto">
                         {% include "generator.html" %}
                     </div>
@@ -177,6 +182,13 @@
             document.addEventListener("DOMContentLoaded", () => {
                 const D_NONE = "d-none";
                 const inputTab = document.querySelector('#input-panel');
+                const leftContainer = document.getElementById('left-panels');
+                function setLeftMinHeight() {
+                    if (!leftContainer) return;
+                    leftContainer.classList.add('min-66');
+                }
+                // initialize
+                setLeftMinHeight();
 
                 function showOnlyOnePanel(panelToShow) {
                     document.querySelectorAll('.left-panel').forEach(panel => {
@@ -195,6 +207,7 @@
                         inputTab.classList.add(D_NONE);
                         showOnlyOnePanel(panel);
                     }
+                    setLeftMinHeight();
                 }
 
                 // Generic toggle for all panel buttons
@@ -233,6 +246,7 @@
                     if (event.key === "Escape" || event.key === "Esc") {
                         showOnlyOnePanel(null);
                         inputTab.classList.remove(D_NONE);
+                        setLeftMinHeight();
                     }
                 });
             });
