@@ -23,7 +23,7 @@
                 border: 1px solid #ccc;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
                 border-radius: 0.5rem;
-                overflow: hidden;
+                overflow: auto;
 
             }
 
@@ -49,7 +49,7 @@
                 border: 1px solid #ccc;
                 border-radius: 0.5rem;
                 background-color: white;
-                overflow: hidden;
+                overflow: auto;
             }
 
             /* Generator iframe sizing */
@@ -100,6 +100,13 @@
                 height: auto;
                 /* small screens: let content define height */
             }
+
+            @media (min-width: 768px) {
+                /* panels and their container fill viewport height on desktop */
+                .panel { height: 100%; }
+                #left-panels, #right-panel { height: 100%; display: flex; flex-direction: column; }
+                #left-panels .panel, #generator-panel { flex: 1 1 auto; min-height: 0; }
+            }
         </style>
 
     </head>
@@ -115,11 +122,11 @@
             </div>
         </div>
 
-        <div class="container-fluid min-vh-100 p-4 bg-danger">
-            <div class="d-flex flex-column flex-md-row h-100 gap-1">
+        <div class="container-fluid vh-100 p-4 bg-danger">
+            <div class="row h-100 g-1 align-items-stretch">
                 <!-- Sidebar Panle (buttons) -->
                 <div id="sidebar-buttons"
-                    class="col-12 col-md-auto mt-0 mt-md-3 d-none align-middle align-self-start align-self-md-stretch">
+                    class="col-12 col-md-auto mt-0 mt-md-0 d-none align-middle align-self-start align-self-md-stretch">
                     <div class="d-flex flex-md-column flex-row bg-dark rounded gap-2 h-100 pt-md-2 w-100 w-md-auto">
                         <a href="/home" class="btn text-white fs-4 d-flex align-items-center justify-content-center"
                             title="Home">
@@ -134,8 +141,8 @@
                     </div>
                 </div>
                 <!-- Left Panels (inputs)-->
-                <div id="left-panels" class="col-12 mt-0 mt-md-3 min-vh-66 overflow-auto d-flex flex-column h-100">
-                    <div id="input-panel" class="panel left-panel flex-grow-1 overflow-auto d-flex flex-column">
+                <div id="left-panels" class="col-12 col-md-4 d-flex flex-column h-100">
+                    <div id="input-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto">
                         {% include "input.html" %}
                     </div>
 
@@ -156,8 +163,8 @@
                 </div>
 
                 <!-- Generator Panel (with a generated website)-->
-                <div id="right-panel" class="col-12 col-md-7 mt-0 mt-md-3 d-flex flex-column h-100">
-                    <div id="generator-panel" class="panel flex-grow-1 overflow-auto d-flex flex-column">
+                <div id="right-panel" class="col-12 col-md d-flex flex-column h-100">
+                    <div id="generator-panel" class="panel flex-fill d-flex flex-column overflow-auto">
                         {% include "generator.html" %}
                     </div>
                 </div>
