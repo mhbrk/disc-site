@@ -14,11 +14,14 @@
         }
 
         .panel {
-            height: 95vh;
-            padding: 0;
+            background-color: white;
+            height: 100%;
+            width: 100%;
             border: 1px solid #ccc;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             border-radius: 0.5rem;
             overflow: hidden;
+
         }
 
         #input-panel iframe {
@@ -29,21 +32,20 @@
 
         #generator-panel {
             position: relative;
-        }
-
-        .side-panel {
-            position: absolute;
-            top: 1rem;
-            left: 74px;
-            width: 33%;
-            height: 95vh;
-            background-color: white;
             border: 1px solid #ccc;
             border-radius: 0.5rem;
-            z-index: 10;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            overflow-y: auto;
-            padding: 1rem;
+            background-color: white;
+            overflow: hidden;
+        }
+
+        #right-panel {
+            height: 50vh;
+        }
+
+        @media (min-width: 768px) {
+            #right-panel {
+                height: 100%;
+            }
         }
 
     </style>
@@ -61,13 +63,15 @@
         <button id="popup-submit" class="btn btn-sm btn-primary">→</button>
     </div>
 </div>
-<div class="container-fluid mt-3">
-    <div class="row g-3 align-items-stretch">
-        <!-- Sidebar Column -->
-        <div id="sidebar-buttons" class="col-12 col-md-auto px-2 px-md-0 mt-0 mt-md-3 d-none">
-            <div
-                class="d-flex flex-md-column flex-row bg-dark rounded gap-2 h-100 px-1 pt-md-2 w-100 w-md-auto">
-                <a href="/home" class="btn fs-4" title="Home"><img src="public/breba_icon_dark.png" alt="Home" width="24" height="24"></a>
+
+<div class="container-fluid vh-100 p-4 bg-danger">
+    <div class="d-flex flex-column flex-md-row h-100 gap-1">
+        <!-- Sidebar Panle (buttons) -->
+        <div id="sidebar-buttons" class="col-12 col-md-auto px-2 px-md-0 mt-0 mt-md-3 d-none align-middle align-self-start align-self-md-stretch">
+            <div class="d-flex flex-md-column flex-row bg-dark rounded gap-2 h-100 px-1 pt-md-2 w-100 w-md-auto">
+                <a href="/home" class="btn text-white fs-4 d-flex align-items-center justify-content-center" title="Home">
+                    <img src="public/breba_icon_dark.png" alt="Home" width="24" height="24">
+                </a>
                 <button id="toggle-products" type="button" class="btn text-white fs-4" title="Products">&#x1F5C2;
                 </button>
                 <button id="toggle-builder" class="btn text-white fs-4" title="Open Builder">&#x1F4C4;</button>
@@ -75,45 +79,61 @@
                 <button id="toggle-templates" class="btn text-white fs-4" title="Templates">&#x1F4C1;</button>
             </div>
         </div>
-        <div id="left-panel" class="mt-0 mt-md-3">
-            <div id="input-panel" class="panel">
+        <!-- Left Panels (inputs)-->
+        <div id="left-panels" class="col-12 mt-0 mt-md-3">
+            <div id="input-panel" class="panel left-panel">
                 {% include "input.html" %}
             </div>
+
+            <!-- Side panels positioned relative to #left-panels -->
+            <div id="builder-panel" class="panel left-panel d-none">
+                {% include "builder.html" %}
+            </div>
+
+            <div id="deploy-panel" class="panel left-panel d-none">
+                {% include "deploy.html" %}
+            </div>
+            <div id="templates-panel" class="panel left-panel d-none">
+                {% include "templates.html" %}
+            </div>
+            <div id="products-panel" class="panel left-panel d-none">
+                {% include "products.html" %}
+            </div>
         </div>
-        <div id="right-panel" class="col-md-7 d-none">
+
+        <!-- Generator Panel (with a generated website)-->
+        <div id="right-panel" class="col-12 col-md-7 mt-0 mt-md-3">
             <div id="generator-panel" class="panel">
                 {% include "generator.html" %}
             </div>
         </div>
+        
     </div>
 
-    <!-- Builder panel outside of grid -->
-    <div id="builder-panel" class="side-panel d-none">
-        {% include "builder.html" %}
-    </div>
-
-    <div id="deploy-panel" class="side-panel d-none">
-        {% include "deploy.html" %}
-    </div>
-    <div id="templates-panel" class="side-panel d-none">
-        {% include "templates.html" %}
-    </div>
-    <div id="products-panel" class="side-panel d-none">
-        {% include "products.html" %}
-    </div>
 </div>
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        function showOnly(panelToShow) {
-            document.querySelectorAll('.side-panel').forEach(panel => {
-                (panel === panelToShow) ? panel.classList.remove("d-none") : panel.classList.add("d-none");
+       const D_NONE = "d-none";
+       const inputTab = document.querySelector('#input-panel');
+
+        function showOnlyOnePanel(panelToShow) {
+            document.querySelectorAll('.left-panel').forEach(panel => {
+                (panel === panelToShow) ? panel.classList.remove(D_NONE) : panel.classList.add(D_NONE);
             });
         }
 
+
         function togglePanel(panel) {
-            const isVisible = !panel.classList.contains("d-none");
-            showOnly(isVisible ? null : panel);
+            const isVisible = !panel.classList.contains(D_NONE);
+            if (isVisible) {
+                panel.classList.add(D_NONE);
+                inputTab.classList.remove(D_NONE);
+            } else {
+                panel.classList.remove(D_NONE);
+                inputTab.classList.add(D_NONE);
+                showOnlyOnePanel(panel);
+            }
         }
 
         // Generic toggle for all panel buttons
@@ -150,7 +170,8 @@
         // Escape key closes all panels
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape" || event.key === "Esc") {
-                showOnly(null);
+                showOnlyOnePanel(null);
+                inputTab.classList.remove(D_NONE);
             }
         });
     });
@@ -161,7 +182,7 @@
     } else if (event.data.method === "logged_in") {
         // Reveal generator + sidebar buttons
 
-        document.getElementById("left-panel").classList.add("col-md-4");
+        document.getElementById("left-panels").classList.add("col-md-4");
         document.getElementById("right-panel").classList.remove("d-none");
         document.getElementById("sidebar-buttons").classList.remove("d-none");
     }
