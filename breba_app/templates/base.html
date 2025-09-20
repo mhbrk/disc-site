@@ -2,6 +2,7 @@
 <html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Breba</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
@@ -15,7 +16,7 @@
 
         .panel {
             background-color: white;
-            height: 100%;
+            height: auto;
             width: 100%;
             border: 1px solid #ccc;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -26,8 +27,13 @@
 
         #input-panel iframe {
             width: 100%;
-            height: 100%;
             border: none;
+        }
+        @media (max-width: 767.98px) {
+            #input-panel iframe { height: 66vh; }
+        }
+        @media (min-width: 768px) {
+            #input-panel iframe { height: 100%; }
         }
 
         #generator-panel {
@@ -38,14 +44,23 @@
             overflow: hidden;
         }
 
-        #right-panel {
-            height: 50vh;
+        /* Generator iframe sizing */
+        #generator-panel > iframe,
+        #generator-frame { width: 100%; border: 0; }
+        @media (max-width: 767.98px) {
+          #generator-panel > iframe,
+          #generator-frame { height: auto; min-height: 66vh; }
+        }
+        @media (min-width: 768px) {
+          #generator-panel > iframe,
+          #generator-frame { height: 100%; }
         }
 
-        @media (min-width: 768px) {
-            #right-panel {
-                height: 100%;
-            }
+        #right-panel {
+            height: auto; /* small screens: let content define height */
+        }
+        @media (max-width: 767.98px) {
+            .min-vh-66 { min-height: 66vh; }
         }
 
     </style>
@@ -64,11 +79,11 @@
     </div>
 </div>
 
-<div class="container-fluid vh-100 p-4 bg-danger">
+<div class="container-fluid min-vh-100 p-4 bg-danger">
     <div class="d-flex flex-column flex-md-row h-100 gap-1">
         <!-- Sidebar Panle (buttons) -->
-        <div id="sidebar-buttons" class="col-12 col-md-auto px-2 px-md-0 mt-0 mt-md-3 d-none align-middle align-self-start align-self-md-stretch">
-            <div class="d-flex flex-md-column flex-row bg-dark rounded gap-2 h-100 px-1 pt-md-2 w-100 w-md-auto">
+        <div id="sidebar-buttons" class="col-12 col-md-auto mt-0 mt-md-3 d-none align-middle align-self-start align-self-md-stretch">
+            <div class="d-flex flex-md-column flex-row bg-dark rounded gap-2 h-100 pt-md-2 w-100 w-md-auto">
                 <a href="/home" class="btn text-white fs-4 d-flex align-items-center justify-content-center" title="Home">
                     <img src="public/breba_icon_dark.png" alt="Home" width="24" height="24">
                 </a>
@@ -80,8 +95,8 @@
             </div>
         </div>
         <!-- Left Panels (inputs)-->
-        <div id="left-panels" class="col-12 mt-0 mt-md-3">
-            <div id="input-panel" class="panel left-panel">
+        <div id="left-panels" class="col-12 mt-0 mt-md-3 min-vh-66 overflow-auto d-flex flex-column h-100">
+            <div id="input-panel" class="panel left-panel flex-grow-1 overflow-auto d-flex flex-column">
                 {% include "input.html" %}
             </div>
 
@@ -102,8 +117,8 @@
         </div>
 
         <!-- Generator Panel (with a generated website)-->
-        <div id="right-panel" class="col-12 col-md-7 mt-0 mt-md-3">
-            <div id="generator-panel" class="panel">
+        <div id="right-panel" class="col-12 col-md-7 mt-0 mt-md-3 d-flex flex-column h-100">
+            <div id="generator-panel" class="panel flex-grow-1 overflow-auto d-flex flex-column">
                 {% include "generator.html" %}
             </div>
         </div>
