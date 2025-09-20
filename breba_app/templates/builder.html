@@ -1,20 +1,21 @@
 <div class="d-flex flex-column h-100">
     <!-- Textarea section -->
-    <div style="flex: 0 0 70%; position: relative;">
-        <textarea id="builder-prompt"
-                  class="form-control h-100"
-                  style="resize: none;"></textarea>
-        <button id="run-button"
-                class="btn btn-primary"
-                style="position: absolute; top: 8px; right: 8px; display: none;">
-            Run
-        </button>
+    <div class="position-relative h-75">
+        <textarea id="builder-prompt" class="form-control h-100 no-resize"></textarea>
+        <div id="run-button-wrapper" class="position-absolute top-0 m-2 w-100 rounded d-none">
+            <div class="frosted-panel p-2">
+                <div> Apply your changes</div>
+                <button id="run-button" class="btn btn-primary ml-2">
+                    OK
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Updates section -->
-    <div class="card" style="flex: 0 0 30%; overflow: hidden;">
+    <div class="card h-25 overflow-hidden flex-shrink-0">
         <div class="card-header">Status Updates</div>
-        <div class="card-body" style="overflow-y: auto;">
+        <div class="card-body overflow-auto">
             <ul id="updates-list" class="list-unstyled mb-0"></ul>
         </div>
     </div>
@@ -23,14 +24,15 @@
 <script>
     const textarea = document.getElementById("builder-prompt");
     const runButton = document.getElementById("run-button");
+    const runButtonWrapper = document.getElementById("run-button-wrapper");
     let lastServerContent = "";
 
     // Helper to show/hide
     function updateRunButtonVisibility() {
         if (textarea.value !== lastServerContent) {
-            runButton.style.display = "block";
+            runButtonWrapper.classList.remove('d-none');
         } else {
-            runButton.style.display = "none";
+            runButtonWrapper.classList.add('d-none');
         }
     }
 
@@ -63,3 +65,49 @@
     });
 
 </script>
+<style>
+.no-resize { resize: none; }
+
+/* Match Chainlit input panel look */
+#builder-prompt {
+    padding: 1rem;
+    background-color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border: none !important;
+}
+#builder-prompt {
+    width: 100%;
+    border-radius: 0;
+    border: none !important;
+}
+
+/* Ensure the container has consistent padding */
+#builder-prompt:focus {
+    outline: none;
+    border: none;
+    box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25);
+}
+
+.frosted-panel {
+    width: fit-content;
+    max-width: calc(100% - 3rem);
+    margin: 0 auto; /* centers horizontally */
+    backdrop-filter: blur(8px);
+    background-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 0.5rem 1rem;
+    border-radius: 12px; /* rounded corners */
+}
+
+/* Adjust surrounding card to match spacing */
+#builder-panel .card {
+    margin-top: 1rem;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+</style>
