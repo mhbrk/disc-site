@@ -1,210 +1,248 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Breba</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Breba</title>
+        <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-        .panel {
-            background-color: white;
-            height: auto;
-            width: 100%;
-            border: 1px solid #ccc;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            border-radius: 0.5rem;
-            overflow: hidden;
+        <style>
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+            }
 
-        }
+            .panel {
+                background-color: white;
+                height: auto;
+                width: 100%;
+                border: 1px solid #ccc;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                border-radius: 0.5rem;
+                overflow: hidden;
 
-        #input-panel iframe {
-            width: 100%;
-            border: none;
-        }
-        @media (max-width: 767.98px) {
-            #input-panel iframe { height: 66vh; }
-        }
-        @media (min-width: 768px) {
-            #input-panel iframe { height: 100%; }
-        }
+            }
 
-        #generator-panel {
-            position: relative;
-            border: 1px solid #ccc;
-            border-radius: 0.5rem;
-            background-color: white;
-            overflow: hidden;
-        }
+            #input-panel iframe {
+                width: 100%;
+                border: none;
+            }
 
-        /* Generator iframe sizing */
-        #generator-panel > iframe,
-        #generator-frame { width: 100%; border: 0; }
-        @media (max-width: 767.98px) {
-          #generator-panel > iframe,
-          #generator-frame { height: auto; min-height: 66vh; }
-        }
-        @media (min-width: 768px) {
-          #generator-panel > iframe,
-          #generator-frame { height: 100%; }
-        }
+            @media (max-width: 767.98px) {
+                #input-panel iframe {
+                    height: 66vh;
+                }
+            }
 
-        #right-panel {
-            height: auto; /* small screens: let content define height */
-        }
-        @media (max-width: 767.98px) {
-            .min-vh-66 { min-height: 66vh; }
-        }
+            @media (min-width: 768px) {
+                #input-panel iframe {
+                    height: 100%;
+                }
+            }
 
-    </style>
+            #generator-panel {
+                position: relative;
+                border: 1px solid #ccc;
+                border-radius: 0.5rem;
+                background-color: white;
+                overflow: hidden;
+            }
 
-</head>
-<body style="background-color: #c8c9ca;">
-<div id="popup"
-     style="display:none; position:absolute; z-index:1000; background:white;
+            /* Generator iframe sizing */
+            #generator-panel>iframe,
+            #generator-frame {
+                width: 100%;
+                border: 0;
+            }
+
+            @media (max-width: 767.98px) {
+
+                #generator-panel>iframe,
+                #generator-frame {
+                    height: auto;
+                    min-height: 66vh;
+                    display: block;
+                }
+            }
+
+            @media (min-width: 768px) {
+
+                #generator-panel>iframe,
+                #generator-frame {
+                    height: 100%;
+                }
+            }
+
+            /* Make parent panels tall on small screens so iframe can fill them */
+            @media (max-width: 767.98px) {
+
+                #right-panel,
+                #generator-panel {
+                    min-height: 100vh;
+                }
+
+                #generator-panel>iframe,
+                #generator-frame {
+                    height: auto;
+                    min-height: 100vh;
+                }
+
+                #generator-panel {
+                    overflow: visible !important;
+                }
+            }
+
+            #right-panel {
+                height: auto;
+                /* small screens: let content define height */
+            }
+        </style>
+
+    </head>
+
+    <body style="background-color: #c8c9ca;">
+        <div id="popup" style="display:none; position:absolute; z-index:1000; background:white;
             border:1px solid #ccc; padding:10px; border-radius:8px;
             width:600px; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
-    <div style="display:flex; gap:5px;">
-        <input type="text" id="popup-input"
-               placeholder="Type your request. e.g. Explain"
-               class="form-control"/>
-        <button id="popup-submit" class="btn btn-sm btn-primary">→</button>
-    </div>
-</div>
-
-<div class="container-fluid min-vh-100 p-4 bg-danger">
-    <div class="d-flex flex-column flex-md-row h-100 gap-1">
-        <!-- Sidebar Panle (buttons) -->
-        <div id="sidebar-buttons" class="col-12 col-md-auto mt-0 mt-md-3 d-none align-middle align-self-start align-self-md-stretch">
-            <div class="d-flex flex-md-column flex-row bg-dark rounded gap-2 h-100 pt-md-2 w-100 w-md-auto">
-                <a href="/home" class="btn text-white fs-4 d-flex align-items-center justify-content-center" title="Home">
-                    <img src="public/breba_icon_dark.png" alt="Home" width="24" height="24">
-                </a>
-                <button id="toggle-products" type="button" class="btn text-white fs-4" title="Products">&#x1F5C2;
-                </button>
-                <button id="toggle-builder" class="btn text-white fs-4" title="Open Builder">&#x1F4C4;</button>
-                <button id="toggle-deploy" class="btn text-white fs-4" title="Deploy App">&#x1F680;</button>
-                <button id="toggle-templates" class="btn text-white fs-4" title="Templates">&#x1F4C1;</button>
-            </div>
-        </div>
-        <!-- Left Panels (inputs)-->
-        <div id="left-panels" class="col-12 mt-0 mt-md-3 min-vh-66 overflow-auto d-flex flex-column h-100">
-            <div id="input-panel" class="panel left-panel flex-grow-1 overflow-auto d-flex flex-column">
-                {% include "input.html" %}
-            </div>
-
-            <!-- Side panels positioned relative to #left-panels -->
-            <div id="builder-panel" class="panel left-panel d-none">
-                {% include "builder.html" %}
-            </div>
-
-            <div id="deploy-panel" class="panel left-panel d-none">
-                {% include "deploy.html" %}
-            </div>
-            <div id="templates-panel" class="panel left-panel d-none">
-                {% include "templates.html" %}
-            </div>
-            <div id="products-panel" class="panel left-panel d-none">
-                {% include "products.html" %}
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="popup-input" placeholder="Type your request. e.g. Explain"
+                    class="form-control" />
+                <button id="popup-submit" class="btn btn-sm btn-primary">→</button>
             </div>
         </div>
 
-        <!-- Generator Panel (with a generated website)-->
-        <div id="right-panel" class="col-12 col-md-7 mt-0 mt-md-3 d-flex flex-column h-100">
-            <div id="generator-panel" class="panel flex-grow-1 overflow-auto d-flex flex-column">
-                {% include "generator.html" %}
+        <div class="container-fluid min-vh-100 p-4 bg-danger">
+            <div class="d-flex flex-column flex-md-row h-100 gap-1">
+                <!-- Sidebar Panle (buttons) -->
+                <div id="sidebar-buttons"
+                    class="col-12 col-md-auto mt-0 mt-md-3 d-none align-middle align-self-start align-self-md-stretch">
+                    <div class="d-flex flex-md-column flex-row bg-dark rounded gap-2 h-100 pt-md-2 w-100 w-md-auto">
+                        <a href="/home" class="btn text-white fs-4 d-flex align-items-center justify-content-center"
+                            title="Home">
+                            <img src="public/breba_icon_dark.png" alt="Home" width="24" height="24">
+                        </a>
+                        <button id="toggle-products" type="button" class="btn text-white fs-4"
+                            title="Products">&#x1F5C2;
+                        </button>
+                        <button id="toggle-builder" class="btn text-white fs-4" title="Open Builder">&#x1F4C4;</button>
+                        <button id="toggle-deploy" class="btn text-white fs-4" title="Deploy App">&#x1F680;</button>
+                        <button id="toggle-templates" class="btn text-white fs-4" title="Templates">&#x1F4C1;</button>
+                    </div>
+                </div>
+                <!-- Left Panels (inputs)-->
+                <div id="left-panels" class="col-12 mt-0 mt-md-3 min-vh-66 overflow-auto d-flex flex-column h-100">
+                    <div id="input-panel" class="panel left-panel flex-grow-1 overflow-auto d-flex flex-column">
+                        {% include "input.html" %}
+                    </div>
+
+                    <!-- Side panels positioned relative to #left-panels -->
+                    <div id="builder-panel" class="panel left-panel d-none">
+                        {% include "builder.html" %}
+                    </div>
+
+                    <div id="deploy-panel" class="panel left-panel d-none">
+                        {% include "deploy.html" %}
+                    </div>
+                    <div id="templates-panel" class="panel left-panel d-none">
+                        {% include "templates.html" %}
+                    </div>
+                    <div id="products-panel" class="panel left-panel d-none">
+                        {% include "products.html" %}
+                    </div>
+                </div>
+
+                <!-- Generator Panel (with a generated website)-->
+                <div id="right-panel" class="col-12 col-md-7 mt-0 mt-md-3 d-flex flex-column h-100">
+                    <div id="generator-panel" class="panel flex-grow-1 overflow-auto d-flex flex-column">
+                        {% include "generator.html" %}
+                    </div>
+                </div>
+
             </div>
+
         </div>
-        
-    </div>
 
-</div>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const D_NONE = "d-none";
+                const inputTab = document.querySelector('#input-panel');
 
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-       const D_NONE = "d-none";
-       const inputTab = document.querySelector('#input-panel');
+                function showOnlyOnePanel(panelToShow) {
+                    document.querySelectorAll('.left-panel').forEach(panel => {
+                        (panel === panelToShow) ? panel.classList.remove(D_NONE) : panel.classList.add(D_NONE);
+                    });
+                }
 
-        function showOnlyOnePanel(panelToShow) {
-            document.querySelectorAll('.left-panel').forEach(panel => {
-                (panel === panelToShow) ? panel.classList.remove(D_NONE) : panel.classList.add(D_NONE);
+
+                function togglePanel(panel) {
+                    const isVisible = !panel.classList.contains(D_NONE);
+                    if (isVisible) {
+                        panel.classList.add(D_NONE);
+                        inputTab.classList.remove(D_NONE);
+                    } else {
+                        panel.classList.remove(D_NONE);
+                        inputTab.classList.add(D_NONE);
+                        showOnlyOnePanel(panel);
+                    }
+                }
+
+                // Generic toggle for all panel buttons
+                document.querySelectorAll('[id^="toggle-"]').forEach(button => {
+                    button.addEventListener("click", () => {
+                        const panelName = button.id.replace('toggle-', '');
+                        const panel = document.getElementById(panelName + '-panel');
+                        if (panel) togglePanel(panel);
+                    });
+                });
+
+                // Template selection logic
+                document.querySelectorAll(".start-template").forEach(button => {
+                    button.addEventListener("click", async () => {
+                        const templateName = button.dataset.template;
+
+                        const cards = document.getElementById("template-cards");
+                        const iframe = document.getElementById("generator-frame");
+
+                        // Hide cards and show iframe
+                        if (cards) cards.style.display = "none";
+                        if (iframe) iframe.style.display = "block";
+
+                        const chat = document.getElementById('chainlit');
+                        if (chat) {
+                            chat.contentWindow.postMessage({
+                                method: "load_template",
+                                body: templateName
+                            }, '*');
+                        }
+                    });
+                });
+
+                // Escape key closes all panels
+                document.addEventListener("keydown", (event) => {
+                    if (event.key === "Escape" || event.key === "Esc") {
+                        showOnlyOnePanel(null);
+                        inputTab.classList.remove(D_NONE);
+                    }
+                });
             });
-        }
 
+            window.addEventListener('message', (event) => {
+                if (event.data.method === "reload_product") {
+                    document.location.reload();
+                } else if (event.data.method === "logged_in") {
+                    // Reveal generator + sidebar buttons
 
-        function togglePanel(panel) {
-            const isVisible = !panel.classList.contains(D_NONE);
-            if (isVisible) {
-                panel.classList.add(D_NONE);
-                inputTab.classList.remove(D_NONE);
-            } else {
-                panel.classList.remove(D_NONE);
-                inputTab.classList.add(D_NONE);
-                showOnlyOnePanel(panel);
-            }
-        }
-
-        // Generic toggle for all panel buttons
-        document.querySelectorAll('[id^="toggle-"]').forEach(button => {
-            button.addEventListener("click", () => {
-                const panelName = button.id.replace('toggle-', '');
-                const panel = document.getElementById(panelName + '-panel');
-                if (panel) togglePanel(panel);
-            });
-        });
-
-        // Template selection logic
-        document.querySelectorAll(".start-template").forEach(button => {
-            button.addEventListener("click", async () => {
-                const templateName = button.dataset.template;
-
-                const cards = document.getElementById("template-cards");
-                const iframe = document.getElementById("generator-frame");
-
-                // Hide cards and show iframe
-                if (cards) cards.style.display = "none";
-                if (iframe) iframe.style.display = "block";
-
-                const chat = document.getElementById('chainlit');
-                if (chat) {
-                    chat.contentWindow.postMessage({
-                        method: "load_template",
-                        body: templateName
-                    }, '*');
+                    document.getElementById("left-panels").classList.add("col-md-4");
+                    document.getElementById("right-panel").classList.remove("d-none");
+                    document.getElementById("sidebar-buttons").classList.remove("d-none");
                 }
             });
-        });
+        </script>
 
-        // Escape key closes all panels
-        document.addEventListener("keydown", (event) => {
-            if (event.key === "Escape" || event.key === "Esc") {
-                showOnlyOnePanel(null);
-                inputTab.classList.remove(D_NONE);
-            }
-        });
-    });
+    </body>
 
-    window.addEventListener('message', (event) => {
-    if (event.data.method === "reload_product") {
-        document.location.reload();
-    } else if (event.data.method === "logged_in") {
-        // Reveal generator + sidebar buttons
-
-        document.getElementById("left-panels").classList.add("col-md-4");
-        document.getElementById("right-panel").classList.remove("d-none");
-        document.getElementById("sidebar-buttons").classList.remove("d-none");
-    }
-});
-
-
-</script>
-
-</body>
 </html>
