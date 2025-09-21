@@ -147,6 +147,26 @@
                 width: 24px;
                 height: 24px;
             }
+
+            #left-panels {
+                position: relative;
+            }
+            #left-panels > .panel-overlay {
+              position: absolute;
+              inset: calc(var(--bs-gutter-y) * .5) calc(var(--bs-gutter-x) * .5);
+              background: white;
+              opacity: 0;
+              visibility: hidden;
+              pointer-events: none;
+              z-index: 2;
+              transition: opacity 300ms ease-out, visibility 0s linear 300ms;
+              border-radius: .5rem;
+            }
+            #left-panels.reveal-overlay > .panel-overlay {
+              opacity: 1;
+              visibility: visible;
+              transition: none;
+            }
         </style>
 
     </head>
@@ -188,15 +208,14 @@
                 </div>
                 <!-- Left Panels (inputs)-->
                 <div id="left-panels" class="col-12 col-md-4 d-flex flex-column">
+                    <div class="panel-overlay"></div>
+                    <!-- Side panels positioned relative to #left-panels -->
                     <div id="input-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto">
                         {% include "input.html" %}
                     </div>
-
-                    <!-- Side panels positioned relative to #left-panels -->
                     <div id="builder-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
                         {% include "builder.html" %}
                     </div>
-
                     <div id="deploy-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
                         {% include "deploy.html" %}
                     </div>
@@ -214,9 +233,7 @@
                         {% include "generator.html" %}
                     </div>
                 </div>
-
             </div>
-
         </div>
 
         <script>
@@ -228,13 +245,30 @@
                     if (!leftContainer) return;
                     leftContainer.classList.add('min-66');
                 }
+                function triggerOverlay() {
+                  const HOLD_MS = 180;
+                  if (!leftContainer) return;
+                  void leftContainer.offsetHeight;
+                  leftContainer.classList.add('reveal-overlay');
+                  setTimeout(() => {
+                    leftContainer.classList.remove('reveal-overlay');
+                  }, HOLD_MS);
+                }
                 // initialize
                 setLeftMinHeight();
 
                 function showOnlyOnePanel(panelToShow) {
-                    document.querySelectorAll('.left-panel').forEach(panel => {
-                        (panel === panelToShow) ? panel.classList.remove(D_NONE) : panel.classList.add(D_NONE);
-                    });
+                  document.querySelectorAll('.left-panel').forEach(panel => {
+                    if (panel === panelToShow) {
+                      if (panel.classList.contains(D_NONE)) {
+                        panel.classList.remove(D_NONE);
+                      }
+                      
+                      triggerOverlay();
+                    } else {
+                      panel.classList.add(D_NONE);
+                    }
+                  });
                 }
 
 
@@ -243,6 +277,7 @@
                     if (isVisible) {
                         panel.classList.add(D_NONE);
                         inputTab.classList.remove(D_NONE);
+                        triggerOverlay();
                     } else {
                         panel.classList.remove(D_NONE);
                         inputTab.classList.add(D_NONE);
@@ -287,6 +322,7 @@
                     if (event.key === "Escape" || event.key === "Esc") {
                         showOnlyOnePanel(null);
                         inputTab.classList.remove(D_NONE);
+                        triggerOverlay();
                         setLeftMinHeight();
                     }
                 });
