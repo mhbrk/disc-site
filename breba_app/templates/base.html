@@ -24,7 +24,6 @@
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
                 border-radius: 0.5rem;
                 overflow: auto;
-
             }
 
             /* Match chainlit panel style for other left-panels */
@@ -106,7 +105,9 @@
 
             /* Small screens: left column ~2/3 only when input panel is visible */
             @media (max-width: 767.98px) {
-                #left-panels.min-66 { min-height: 66vh; }
+                #left-panels.min-66 {
+                    min-height: 66vh;
+                }
             }
 
             #right-panel {
@@ -117,8 +118,34 @@
             @media (min-width: 768px) {
                 /* panels and their container fill viewport height on desktop */
                 .panel { height: 100%; }
-                #left-panels, #right-panel { height: 100%; display: flex; flex-direction: column; }
-                #left-panels .panel, #generator-panel { flex: 1 1 auto; min-height: 0; }
+                #left-panels, #right-panel {
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                }
+                #left-panels .panel, #generator-panel {
+                    flex: 1 1 auto;
+                    min-height: 0;
+                }
+            }
+
+            /* Normalize sidebar button boxes and icon sizing */
+            #sidebar-buttons .btn { 
+                width: 48px; 
+                height: 48px; 
+                padding: 0; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center;
+                line-height: 1;
+            }
+            #sidebar-buttons .btn > .icon { 
+                font-size: 24px;
+                line-height: 1;
+            }
+            #sidebar-buttons a.btn img {
+                width: 24px;
+                height: 24px;
             }
         </style>
 
@@ -139,18 +166,24 @@
             <div class="row h-100 g-1 align-items-stretch">
                 <!-- Sidebar Panle (buttons) -->
                 <div id="sidebar-buttons"
-                    class="col-12 col-md-auto mt-0 mt-md-0 d-none align-middle align-self-start align-self-md-stretch">
-                    <div class="d-flex flex-md-column flex-row bg-dark rounded gap-2 h-100 pt-md-2 w-100 w-md-auto">
-                        <a href="/home" class="btn text-white fs-4 d-flex align-items-center justify-content-center"
+                    class="col-12 col-md-auto mt-1 mt-md-1 d-none align-middle align-self-start align-self-md-stretch">
+                    <div class="d-flex flex-md-column flex-row bg-dark rounded gap-2 h-100 pt-md-0 w-100 w-md-auto">
+                        <a href="/home" class="btn text-white d-flex align-items-center justify-content-center"
                             title="Home">
                             <img src="public/breba_icon_dark.png" alt="Home" width="24" height="24">
                         </a>
-                        <button id="toggle-products" type="button" class="btn text-white fs-4"
-                            title="Products">&#x1F5C2;
+                        <button id="toggle-products" type="button" class="btn text-white" title="Products">
+                            <span class="icon">&#x1F5C2;</span>
                         </button>
-                        <button id="toggle-builder" class="btn text-white fs-4" title="Open Builder">&#x1F4C4;</button>
-                        <button id="toggle-deploy" class="btn text-white fs-4" title="Deploy App">&#x1F680;</button>
-                        <button id="toggle-templates" class="btn text-white fs-4" title="Templates">&#x1F4C1;</button>
+                        <button id="toggle-builder" class="btn text-white" title="Open Builder">
+                            <span class="icon">&#x1F4C4;</span>
+                        </button>
+                        <button id="toggle-deploy" class="btn text-white" title="Deploy App">
+                            <span class="icon">&#x1F680;</span>
+                        </button>
+                        <button id="toggle-templates" class="btn text-white" title="Templates">
+                            <span class="icon">&#x1F4C1;</span>
+                        </button>
                     </div>
                 </div>
                 <!-- Left Panels (inputs)-->
