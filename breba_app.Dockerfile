@@ -26,6 +26,7 @@ COPY breba_app/chainlit.md ./chainlit.md
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Use non-root user from here on
+RUN chown -R appuser:appuser /app
 USER appuser
 
 # Command to run the app with uvicorn
