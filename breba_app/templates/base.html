@@ -17,46 +17,13 @@
             }
 
             .panel {
-                background-color: white;
                 height: auto;
-                width: 100%;
-                border: 1px solid #ccc;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-                border-radius: 0.5rem;
-                overflow: auto;
-            }
-
-            /* Match chainlit panel style for other left-panels */
-            .left-panel:not(#input-panel) {
-                padding: 1rem;
-                background-color: white;
-                border-radius: 0.5rem;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             }
 
             #input-panel iframe {
                 width: 100%;
                 border: none;
-            }
-
-            @media (max-width: 767.98px) {
-                #input-panel iframe {
-                    height: 66vh;
-                }
-            }
-
-            @media (min-width: 768px) {
-                #input-panel iframe {
-                    height: 100%;
-                }
-            }
-
-            #generator-panel {
-                position: relative;
-                border: 1px solid #ccc;
-                border-radius: 0.5rem;
-                background-color: white;
-                overflow: auto;
+                height: 100%;
             }
 
             /* Generator iframe sizing */
@@ -246,27 +213,27 @@
                 <div id="left-panels" class="col-12 col-md-4 d-flex flex-column">
                     <div class="panel-overlay"></div>
                     <!-- Side panels positioned relative to #left-panels -->
-                    <div id="input-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto">
+                    <div id="input-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto bg-white w-100 border shadow rounded-3">
                         {% include "input.html" %}
                     </div>
-                    <div id="builder-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
+                    <div id="builder-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none bg-white w-100 border shadow rounded-3 p-3">
                         {% include "builder.html" %}
                     </div>
-                    <div id="deploy-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
+                    <div id="deploy-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none bg-white w-100 border shadow rounded-3 p-3">
                         {% include "deploy.html" %}
                     </div>
                     <div id="templates-panel"
-                        class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
+                        class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none bg-white w-100 border shadow rounded-3 p-3">
                         {% include "templates.html" %}
                     </div>
-                    <div id="products-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
+                    <div id="products-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none bg-white w-100 border shadow rounded-3 p-3">
                         {% include "products.html" %}
                     </div>
                 </div>
 
                 <!-- Generator Panel (with a generated website)-->
                 <div id="right-panel" class="col-12 col-md d-flex flex-column">
-                    <div id="generator-panel" class="panel flex-fill d-flex flex-column overflow-auto">
+                    <div id="generator-panel" class="panel flex-fill d-flex flex-column overflow-auto bg-white w-100 border shadow rounded-3 position-relative">
                         {% include "generator.html" %}
                     </div>
                 </div>
