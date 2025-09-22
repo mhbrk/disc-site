@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user and group
+RUN addgroup --system appuser && adduser --system --ingroup appuser appuser
+
 # Copy the entire app into the image
 COPY breba_app ./breba_app
 COPY ./requirements.txt .
@@ -21,6 +24,9 @@ COPY breba_app/chainlit.md ./chainlit.md
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Use non-root user from here on
+USER appuser
 
 # Command to run the app with uvicorn
 CMD ["python", "breba_app/main.py"]
