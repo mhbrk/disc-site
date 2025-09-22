@@ -31,7 +31,7 @@
                 padding: 1rem;
                 background-color: white;
                 border-radius: 0.5rem;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             }
 
             #input-panel iframe {
@@ -116,56 +116,89 @@
             }
 
             @media (min-width: 768px) {
+
                 /* panels and their container fill viewport height on desktop */
-                .panel { height: 100%; }
-                #left-panels, #right-panel {
+                .panel {
+                    height: 100%;
+                }
+
+                #left-panels,
+                #right-panel {
                     height: 100%;
                     display: flex;
                     flex-direction: column;
                 }
-                #left-panels .panel, #generator-panel {
+
+                #left-panels .panel,
+                #generator-panel {
                     flex: 1 1 auto;
                     min-height: 0;
                 }
             }
 
             /* Normalize sidebar button boxes and icon sizing */
-            #sidebar-buttons .btn { 
-                width: 48px; 
-                height: 48px; 
-                padding: 0; 
-                display: flex; 
-                align-items: center; 
+            #sidebar-buttons .btn {
+                width: 48px;
+                height: 48px;
+                padding: 0;
+                display: flex;
+                align-items: center;
                 justify-content: center;
                 line-height: 1;
+                border: 0;
+                box-shadow: none;
             }
-            #sidebar-buttons .btn > .icon { 
+
+            #sidebar-buttons .btn>.icon {
                 font-size: 24px;
                 line-height: 1;
             }
+
             #sidebar-buttons a.btn img {
                 width: 24px;
                 height: 24px;
             }
 
+            #sidebar-buttons .btn.active {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+
+            #sidebar-buttons .btn.active,
+            #sidebar-buttons .btn:active {
+                border: 0;
+                box-shadow: none;
+            }
+
+            #sidebar-buttons .btn:focus {
+                outline: none;
+                box-shadow: none;
+            }
+
+            #sidebar-buttons .btn:focus-visible {
+                outline: none;
+                box-shadow: none;
+            }
+
             #left-panels {
                 position: relative;
             }
-            #left-panels > .panel-overlay {
-              position: absolute;
-              inset: calc(var(--bs-gutter-y) * .5) calc(var(--bs-gutter-x) * .5);
-              background: white;
-              opacity: 0;
-              visibility: hidden;
-              pointer-events: none;
-              z-index: 2;
-              transition: opacity 300ms ease-out, visibility 0s linear 300ms;
-              border-radius: .5rem;
+
+            #left-panels>.panel-overlay {
+                position: absolute;
+                inset: calc(var(--bs-gutter-y) * .5) calc(var(--bs-gutter-x) * .5);
+                background: white;
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+                z-index: 2;
+                transition: opacity 300ms ease-out, visibility 0s linear 300ms;
+                border-radius: .5rem;
             }
-            #left-panels.reveal-overlay > .panel-overlay {
-              opacity: 1;
-              visibility: visible;
-              transition: none;
+
+            #left-panels.reveal-overlay>.panel-overlay {
+                opacity: 1;
+                visibility: visible;
+                transition: none;
             }
         </style>
 
@@ -188,20 +221,23 @@
                 <div id="sidebar-buttons"
                     class="col-12 col-md-auto mt-1 mt-md-1 d-none align-middle align-self-start align-self-md-stretch">
                     <div class="d-flex flex-md-column flex-row bg-dark rounded gap-2 h-100 pt-md-0 w-100 w-md-auto">
-                        <a href="/home" class="btn text-white d-flex align-items-center justify-content-center"
+                        <a href="/home"
+                            class="btn text-white d-flex align-items-center justify-content-center shadow-none focus-ring-0"
                             title="Home">
                             <img src="public/breba_icon_dark.png" alt="Home" width="24" height="24">
                         </a>
-                        <button id="toggle-products" type="button" class="btn text-white" title="Products">
+                        <button id="toggle-products" type="button" class="btn text-white shadow-none focus-ring-0"
+                            title="Products">
                             <span class="icon">&#x1F5C2;</span>
                         </button>
-                        <button id="toggle-builder" class="btn text-white" title="Open Builder">
+                        <button id="toggle-builder" class="btn text-white focus-ring-0 shadow-none"
+                            title="Open Builder">
                             <span class="icon">&#x1F4C4;</span>
                         </button>
-                        <button id="toggle-deploy" class="btn text-white" title="Deploy App">
+                        <button id="toggle-deploy" class="btn text-white shadow-none focus-ring-0" title="Deploy App">
                             <span class="icon">&#x1F680;</span>
                         </button>
-                        <button id="toggle-templates" class="btn text-white" title="Templates">
+                        <button id="toggle-templates" class="btn text-white shadow-none focus-ring-0" title="Templates">
                             <span class="icon">&#x1F4C1;</span>
                         </button>
                     </div>
@@ -219,7 +255,8 @@
                     <div id="deploy-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
                         {% include "deploy.html" %}
                     </div>
-                    <div id="templates-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
+                    <div id="templates-panel"
+                        class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
                         {% include "templates.html" %}
                     </div>
                     <div id="products-panel" class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none">
@@ -246,36 +283,42 @@
                     leftContainer.classList.add('min-66');
                 }
                 function triggerOverlay() {
-                  const HOLD_MS = 180;
-                  if (!leftContainer) return;
-                  void leftContainer.offsetHeight;
-                  leftContainer.classList.add('reveal-overlay');
-                  setTimeout(() => {
-                    leftContainer.classList.remove('reveal-overlay');
-                  }, HOLD_MS);
+                    const HOLD_MS = 180;
+                    if (!leftContainer) return;
+                    void leftContainer.offsetHeight;
+                    leftContainer.classList.add('reveal-overlay');
+                    setTimeout(() => {
+                        leftContainer.classList.remove('reveal-overlay');
+                    }, HOLD_MS);
                 }
                 // initialize
                 setLeftMinHeight();
 
                 function showOnlyOnePanel(panelToShow) {
-                  document.querySelectorAll('.left-panel').forEach(panel => {
-                    if (panel === panelToShow) {
-                      if (panel.classList.contains(D_NONE)) {
-                        panel.classList.remove(D_NONE);
-                      }
-                      
-                      triggerOverlay();
-                    } else {
-                      panel.classList.add(D_NONE);
-                    }
-                  });
+                    document.querySelectorAll('.left-panel').forEach(panel => {
+                        const buttonId = 'toggle-' + panel.id.replace('-panel', '');
+                        const button = document.getElementById(buttonId);
+                        if (panel === panelToShow) {
+                            if (panel.classList.contains(D_NONE)) {
+                                panel.classList.remove(D_NONE);
+                            }
+                            if (button) button.classList.add('active');
+                            triggerOverlay();
+                        } else {
+                            panel.classList.add(D_NONE);
+                            if (button) button.classList.remove('active');
+                        }
+                    });
                 }
 
 
                 function togglePanel(panel) {
                     const isVisible = !panel.classList.contains(D_NONE);
+                    const buttonId = 'toggle-' + panel.id.replace('-panel', '');
+                    const button = document.getElementById(buttonId);
                     if (isVisible) {
                         panel.classList.add(D_NONE);
+                        if (button) button.classList.remove('active');
                         inputTab.classList.remove(D_NONE);
                         triggerOverlay();
                     } else {
