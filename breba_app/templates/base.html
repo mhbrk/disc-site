@@ -261,7 +261,7 @@
                 // initialize
                 setLeftMinHeight();
 
-                function showOnlyOnePanel(panelToShow) {
+                function showOnlyActivePanel(panelToShow) {
                     document.querySelectorAll('.left-panel').forEach(panel => {
                         const buttonId = 'toggle-' + panel.id.replace('-panel', '');
                         const button = document.getElementById(buttonId);
@@ -291,7 +291,7 @@
                     } else {
                         panel.classList.remove(D_NONE);
                         inputTab.classList.add(D_NONE);
-                        showOnlyOnePanel(panel);
+                        showOnlyActivePanel(panel);
                     }
                     setLeftMinHeight();
                 }
@@ -330,7 +330,7 @@
                 // Escape key closes all panels
                 document.addEventListener("keydown", (event) => {
                     if (event.key === "Escape" || event.key === "Esc") {
-                        showOnlyOnePanel(null);
+                        showOnlyActivePanel(null);
                         inputTab.classList.remove(D_NONE);
                         triggerOverlay();
                         setLeftMinHeight();
