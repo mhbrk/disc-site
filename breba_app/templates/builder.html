@@ -1,20 +1,21 @@
-<div class="d-flex flex-column" style="height: 100%;">
-    <!-- Textarea section -->
-    <div style="flex: 0 0 70%; position: relative;">
-        <textarea id="builder-prompt"
-                  class="form-control h-100"
-                  style="resize: none;"></textarea>
-        <button id="run-button"
-                class="btn btn-primary"
-                style="position: absolute; top: 8px; right: 8px; display: none;">
-            Run
-        </button>
+<div class="d-flex flex-column h-100">
+
+    <div class="card position-relative h-75 overflow-hidden builder-wrapper">
+        <textarea id="builder-prompt" class="form-control h-100 no-resize border-0 shadow-none focus-ring-0"></textarea>
+
+        <div id="run-button-wrapper" class="position-absolute top-0 start-0 end-0 m-2 mx-4 d-none">
+            <div
+                class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-3 bg-white bg-opacity-75 shadow-sm backdrop-blur w-auto mx-auto">
+                <div class="fw-medium">Apply your changes</div>
+                <button id="run-button" class="btn btn-primary">OK</button>
+            </div>
+        </div>
     </div>
 
     <!-- Updates section -->
-    <div class="card" style="flex: 0 0 30%; overflow: hidden;">
+    <div class="card h-25 mt-2 overflow-hidden flex-shrink-0">
         <div class="card-header">Status Updates</div>
-        <div class="card-body" style="overflow-y: auto;">
+        <div class="card-body overflow-auto">
             <ul id="updates-list" class="list-unstyled mb-0"></ul>
         </div>
     </div>
@@ -23,14 +24,15 @@
 <script>
     const textarea = document.getElementById("builder-prompt");
     const runButton = document.getElementById("run-button");
+    const runButtonWrapper = document.getElementById("run-button-wrapper");
     let lastServerContent = "";
 
     // Helper to show/hide
     function updateRunButtonVisibility() {
         if (textarea.value !== lastServerContent) {
-            runButton.style.display = "block";
+            runButtonWrapper.classList.remove('d-none');
         } else {
-            runButton.style.display = "none";
+            runButtonWrapper.classList.add('d-none');
         }
     }
 
