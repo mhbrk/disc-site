@@ -28,7 +28,7 @@ async def has_cloud_storage(user_name: str, session_id: str):
 async def populate_from_cloud_storage(user_name: str, session_id: str):
     spec = read_spec_text(user_name, session_id)
     product = read_index_html(user_name, session_id)
-    set_generator_response(session_id, product)
+    set_generator_response(session_id, spec, product)
 
     await process_generator_message(product)
 

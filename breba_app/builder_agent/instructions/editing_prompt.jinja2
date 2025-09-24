@@ -13,13 +13,21 @@ IMPORTANT: if the user requests a new website specification, respond with just o
 IMPORTANT: You must wrap the diff in a `::final diff::` block.
 
 Here are the diff examples:
+Given the original text:
+```
+This is a context line.
+This is a context line 2
+line to remove
+context line at the end of the file
+```
 
+Expected diff would be:
 ```
 ::final diff::
 --- a/spec.md
 +++ b/spec.md
 @@ ... @@
- This is a context line
+ This is a context line.
  This is a context line 2
 -line to remove
 +line to add
@@ -27,6 +35,16 @@ Here are the diff examples:
 ::final diff::
 ```
 
+Given the original text:
+```
+This is a context line, but next line is empty
+
+line to remove
+context line
+context line
+```
+
+Expected diff would be:
 ```
 ::final diff::
 --- a/spec.md
@@ -42,7 +60,17 @@ Here are the diff examples:
 ::final diff::
 ```
 
-Example with Bullet points
+Given the following example with Bullet points:
+```
+## This is a context line, but next line is empty
+
+- line to remove that starts with a markdown bullet
+
+context line
+context line
+```
+
+Expected diff would be:
 ```
 ::final diff::
 --- a/spec.md
@@ -87,6 +115,9 @@ Start a new hunk for each section of the file that needs changes.
 Include 3 lines of context before and after each hunk. Start unchanged lines with a space.
 Only output hunks that specify changes with `+` or `-` lines.
 Skip any hunks that are entirely unchanging ` ` lines.
+IMPORTANT: hunk prefix `+`, `-`, ` ` must be the first character of the line, followed by the exact line from original text.
+IMPORTANT: For context hunk lines, you must preserve the original whitespace without adding any extra spaces.
+
 
 To text within a file, use 2 hunks: 1 to delete it from its current location, 1 to insert it in the new location.
 

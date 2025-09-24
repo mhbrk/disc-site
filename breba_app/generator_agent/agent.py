@@ -13,7 +13,7 @@ from langgraph.prebuilt.chat_agent_executor import AgentState
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
-from breba_app.diff import apply_diff_no_line_numbers
+from breba_app.diff import apply_diff_no_line_numbers, get_diff
 from .diffing import diff_text
 from .generate_image import generate_image
 from .instruction_reader import get_instructions
@@ -138,15 +138,50 @@ class HTMLAgent:
 
         yield self.get_agent_response(config)
 
+    async def diffing_spec_update(self, spec: str, user_name: str, session_id: str):
+        """
+        This method is used to update the specification.
+        """
+        logger.info("Generator diffing spec update")
+        current_spec = self.get_last_specification(session_id)
+        if current_spec == spec:
+            logger.info("Generator will not update anything since spec is the same")
+            return
+
+        diff = get_diff(current_spec, spec)
+        # if the spec change is more than 20% of the spec, we want to fall back to full spec update
+        acceptable_diff_percentage = 0.6
+        if len(diff.split("\n")) > len(current_spec.split("\n")) * acceptable_diff_percentage:
+            # when there are lots of changes to the spec, we will stream the full spec update
+            logger.info("Spec diff is too big, streaming full spec update")
+            async for chunk in self.stream(spec, user_name, session_id):
+                yield chunk
+        else:
+            try:
+                query = f"I changed the spec given the following diff:\n{diff}"
+                update = await self.diffing_update(query, session_id)
+                self.set_spec(session_id, spec)
+                # We will just stream the entire spec
+                self.set_last_html(session_id, update)
+                config = {"configurable": {"thread_id": session_id}}
+                yield self.get_agent_response(config)
+            except Exception as e:
+                logger.error(f"Failed to diff spec: {e}")
+                async for chunk in self.stream(spec, user_name, session_id):
+                    yield chunk
+
     async def diffing_update(self, query: str, session_id: str):
         """
         This method is used to update only the parts of the html that need to be updated.
+        :return: modified html
+        :raises: Exception if the diff is too long, or malformed
         """
         html = self.get_last_html(session_id)
         # Will raise an exception if the diff is too long
         diff = await diff_text(html, query)
         modified = apply_diff_no_line_numbers(html, diff)
         self.set_last_html(session_id, modified)
+        # TODO: this violates the interface because the agent returns text instead of agent response
         return modified
 
     async def editing_stream(self, query: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
@@ -181,6 +216,10 @@ class HTMLAgent:
                 logger.info(data["messages"][-1].pretty_repr())
 
         yield self.get_agent_response(config)
+
+    def set_spec(self, session_id: str, spec: str):
+        config = {"configurable": {"thread_id": session_id}}
+        self.graph.update_state(config, {"specification": spec})
 
     def get_last_specification(self, session_id):
         config = {"configurable": {"thread_id": session_id}}

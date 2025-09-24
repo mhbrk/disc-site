@@ -2,7 +2,6 @@ import difflib
 import logging
 
 from agent_model import TextPart, Message
-from breba_app.diff import PatchApplyError
 from builder_agent.agent import agent as builder_agent
 from generator_agent.accumulator import TagAccumulator
 from generator_agent.agent import agent as generator_agent
@@ -14,8 +13,9 @@ def get_generator_response(session_id: str):
     return generator_agent.get_last_html(session_id)
 
 
-def set_generator_response(session_id: str, html_output: str):
+def set_generator_response(session_id: str, spec: str, html_output: str):
     generator_agent.set_last_html(session_id, html_output)
+    generator_agent.set_spec(session_id, spec)
 
 
 def get_html_diff(old_html: str, new_html: str):
@@ -49,10 +49,16 @@ async def process_chunk(accumulator: TagAccumulator, chunk: dict, generator_call
         await generator_callback(tag_html)
 
 
-async def generator_task(user_name: str, session_id: str, query: str, generator_callback):
-    accumulator = TagAccumulator()
-    async for chunk in generator_agent.stream(query, user_name, session_id):
-        await process_chunk(accumulator, chunk, generator_callback)
+async def generator_task(user_name: str, session_id: str, spec: str, generator_callback):
+    try:
+        async for update in generator_agent.diffing_spec_update(spec, user_name, session_id):
+            update = update.get("content")
+            await generator_callback(update)
+        await generator_callback("__completed__")
+    except Exception as e:
+        accumulator = TagAccumulator()
+        async for chunk in generator_agent.stream(spec, user_name, session_id):
+            await process_chunk(accumulator, chunk, generator_callback)
 
 
 async def start_editing_task(user_name: str, session_id: str, query: str, generator_callback):
