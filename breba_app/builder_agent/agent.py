@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 class BuilderAgent:
 
     def __init__(self):
+        # TODO: Need to add the spec into the messages list after a diff is applied
         self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
         self.editing_model = ChatOpenAI(model="gpt-5", reasoning_effort="minimal")
 
