@@ -1,7 +1,8 @@
 ---
 name: Feature request
-about: Suggest an idea for Breba
-title: "[FEATURE]"
+about: Suggest a new feature or improvement for Breba
+title: "[FEATURE]: <title>"
+type: feature
 labels: ''
 assignees: ''
 

@@ -1,8 +1,9 @@
 ---
 name: "\U0001F41E Bug report"
 about: Report a reproducible bug or unexpected behavior
-title: "[BUG]"
-labels: bug
+title: "[BUG]: <title>"
+type: bug
+labels: - bug
 assignees: ''
 
 ---
