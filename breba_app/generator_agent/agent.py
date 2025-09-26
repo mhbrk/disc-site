@@ -144,18 +144,23 @@ class HTMLAgent:
         """
         logger.info("Generator diffing spec update")
         current_spec = self.get_last_specification(session_id)
+
+        if not current_spec:
+            logger.info("No current spec found. This is not supported for a diffing update.")
+            raise Exception("No current spec found. This is not supported for a diffing update.")
         if current_spec == spec:
-            logger.info("Generator will not update anything since spec is the same")
-            return
+            logger.info("Provided spec is the same as the current spec. This is not supported for a diffing update.")
+            raise Exception("Provided spec is the same as the current spec. This is not supported for a diffing update.")
 
         diff = get_diff(current_spec, spec)
         # if the spec change is more than 20% of the spec, we want to fall back to full spec update
         acceptable_diff_percentage = 0.6
-        if len(diff.split("\n")) > len(current_spec.split("\n")) * acceptable_diff_percentage:
+        diff_lines = diff.split("\n")
+        current_spec_lines = current_spec.split("\n")
+        if len(diff_lines) > len(current_spec_lines) * acceptable_diff_percentage:
             # when there are lots of changes to the spec, we will stream the full spec update
             logger.info("Spec diff is too big, streaming full spec update")
-            async for chunk in self.stream(spec, user_name, session_id):
-                yield chunk
+            raise Exception(f"Spec diff is too big. Diff length is: {len(diff_lines)}, current spec length is: {len(current_spec_lines)}")
         else:
             try:
                 query = f"I changed the spec given the following diff:\n{diff}"
@@ -167,8 +172,7 @@ class HTMLAgent:
                 yield self.get_agent_response(config)
             except Exception as e:
                 logger.error(f"Failed to diff spec: {e}")
-                async for chunk in self.stream(spec, user_name, session_id):
-                    yield chunk
+                raise e
 
     async def diffing_update(self, query: str, session_id: str):
         """
@@ -176,13 +180,20 @@ class HTMLAgent:
         :return: modified html
         :raises: Exception if the diff is too long, or malformed
         """
+        logger.info("Generator diffing update")
         html = self.get_last_html(session_id)
         # Will raise an exception if the diff is too long
         diff = await diff_text(html, query)
-        modified = apply_diff_no_line_numbers(html, diff)
-        self.set_last_html(session_id, modified)
-        # TODO: this violates the interface because the agent returns text instead of agent response
-        return modified
+        logger.info(f"Diff was successfully generated: {diff}")
+        try:
+            modified = apply_diff_no_line_numbers(html, diff)
+            self.set_last_html(session_id, modified)
+            # TODO: this violates the interface because the agent returns text instead of agent response
+            return modified
+        except Exception as e:
+            logger.error(f"Failed to apply diff: {e}\n"
+                         f"Failed diff: {diff}")
+            raise e
 
     async def editing_stream(self, query: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
         """

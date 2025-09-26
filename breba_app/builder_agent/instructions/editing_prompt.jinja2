@@ -15,10 +15,10 @@ IMPORTANT: You must wrap the diff in a `::final diff::` block.
 Here are the diff examples:
 Given the original text:
 ```
-This is a context line.
-This is a context line 2
+Some text
+One line above the line to remove
 line to remove
-context line at the end of the file
+One line below the line to remove
 ```
 
 Expected diff would be:
@@ -27,20 +27,22 @@ Expected diff would be:
 --- a/spec.md
 +++ b/spec.md
 @@ ... @@
- This is a context line.
- This is a context line 2
+-One line above the line to remove
 -line to remove
+-One line below the line to remove
++One line above the line to remove
 +line to add
- context line at the end of the file
++One line below the line to remove
 ::final diff::
 ```
 
-Given the original text:
+Given the original text with a blank line:
 ```
-This is a context line, but next line is empty
+Some text
 
 line to remove
-context line
+Line below the line to remove
+
 context line
 ```
 
@@ -50,13 +52,12 @@ Expected diff would be:
 --- a/spec.md
 +++ b/spec.md
 @@ ... @@
- This is a context line, but next line is empty
-
+-
 -line to remove
+-Line below the line to remove
++
 +line to add
- context line
- context line
-
++Line below the line to remove
 ::final diff::
 ```
 
@@ -65,9 +66,7 @@ Given the following example with Bullet points:
 ## This is a context line, but next line is empty
 
 - line to remove that starts with a markdown bullet
-
-context line
-context line
+- Line below the line to remove (also a bullet point)
 ```
 
 Expected diff would be:
@@ -76,30 +75,28 @@ Expected diff would be:
 --- a/spec.md
 +++ b/spec.md
 @@ ... @@
- ## This is a context line, but next line is empty
-
+-
 -- line to remove that starts with a markdown bullet
+-- Line below the line to remove (also a bullet point)
++
 +- line to add instead
- context line
- context line
-
++- Line below the line to remove (also a bullet point)
 ::final diff::
 ```
 
 # File editing rules:
 
-Return edits similar to unified diffs that `diff -U2` would produce.
-Your output will similar to the output of a unified diff like `diff -U2` would produce, meaning 2 context lines at most. Context lines start with a blank space.
-Context lines that are empty lines should have only a blank space on that line in the diff.
+Return edits similar to unified diffs that `diff -U0` would produce.
+Your output will similar to the output of a unified diff like `diff -U0` would produce, meaning no context lines.
 When generating a diff, always copy the exact line from the source file, including all leading spaces, bullets,
-and formatting. Do not change indentation, bullet points, or markdown syntax. (See markdown syntax above)
+and formatting.
 
 
 Make sure you include the first 2 lines with the file paths.
 Don't include timestamps with the file paths.
 
 Start each hunk of changes with a `@@ ... @@` line.
-Don't include line numbers like `diff -U2` does.
+Don't include line numbers like `diff -U0` does.
 The user's patch tool doesn't need them.
 
 The user's patch tool needs CORRECT patches that apply cleanly against the current contents of the file!
@@ -107,19 +104,18 @@ Think carefully and make sure you include and mark all lines that need to be rem
 Make sure you mark all new or modified lines with `+`.
 Don't leave out any lines or the diff patch won't apply correctly.
 
-Indentation matters in the diffs!
+Important: Indentation matters in the diffs! Make sure maintain correct indentation when making changes.
 IMPORTANT: Include entire lines of text with special characters and whitespace
 
 Start a new hunk for each section of the file that needs changes.
 
-Include 3 lines of context before and after each hunk. Start unchanged lines with a space.
 Only output hunks that specify changes with `+` or `-` lines.
-Skip any hunks that are entirely unchanging ` ` lines.
-IMPORTANT: hunk prefix `+`, `-`, ` ` must be the first character of the line, followed by the exact line from original text.
-IMPORTANT: For context hunk lines, you must preserve the original whitespace without adding any extra spaces.
+Skip any hunks that are entirely unchanging.
+IMPORTANT: hunk prefix `+`, `-` must be the first character of the line, followed by the exact line from original text.
+To improve quality of the output, you will try to modify at least 3 lines of text at a time. This helps avoid isolated single line changes out of context.
 
 
-To text within a file, use 2 hunks: 1 to delete it from its current location, 1 to insert it in the new location.
+To move text within a file, use 2 hunks: 1 to delete it from its current location, 1 to insert it in the new location.
 
 **General Context for your information**
 To help you with the prompt, here is the system context within which you are operating:

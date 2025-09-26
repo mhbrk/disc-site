@@ -56,6 +56,8 @@ async def generator_task(user_name: str, session_id: str, spec: str, generator_c
             await generator_callback(update)
         await generator_callback("__completed__")
     except Exception as e:
+        logger.info(f"Diffing spec update failed: {e}")
+        logger.info("Falling back to rebuilding the website from scratch")
         accumulator = TagAccumulator()
         async for chunk in generator_agent.stream(spec, user_name, session_id):
             await process_chunk(accumulator, chunk, generator_callback)

@@ -39,7 +39,6 @@ logger = logging.getLogger(__name__)
 class BuilderAgent:
 
     def __init__(self):
-        # TODO: Need to add the spec into the messages list after a diff is applied
         self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
         self.editing_model = ChatOpenAI(model="gpt-5", reasoning_effort="minimal")
 
@@ -192,10 +191,16 @@ class BuilderAgent:
             diff = split_message[1]
             if not diff:
                 raise f"Cloud not extract diff, something went wrong: {diff}"
-            logger.info(f"Diff: {diff}")
-            new_prompt = apply_diff_no_line_numbers(state["prompt"], diff)
-            # In this case we are not replacing the last message to preserve the context of the diff
-            last_message = {"role": "user", "content": f"This the full spec for my site: {new_prompt}"}
+            logger.info(f"Attempting to apply diff: {diff}")
+            try:
+                new_prompt = apply_diff_no_line_numbers(state["prompt"], diff)
+                logger.info(f"Diff was successfully applied: {diff}")
+                # In this case we are not replacing the last message to preserve the context of the diff
+                last_message = {"role": "user", "content": f"This the full spec for my site: {new_prompt}"}
+            except Exception as e:
+                logger.error(f"Failed to apply diff: {e}\n"
+                             f"Failed diff: {diff}")
+                return {"messages": ["Diff failed to apply with the following error: {e}"]}
 
         return {"prompt": new_prompt, "messages": [last_message]}
 
