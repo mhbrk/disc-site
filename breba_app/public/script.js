@@ -1,33 +1,23 @@
 // Mobile Navigation Toggle
 document.addEventListener('DOMContentLoaded', function () {
-    const navMenu = document.querySelector('.nav-menu');
-    const navActions = document.querySelector('.nav-actions');
-
-
-    // Close mobile menu when clicking on a link
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            navMenu.classList.remove('active');
-            navActions.classList.remove('active');
-        });
-    });
-
-
     // Smooth scrolling for navigation links
     const navLinksSmooth = document.querySelectorAll('a[href^="#"]');
     navLinksSmooth.forEach(link => {
         link.addEventListener('click', function (e) {
-            e.preventDefault();
             const targetId = this.getAttribute('href');
-            const targetSection = document.querySelector(targetId);
+            // we don't want this behavior for anchor links with dummy hrefs equaling #
+            // Only apply this to anchor links with hrefs that look like #pricing
+            if (targetId && targetId !== "#") {
+                e.preventDefault();
+                const targetSection = document.querySelector(targetId);
 
-            if (targetSection) {
-                const offsetTop = targetSection.offsetTop - 80; // Account for fixed navbar
-                window.scrollTo({
-                    top: offsetTop,
-                    behavior: 'smooth'
-                });
+                if (targetSection) {
+                    const offsetTop = targetSection.offsetTop - 80; // Account for fixed navbar
+                    window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
             }
         });
     });
@@ -131,107 +121,112 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 
-// Waitlist Modal logic
-function openWaitlistModal() {
-    var waitlistModal = new bootstrap.Modal(document.getElementById('waitlistModal'));
-    waitlistModal.show();
-}
-
-document.querySelectorAll('.join-waitlist-btn').forEach(btn => {
-    btn.addEventListener('click', openWaitlistModal);
-});
-// Optional: Close modal on ESC
-document.addEventListener('keydown', function (e) {
-    if (e.key === "Escape") {
-        var modalEl = document.getElementById('waitlistModal');
-        if (modalEl && modalEl.classList.contains('show')) {
-            bootstrap.Modal.getInstance(modalEl).hide();
-        }
-    }
-});
-
-
-document.getElementById("brebaWaitlistForm").addEventListener("submit", async function (e) {
-    e.preventDefault();
-
-    const form = e.target;
-    const data = {
-        email: form.email.value,
-        alphaAccess: form.alphaAccess?.value || "",
-        privateCloud: form.privateCloud?.value || "",
-        comments: form.comments.value
-    };
-
-    const alertBox = document.getElementById("formAlert");
-    const submitBtn = document.getElementById("submitBtn");
-    const spinner = document.getElementById("submitSpinner");
-    const submitText = document.getElementById("submitText");
-
-    alertBox.classList.add("d-none");
-    spinner.classList.remove("d-none");
-    submitText.textContent = "Submitting...";
-
-    try {
-        const response = await fetch("https://script.google.com/macros/s/AKfycbwCbKjWjO4ZkDWzFCeh7zo7e1rnHu6OP-ydwlJVJRyp-AjGav1gaG_5N1yEzOArvklW/exec", {
-            method: "POST",
-            mode: "no-cors",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
-        });
-
-        form.reset();
-        alertBox.className = "alert alert-success";
-        alertBox.textContent = "🎉 Thank you! Your response has been recorded.";
-        alertBox.classList.remove("d-none");
-
-        // Wait 1.5s then close modal
-        setTimeout(() => {
-            const modal = bootstrap.Modal.getInstance(document.getElementById("waitlistModal"));
-            modal.hide();
-            alertBox.classList.add("d-none"); // hide alert after closing
-        }, 5000);
-
-    } catch (error) {
-        alertBox.className = "alert alert-danger";
-        alertBox.textContent = "❌ There was an error submitting the form. Please try again.";
-        alertBox.classList.remove("d-none");
-        console.error("Submission failed", error);
+// Home page specific functionality
+if (document.getElementById('brebaWaitlistForm')) {
+    // Waitlist Modal logic
+    function openWaitlistModal() {
+        var waitlistModal = new bootstrap.Modal(document.getElementById('waitlistModal'));
+        waitlistModal.show();
     }
 
-    spinner.classList.add("d-none");
-    submitText.textContent = "Submit";
-});
-
-
-document.getElementById("buildAppBtn").addEventListener("click", function () {
-    const idea = document.getElementById("buildAppInput").value; // get input value
-    const textarea = document.getElementById("comments");
-    textarea.value = idea; // put into textarea
-});
-
-document.getElementById('waitlistModal').addEventListener('shown.bs.modal', function () {
-    const emailInput = document.querySelector('#waitlistModal input[name="email"]');
-    if (emailInput) {
-        emailInput.focus();
-    }
-});
-
-
-const modal = document.getElementById('demoModal');
-const frame = document.getElementById('demoVideo');
-
-// When the trigger is clicked, set the iframe src (with autoplay)
-document.querySelectorAll('[data-bs-target="#demoModal"]').forEach(el => {
-    el.addEventListener('click', function () {
-        const url = this.getAttribute('data-video')
-            || 'https://www.youtube.com/embed/Txv-lUdk1LM?rel=0&autoplay=1&rel=0';
-        frame.src = url;
+    document.querySelectorAll('.join-waitlist-btn').forEach(btn => {
+        btn.addEventListener('click', openWaitlistModal);
     });
-});
 
-// When modal closes, stop the video by clearing src
-modal.addEventListener('hidden.bs.modal', function () {
-    frame.src = '';
-});
+    // Optional: Close modal on ESC
+    document.addEventListener('keydown', function (e) {
+        if (e.key === "Escape") {
+            var modalEl = document.getElementById('waitlistModal');
+            if (modalEl && modalEl.classList.contains('show')) {
+                bootstrap.Modal.getInstance(modalEl).hide();
+            }
+        }
+    });
+
+    // Waitlist form submission
+    document.getElementById("brebaWaitlistForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const data = {
+            email: form.email.value,
+            alphaAccess: form.alphaAccess?.value || "",
+            privateCloud: form.privateCloud?.value || "",
+            comments: form.comments.value
+        };
+
+        const alertBox = document.getElementById("formAlert");
+        const submitBtn = document.getElementById("submitBtn");
+        const spinner = document.getElementById("submitSpinner");
+        const submitText = document.getElementById("submitText");
+
+        alertBox.classList.add("d-none");
+        spinner.classList.remove("d-none");
+        submitText.textContent = "Submitting...";
+
+        try {
+            const response = await fetch("https://script.google.com/macros/s/AKfycbwCbKjWjO4ZkDWzFCeh7zo7e1rnHu6OP-ydwlJVJRyp-AjGav1gaG_5N1yEzOArvklW/exec", {
+                method: "POST",
+                mode: "no-cors",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            });
+
+            form.reset();
+            alertBox.className = "alert alert-success";
+            alertBox.textContent = "🎉 Thank you! Your response has been recorded.";
+            alertBox.classList.remove("d-none");
+
+            // Wait 1.5s then close modal
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById("waitlistModal"));
+                modal.hide();
+                alertBox.classList.add("d-none"); // hide alert after closing
+            }, 5000);
+
+        } catch (error) {
+            alertBox.className = "alert alert-danger";
+            alertBox.textContent = "❌ There was an error submitting the form. Please try again.";
+            alertBox.classList.remove("d-none");
+            console.error("Submission failed", error);
+        }
+
+        spinner.classList.add("d-none");
+        submitText.textContent = "Submit";
+    });
+
+    // Build app button
+    document.getElementById("buildAppBtn").addEventListener("click", function () {
+        const idea = document.getElementById("buildAppInput").value; // get input value
+        const textarea = document.getElementById("comments");
+        textarea.value = idea; // put into textarea
+    });
+
+    // Modal focus
+    document.getElementById('waitlistModal').addEventListener('shown.bs.modal', function () {
+        const emailInput = document.querySelector('#waitlistModal input[name="email"]');
+        if (emailInput) {
+            emailInput.focus();
+        }
+    });
+
+    // Demo modal
+    const modal = document.getElementById('demoModal');
+    const frame = document.getElementById('demoVideo');
+
+    // When the trigger is clicked, set the iframe src (with autoplay)
+    document.querySelectorAll('[data-bs-target="#demoModal"]').forEach(el => {
+        el.addEventListener('click', function () {
+            const url = this.getAttribute('data-video')
+                || 'https://www.youtube.com/embed/Txv-lUdk1LM?rel=0&autoplay=1&rel=0';
+            frame.src = url;
+        });
+    });
+
+    // When modal closes, stop the video by clearing src
+    modal.addEventListener('hidden.bs.modal', function () {
+        frame.src = '';
+    });
+}
