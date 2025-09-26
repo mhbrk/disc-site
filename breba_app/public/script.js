@@ -1,25 +1,12 @@
 // Mobile Navigation Toggle
 document.addEventListener('DOMContentLoaded', function () {
-    const navMenu = document.querySelector('.nav-menu');
-    const navActions = document.querySelector('.nav-actions');
-
-    if (navMenu && navActions) {
-        // Close mobile menu when clicking on a link
-        const navLinks = document.querySelectorAll('.nav-link');
-        navLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                navMenu.classList.remove('active');
-                navActions.classList.remove('active');
-            });
-        });
-    }
-
-
     // Smooth scrolling for navigation links
     const navLinksSmooth = document.querySelectorAll('a[href^="#"]');
     navLinksSmooth.forEach(link => {
         link.addEventListener('click', function (e) {
             const targetId = this.getAttribute('href');
+            // we don't want this behavior for anchor links with dummy hrefs equaling #
+            // Only apply this to anchor links with hrefs that look like #pricing
             if (targetId && targetId !== "#") {
                 e.preventDefault();
                 const targetSection = document.querySelector(targetId);
