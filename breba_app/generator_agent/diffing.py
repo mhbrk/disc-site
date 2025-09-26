@@ -38,7 +38,7 @@ async def diff_stream(html: str, prompt: str):
         await stream.close()  # ensure connection closes
 
 
-async def diff_text(html: str, prompt: str, max_lines: int = 100):
+async def diff_text(html: str, prompt: str, max_lines: int = 300):
     diff = ""
     agen = diff_stream(html, prompt)
     try:
