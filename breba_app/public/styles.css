@@ -194,10 +194,6 @@ body {
     transform: scale(1.1);
 }
 
-.nav-menu {
-    display: flex;
-    gap: 2rem;
-}
 
 .nav-link {
     color: var(--breba-light-text);
@@ -208,12 +204,6 @@ body {
 
 .nav-link:hover {
     color: var(--breba-primary);
-}
-
-.nav-actions {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
 }
 
 
@@ -1504,11 +1494,6 @@ section {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .nav-menu {
-        display: none;
-    }
-
-
     .hero-container {
         grid-template-columns: 1fr;
         text-align: center;
