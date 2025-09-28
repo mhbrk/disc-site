@@ -255,7 +255,7 @@ class BuilderAgent:
             await self.app.ainvoke(Command(resume=user_input), config)
         else:
             # This happens in only with the first task request, if task is being continued this will not work
-            logger.info(f"Invoking builder agent with user input: {user_input}")
+            logger.info(f"Invoking builder editing agent with user input: {user_input}")
             await self.app.ainvoke(
                 {"messages": [{"role": user_input.role, "content": user_input.parts[0].text}], "user_name": user_name,
                  "current_agent": "editing_spec_agent"},

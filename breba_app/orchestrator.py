@@ -48,9 +48,18 @@ async def process_chunk(accumulator: TagAccumulator, chunk: dict, generator_call
         logger.info(f"HTML tag exists: {tag_html}")
         await generator_callback(tag_html)
 
+async def generate_full_website(user_name: str, session_id: str, spec: str, generator_callback):
+    logger.info("Generating full website")
+    accumulator = TagAccumulator()
+    async for chunk in generator_agent.stream(spec, user_name, session_id):
+        await process_chunk(accumulator, chunk, generator_callback)
+
 
 async def generator_task(user_name: str, session_id: str, spec: str, generator_callback):
     try:
+        if not generator_agent.get_last_html(session_id):
+            logger.info("Existing html not found. Generating full website")
+            await generate_full_website(user_name, session_id, spec, generator_callback)
         async for update in generator_agent.diffing_spec_update(spec, user_name, session_id):
             update = update.get("content")
             await generator_callback(update)
@@ -58,9 +67,7 @@ async def generator_task(user_name: str, session_id: str, spec: str, generator_c
     except Exception as e:
         logger.info(f"Diffing spec update failed: {e}")
         logger.info("Falling back to rebuilding the website from scratch")
-        accumulator = TagAccumulator()
-        async for chunk in generator_agent.stream(spec, user_name, session_id):
-            await process_chunk(accumulator, chunk, generator_callback)
+        await generate_full_website(user_name, session_id, spec, generator_callback)
 
 
 async def start_editing_task(user_name: str, session_id: str, query: str, generator_callback):
