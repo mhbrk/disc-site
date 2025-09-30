@@ -13,7 +13,7 @@ from langgraph.prebuilt.chat_agent_executor import AgentState
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
-from breba_app.diff import apply_diff_no_line_numbers
+from breba_app.diff import apply_diff_no_line_numbers, get_diff
 from .diffing import diff_text
 from .generate_image import generate_image
 from .instruction_reader import get_instructions
@@ -110,7 +110,7 @@ class HTMLAgent:
         self.graph.invoke({"messages": [("user", query)]}, config)
         return self.get_agent_response(config)
 
-    async def stream(self, query: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
+    async def stream(self, spec: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # TODO: username needs to be used as a static parameter to the tool call
         #  For this need to redo the generator agent using custom graph or using baml
@@ -118,8 +118,8 @@ class HTMLAgent:
             "messages": [("user", f"Your session id is: {session_id}."),
                          ("user", f"The user name for tool use is: {user_name}."),
                          ("user", f"Current time is: {current_time}"),
-                         ("user", query)],
-            "specification": query
+                         ("user", spec)],
+            "specification": spec
         }
 
         config = {"configurable": {"thread_id": session_id}}
@@ -138,18 +138,73 @@ class HTMLAgent:
 
         yield self.get_agent_response(config)
 
+    async def diffing_spec_update(self, spec: str, user_name: str, session_id: str):
+        """
+        This method is used to update the specification.
+        """
+        logger.info("Generator diffing spec update")
+        current_spec = self.get_last_specification(session_id)
+
+        if not current_spec:
+            logger.info("No current spec found. This is not supported for a diffing update.")
+            raise Exception("No current spec found. This is not supported for a diffing update.")
+        if current_spec == spec:
+            logger.info("Provided spec is the same as the current spec. This is not supported for a diffing update.")
+            raise Exception("Provided spec is the same as the current spec. This is not supported for a diffing update.")
+
+        diff = get_diff(current_spec, spec)
+        # if the spec change is more than 20% of the spec, we want to fall back to full spec update
+        acceptable_diff_percentage = 0.6
+        diff_lines = diff.split("\n")
+        current_spec_lines = current_spec.split("\n")
+        if len(diff_lines) > len(current_spec_lines) * acceptable_diff_percentage:
+            # when there are lots of changes to the spec, we will stream the full spec update
+            logger.info("Spec diff is too big, streaming full spec update")
+            raise Exception(f"Spec diff is too big. Diff length is: {len(diff_lines)}, current spec length is: {len(current_spec_lines)}")
+        else:
+            try:
+                query = f"I changed the spec given the following diff:\n{diff}"
+                update = await self.diffing_update(query, session_id)
+                self.set_spec(session_id, spec)
+                # We will just stream the entire spec
+                self.set_last_html(session_id, update)
+                config = {"configurable": {"thread_id": session_id}}
+                yield self.get_agent_response(config)
+            except Exception as e:
+                logger.error(f"Failed to diff spec: {e}")
+                raise e
+
     async def diffing_update(self, query: str, session_id: str):
+        """
+        This method is used to update only the parts of the html that need to be updated.
+        :return: modified html
+        :raises: Exception if the diff is too long, or malformed
+        """
+        logger.info("Generator diffing update")
         html = self.get_last_html(session_id)
         # Will raise an exception if the diff is too long
         diff = await diff_text(html, query)
-        modified = apply_diff_no_line_numbers(html, diff)
-        self.set_last_html(session_id, modified)
-        return modified
+        logger.info(f"Diff was successfully generated: {diff}")
+        try:
+            modified = apply_diff_no_line_numbers(html, diff)
+            self.set_last_html(session_id, modified)
+            # TODO: this violates the interface because the agent returns text instead of agent response
+            return modified
+        except Exception as e:
+            logger.error(f"Failed to apply diff: {e}\n"
+                         f"Failed diff: {diff}")
+            raise e
 
     async def editing_stream(self, query: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
+        """
+        Stream inline editing query. The input is not a full specification, but a query to be applied to the current
+        specification. This method is used when diffing update fails and we will generate the full html for the website.
+        """
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # TODO: username needs to be used as a static parameter to the tool call
         #  For this need to redo the generator agent using custom graph or using baml
+        # The difference between editing and regular stream is that this function gets the last specification to work with
+        # that last specification was set by the original stream call
         inputs = {"messages": [("user", f"Your session id is: {session_id}."),
                                ("user", f"The user name for tool use is: {user_name}."),
                                ("user", f"Current time is: {current_time}"),
@@ -172,6 +227,10 @@ class HTMLAgent:
                 logger.info(data["messages"][-1].pretty_repr())
 
         yield self.get_agent_response(config)
+
+    def set_spec(self, session_id: str, spec: str):
+        config = {"configurable": {"thread_id": session_id}}
+        self.graph.update_state(config, {"specification": spec})
 
     def get_last_specification(self, session_id):
         config = {"configurable": {"thread_id": session_id}}
