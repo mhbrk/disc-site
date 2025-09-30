@@ -225,7 +225,8 @@ def upload_site(user_name: str, session_id: str, site_name: str):
     :param site_name: site name where all the files will be stored
     :return: public url of deployed site
     """
-    site_name = re.sub("[^0-9a-zA-Z]+", "-", site_name).strip(" -")
+    # Sanitize site name so that it is a valid URL, but also not case-sensitive
+    site_name = re.sub("[^0-9a-zA-Z]+", "-", site_name).strip(" -").lower()
 
     # TODO: convert to async because GCP is a blocking call, we don't want to have to wait
     # TODO: when empty dir is being uploaded, should pass back an error message
