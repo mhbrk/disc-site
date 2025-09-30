@@ -176,7 +176,7 @@ if (document.getElementById('brebaWaitlistForm')) {
 
             form.reset();
             alertBox.className = "alert alert-success";
-            alertBox.textContent = "🎉 Thank you! Your response has been recorded.";
+            alertBox.textContent = "🎉 Thank you! We are currently at capacity for the beta, but we will onboard you as soon as possible.";
             alertBox.classList.remove("d-none");
 
             // Wait 1.5s then close modal
