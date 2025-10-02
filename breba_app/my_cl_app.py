@@ -245,7 +245,7 @@ async def respond(message: Message):
             blob_image_path = save_image_file_to_private(user_name, product_id, message.elements[0].name,
                                                          message.elements[0].path,
                                                          message.content)
-            message.content = f"Given: {blob_image_path} \n {message.content}"
+            message.content = f"Given newly uploaded file: {blob_image_path} \n {message.content}"
             await to_builder(user_name, product_id, message.content, builder_completed, ask_user,
                              process_generator_message)
         except ValueError as e:
