@@ -15,7 +15,7 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-MAX_FILE_SIZE = 1024 * 1024 * 50  # 50MB
+MAX_FILE_SIZE = 1024 * 1024 * 32  # 32MB is cloud run limit
 
 USERS_BUCKET_NAME: str = os.getenv("USERS_BUCKET")
 CLOUDFLARE_ENDPOINT: str = os.getenv("CLOUDFLARE_ENDPOINT")
