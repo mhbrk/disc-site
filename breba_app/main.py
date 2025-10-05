@@ -15,9 +15,9 @@ from fastapi.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
 from starlette.staticfiles import StaticFiles
 
-from generator_agent.agent import agent
-from storage import read_image_from_private
-from config import init_db
+from breba_app.generator_agent.agent import agent
+from breba_app.storage import read_image_from_private
+from breba_app.config import init_db
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -141,4 +141,4 @@ mount_chainlit(app=app, target=str(current_file_dir / "my_cl_app.py"), path="/ch
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host=HOST, port=PORT, reload=False)
+    uvicorn.run("main:app", host=HOST, port=PORT, reload=True)
