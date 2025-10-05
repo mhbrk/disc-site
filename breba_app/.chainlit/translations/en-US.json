@@ -80,8 +80,8 @@
         },
         "messages": {
             "status": {
-                "using": "💭",
-                "used": "✅"
+                "using": "Using",
+                "used": "Used"
             },
             "actions": {
                 "copy": {
