@@ -13,6 +13,15 @@ fi
 
 echo "✅ Python version $CURRENT_PYTHON OK"
 
+# --- uv package manager check ---
+if ! command -v uv >/dev/null 2>&1; then
+  echo "❌ 'uv' package manager not found."
+  echo "   Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh"
+  exit 1
+else
+  echo "✅ 'uv' package manager found."
+fi
+
 ENV_FILE="./breba_app/.env"
 
 # Ensure ENV_FILE exists
@@ -70,21 +79,13 @@ echo "========================================"
 # Check if .venv exists
 if [ ! -d ".venv" ]; then
   echo ".venv not found. Creating virtual environment..."
-  python3 -m venv .venv
-  echo "Installing requirements..."
-  .venv/bin/pip install --upgrade pip
-  if [ -f requirements.txt ]; then
-    .venv/bin/pip install -r requirements.txt
-  fi
+  uv sync
 fi
-
-echo "Installing Chainlit..."
-.venv/bin/pip install --quiet chainlit
 
 # Generate CHAINLIT_AUTH_SECRET if missing
 if ! grep -q "CHAINLIT_AUTH_SECRET" "$ENV_FILE" 2>/dev/null; then
   echo "Generating CHAINLIT_AUTH_SECRET..."
-  SECRET=$(.venv/bin/chainlit create-secret | grep CHAINLIT_AUTH_SECRET | cut -d= -f2- | tr -d '"')
+  SECRET=$(uv run chainlit create-secret | grep CHAINLIT_AUTH_SECRET | cut -d= -f2- | tr -d '"')
   echo "CHAINLIT_AUTH_SECRET=$SECRET" >> $ENV_FILE
   echo "Added CHAINLIT_AUTH_SECRET to .env"
 fi
