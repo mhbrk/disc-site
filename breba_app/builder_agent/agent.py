@@ -106,12 +106,15 @@ class BuilderAgent:
 
         if len(state["messages"]) > 1:
             message = state["messages"][-1].content
+            logger.info(f"Verifying if diff message: {message}")
             # builder is a special case when LLM decides that it needs to rebuild the spec
             if message == "builder":
                 # TODO: hand off should be explicit not through raising an exception
                 raise Exception("Not an editing task, need to rebuild the spec")
             split_message = message.split("::final diff::")
 
+            logger.info(f"Length of message split is: {len(split_message)}")
+            logger.info(f"Second message split is: {split_message[1]}")
             if len(split_message) > 1 and split_message[1]:
                 return True
         return False
@@ -138,6 +141,7 @@ class BuilderAgent:
         """
         question = state["messages"][-1].content
         answer: Message = interrupt(question)
+        logger.info(f"User input: {answer}")
         return {"messages": [{"role": answer.role, "content": answer.parts[0].text}]}
 
     def extract_prompt(self, state: State) -> State:
@@ -161,6 +165,7 @@ class BuilderAgent:
 
     async def new_spec_agent(self, state: State, config: RunnableConfig) -> State:
         # TODO: use callback or class to get files, probably usersessioncontext class to get userid, user time, and zone
+        logger.info("New spec agent invoked.")
 
         trimmed_messages = trim_messages(
             state["messages"],
@@ -206,6 +211,7 @@ class BuilderAgent:
 
     async def editing_spec_agent(self, state: State, config: RunnableConfig) -> State:
         # TODO: use callback or class to get files, probably usersessioncontext class to get userid, user time, and zone
+        logger.info("Editing spec agent invoked.")
         trimmed_messages = trim_messages(
             state["messages"],
             strategy="last",
