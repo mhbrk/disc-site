@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
 import os
 import re
 from collections import defaultdict
@@ -110,14 +111,25 @@ def save_image_file_to_private(user_name: str, session_id: str, file_name: str, 
     file_size = Path(file_path).stat().st_size
     if file_size > MAX_FILE_SIZE:
         raise ValueError(f"File size exceeds limit of {MAX_FILE_SIZE / 1024 / 1024} MB")
+
+    # Detect MIME type
+    content_type, _ = mimetypes.guess_type(file_path)
+    if not content_type:
+        content_type = "application/octet-stream"  # safe fallback
+
+    extra_args = {
+        "ContentType": content_type,
+    }
+
+    if description:
+        extra_args["Metadata"] = {"description": description}
+
     try:
         s3_client.upload_file(
             Filename=file_path,
             Bucket=USERS_BUCKET_NAME,
             Key=key,
-            ExtraArgs={
-                "Metadata": {"description": description} if description else {}
-            }
+            ExtraArgs=extra_args
         )
         logger.info(f"Uploaded file to {USERS_BUCKET_NAME}/{key}")
         return public_file_url(user_name, session_id, file_name)
