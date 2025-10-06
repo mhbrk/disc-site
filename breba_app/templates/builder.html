@@ -56,7 +56,7 @@
         if (chat) {
             const prompt = {
                 method: "to_builder",
-                body: "This is the final prompt. Just process it. I will not answer any questions: " + textarea.value
+                body: "This is the final specification. Just process it. I will not answer any questions: " + textarea.value
             };
             chat.contentWindow.postMessage(prompt, '*');
             lastServerContent = textarea.value;
