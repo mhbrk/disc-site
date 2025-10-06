@@ -114,7 +114,6 @@ class BuilderAgent:
             split_message = message.split("::final diff::")
 
             logger.info(f"Length of message split is: {len(split_message)}")
-            logger.info(f"Second message split is: {split_message[1]}")
             if len(split_message) > 1 and split_message[1]:
                 return True
         return False
