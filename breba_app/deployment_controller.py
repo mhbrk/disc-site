@@ -1,8 +1,11 @@
+import logging
+
 from storage import upload_site
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product
 from breba_app.models.user import User
 
+logger = logging.getLogger(__name__)
 
 async def run_deployment(username: str, product: Product, deployment_id: str) -> str:
     # TODO: optimize this. User should be fully stored in session at login
@@ -11,9 +14,12 @@ async def run_deployment(username: str, product: Product, deployment_id: str) ->
     user = await User.find_one(User.username == username)
     try:
         deployment = await Deployment.get_or_create(deployment_id, product.id, user.id)
-        url = upload_site(username, product.product_id, deployment.deployment_id)
+        url = await upload_site(username, product.product_id, deployment.deployment_id)
+        logger.info(f"User: {username}, Product: {product.product_id}, uploaded site to url: {url}")
+
         # TODO: Why are we updating the timestamp? maybe instead of get_or create should update or create
         await deployment.update_deployment_timestamp()
         return f"Deployed your website to: {url}"
     except Exception as e:
+        logger.error(f"Could not deploy to {deployment_id}. Error: {e}")
         return f"Could not deploy to {deployment_id}. It is probably already taken by another user"
