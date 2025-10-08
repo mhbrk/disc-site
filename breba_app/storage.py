@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import logging
+import mimetypes
 import os
 import re
 from collections import defaultdict
@@ -45,20 +47,66 @@ def public_file_url(user_name: str, session_id: str, file_name: str) -> str:
     return f"{CDN_BASE_URL}/{user_name}/{session_id}/{file_name}"
 
 
-def _copy_directory_s3(source_bucket, target_bucket, prefix: str, target_prefix: str = None):
-    try:
-        # TODO: optimize this using asyncio.to_thread or create_task
-        for obj_summary in source_bucket.objects.filter(Prefix=prefix):
-            relative_path = obj_summary.key[len(prefix):]
-            new_prefix = target_prefix if target_prefix else prefix
-            new_key = f"{new_prefix}{relative_path}"
+def _join_prefix(base: str) -> str:
+    """Normalize a prefix to end with '/' if it is non-empty and not already ending with it."""
+    if not base:
+        return ""
+    return base if base.endswith("/") else base + "/"
 
-            copy_source = {"Bucket": source_bucket.name, "Key": obj_summary.key}
-            target_bucket.copy(copy_source, new_key)
-            logger.info(f"Copied {obj_summary.key} -> {new_key}")
+
+async def _copy_directory_s3(source_bucket, target_bucket, prefix: str, target_prefix: str = None,
+                             max_concurrency: int = 16):
+    """
+        Asynchronously copy all objects under `prefix` from source_bucket to target_bucket.
+        Each copy runs in a separate thread via asyncio.to_thread.
+
+        Returns (copied_count, failed_count).
+        """
+
+    # Normalize prefixes
+    src_prefix = _join_prefix(prefix)
+    dst_base = _join_prefix(target_prefix if target_prefix is not None else prefix)
+
+    logger.info(f"Listing objects with Prefix='{src_prefix}' in bucket '{source_bucket.name}'...")
+    try:
+        objs = await asyncio.to_thread(lambda: list(source_bucket.objects.filter(Prefix=src_prefix)))
     except Exception as e:
-        logger.error(f"Error copying directory from {source_bucket.name} to {target_bucket.name}: {e}")
+        logger.error(f"Failed to list objects for prefix '{src_prefix}': {e}")
         raise
+
+    if not objs:
+        logger.info("No objects to copy.")
+        raise Exception("No objects to copy.")
+
+    sem = asyncio.Semaphore(max_concurrency)
+
+    async def copy_one(obj_summary):
+        relative_path = obj_summary.key[len(src_prefix):]  # keep folder structure under prefix
+        new_key = f"{dst_base}{relative_path}"
+
+        def _do_copy():
+            copy_source = {"Bucket": source_bucket.name, "Key": obj_summary.key}
+            target_bucket.copy(copy_source, new_key)  # blocking boto3 call
+            logger.info(f"Copied {obj_summary.key} -> {new_key}")
+
+        async with sem:
+            await asyncio.to_thread(_do_copy)
+
+    tasks = [asyncio.create_task(copy_one(o)) for o in objs]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    copied = 0
+    failed = 0
+    for o, r in zip(objs, results):
+        if isinstance(r, Exception):
+            failed += 1
+            logger.error(f"Failed to copy {o.key}: {r}")
+        else:
+            copied += 1
+
+    logger.info(f"Copy complete. Copied: {copied}, Failed: {failed}")
+    if failed > 0:
+        raise Exception(f"Failed to copy {failed} objects.")
 
 
 def _user_session_object(user_name: str, session_id: str, relative_path: str, description: str | None = None):
@@ -110,14 +158,25 @@ def save_image_file_to_private(user_name: str, session_id: str, file_name: str, 
     file_size = Path(file_path).stat().st_size
     if file_size > MAX_FILE_SIZE:
         raise ValueError(f"File size exceeds limit of {MAX_FILE_SIZE / 1024 / 1024} MB")
+
+    # Detect MIME type
+    content_type, _ = mimetypes.guess_type(file_path)
+    if not content_type:
+        content_type = "application/octet-stream"  # safe fallback
+
+    extra_args = {
+        "ContentType": content_type,
+    }
+
+    if description:
+        extra_args["Metadata"] = {"description": description}
+
     try:
         s3_client.upload_file(
             Filename=file_path,
             Bucket=USERS_BUCKET_NAME,
             Key=key,
-            ExtraArgs={
-                "Metadata": {"description": description} if description else {}
-            }
+            ExtraArgs=extra_args
         )
         logger.info(f"Uploaded file to {USERS_BUCKET_NAME}/{key}")
         return public_file_url(user_name, session_id, file_name)
@@ -233,7 +292,7 @@ def get_public_url(site_name: str) -> str:
 
 
 # TODO: user_name/session_id are state for the entire request, should probably create a user_cloud_storage class
-def upload_site(user_name: str, session_id: str, site_name: str):
+async def upload_site(user_name: str, session_id: str, site_name: str):
     """
     Uploads site to google cloud
     Example: upload_site("/Users/yason/breba/disc-site/sites/test-site", "test-site")
@@ -247,7 +306,7 @@ def upload_site(user_name: str, session_id: str, site_name: str):
 
     # TODO: convert to async because GCP is a blocking call, we don't want to have to wait
     # TODO: when empty dir is being uploaded, should pass back an error message
-    _copy_directory_s3(
+    await _copy_directory_s3(
         source_bucket=s3_bucket,
         target_bucket=public_s3_bucket,
         prefix=f"{user_name}/{session_id}/",
