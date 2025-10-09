@@ -153,13 +153,13 @@ class HTMLAgent:
             raise Exception("Provided spec is the same as the current spec. This is not supported for a diffing update.")
 
         diff = get_diff(current_spec, spec)
-        # if the spec change is more than 20% of the spec, we want to fall back to full spec update
-        acceptable_diff_percentage = 0.6
+        # if the spec change is more than 70% of the spec, we want to fall back to full spec update
+        acceptable_diff_percentage = 0.7
         diff_lines = diff.split("\n")
         current_spec_lines = current_spec.split("\n")
         if len(diff_lines) > len(current_spec_lines) * acceptable_diff_percentage:
             # when there are lots of changes to the spec, we will stream the full spec update
-            logger.info("Spec diff is too big, streaming full spec update")
+            logger.info("Spec diff is too big. You have to treat it like a new specification")
             raise Exception(f"Spec diff is too big. Diff length is: {len(diff_lines)}, current spec length is: {len(current_spec_lines)}")
         else:
             try:

@@ -23,7 +23,7 @@ def html():
 
 @pytest.mark.asyncio
 async def test_diffing_inline_style(html):
-    prompt = "The user has highlighted the following text on the generated page: Hello. \nAnd made the following comment: Make this smaller"
+    prompt = "The user has highlighted the following text on the generated page: Hello. \nAnd made the following comment: Make only the Hello smaller"
 
     diff = await diff_text(html, prompt)
 
