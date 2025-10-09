@@ -182,18 +182,11 @@ class HTMLAgent:
         """
         logger.info("Generator diffing update")
         html = self.get_last_html(session_id)
-        # Will raise an exception if the diff is too long
-        diff = await diff_text(html, query)
-        logger.info(f"Diff was successfully generated: {diff}")
-        try:
-            modified = apply_diff_no_line_numbers(html, diff)
-            self.set_last_html(session_id, modified)
-            # TODO: this violates the interface because the agent returns text instead of agent response
-            return modified
-        except Exception as e:
-            logger.error(f"Failed to apply diff: {e}\n"
-                         f"Failed diff: {diff}")
-            raise e
+        modified = await diff_text(html, query)
+        logger.info(f"Diff was successfully applied")
+        self.set_last_html(session_id, modified)
+        # TODO: this violates the interface because the agent returns text instead of agent response
+        return modified
 
     async def editing_stream(self, query: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
         """

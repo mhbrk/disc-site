@@ -4,7 +4,6 @@ import pytest
 from dotenv import load_dotenv
 from openai import Client
 
-from breba_app.diff import apply_diff_no_line_numbers
 from breba_app.generator_agent.diffing import diff_text
 
 load_dotenv()
@@ -23,11 +22,10 @@ def html():
 
 @pytest.mark.asyncio
 async def test_diffing_inline_style(html):
-    prompt = "The user has highlighted the following text on the generated page: Hello. \nAnd made the following comment: Make only the Hello smaller"
+    prompt = "The user has highlighted the following text on the generated page: \"Hello\". \nAnd made the following comment: Make this smaller"
 
-    diff = await diff_text(html, prompt)
+    modified = await diff_text(html, prompt)
 
-    modified = apply_diff_no_line_numbers(html, diff)
     evaluation = client.responses.create(
         model=EVALUATION_MODEL,
         temperature=0,
@@ -46,11 +44,10 @@ async def test_diffing_inline_style(html):
 
 @pytest.mark.asyncio
 async def test_diffing_inline_text(html):
-    prompt = "The user has highlighted the following text on the generated page: Hello World. \nAnd made the following comment: Should be Hello, Universe!"
+    prompt = "The user has highlighted the following text on the generated page: \"Hello World\". \nAnd made the following comment: Should be Hello, Universe!"
 
-    diff = await diff_text(html, prompt)
+    modified = await diff_text(html, prompt)
 
-    modified = apply_diff_no_line_numbers(html, diff)
     evaluation = client.responses.create(
         model=EVALUATION_MODEL,
         temperature=0,

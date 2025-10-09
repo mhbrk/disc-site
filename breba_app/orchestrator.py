@@ -80,7 +80,7 @@ async def start_editing_task(user_name: str, session_id: str, query: str, genera
         await generator_callback(update)
         await generator_callback("__completed__")
     except Exception as e:
-        logger.error(f"Error applying patch: {e}")
+        logger.error(f"Error performing a diffing update: {e}")
         accumulator = TagAccumulator()
         async for chunk in generator_agent.editing_stream(query, user_name, session_id):
             await process_chunk(accumulator, chunk, generator_callback)
