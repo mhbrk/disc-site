@@ -245,7 +245,7 @@ class BuilderAgent:
     async def invoke(self, user_name: str, session_id: str, user_input: Message):
         config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id})
         if self.is_waiting_for_user_input(config):
-            await self.app.ainvoke(Command(resume=user_input), config)
+            await self.app.ainvoke(Command(update={"current_agent": "new_spec_agent"}, resume=user_input), config)
         else:
             # This happens in only with the first task request, if task is being continued this will not work
             logger.info(f"Invoking builder agent with user input: {user_input}")
@@ -257,7 +257,7 @@ class BuilderAgent:
     async def edit_invoke(self, user_name: str, session_id: str, user_input: Message):
         config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id})
         if self.is_waiting_for_user_input(config):
-            await self.app.ainvoke(Command(resume=user_input), config)
+            await self.app.ainvoke(Command(update={"current_agent": "editing_spec_agent"}, resume=user_input), config)
         else:
             # This happens in only with the first task request, if task is being continued this will not work
             logger.info(f"Invoking builder editing agent with user input: {user_input}")

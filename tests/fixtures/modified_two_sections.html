@@ -1,0 +1,1423 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - My Kids Club</title>
+    <meta name="description" content="A comfortable, joyful space for your child while you enjoy skiing in My."/>
+    <meta name="robots" content="follow, index, max-snippet:-1, max-video-preview:-1, max-image-preview:large"/>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/Hero_My_kids.png" as="image">
+    <meta name="author" content="Yason Khaburzaniya">
+    <!-- Google Fonts: Fredoka (headings), Spartan (body) -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@700;800&family=Spartan:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #f9f5ef;
+            --black: #222222;
+            --gray: #4a4a4a;
+            --teal: #02bfa3;
+            --yellow: #f9d65c;
+            --lilac: #d19ce0;
+            --pink: #f06292;
+            --mint: #00bfa5;
+            --lavender: #b39ddb;
+            --white: #fff;
+            --shadow: 0 2px 12px rgba(34,34,34,0.06);
+            --shadow-strong: 0 4px 24px rgba(34,34,34,0.10);
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Spartan', Arial, Helvetica, sans-serif;
+            background: var(--cream);
+            color: var(--black);
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 100vw;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 100vw;
+        }
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        /* Contact Section */
+        .contact-section {
+            background: #fff;
+            padding: 64px 0 48px 0;
+            display: flex;
+            flex-direction: row;
+            gap: 2.5rem;
+            align-items: stretch;
+            justify-content: center;
+            width: 100%;
+        }
+        .contact-map {
+            flex: 1 1 50%;
+            min-width: 260px;
+            max-width: 520px;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(34,34,34,0.08);
+            min-height: 320px;
+            background: #fff;
+            display: flex;
+        }
+        .contact-map iframe {
+            border: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 320px;
+            display: block;
+        }
+        .contact-info {
+            flex: 1 1 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 2.5rem;
+            min-width: 220px;
+            max-width: 520px;
+        }
+        .contact-info h2 {
+            font-family: 'Fredoka', Arial, Helvetica, sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.7em;
+            color: var(--black);
+        }
+        .contact-helper {
+            font-size: 1.13rem;
+            color: var(--gray);
+            font-weight: 500;
+            margin-bottom: 1.2em;
+        }
+        .contact-detail {
+            font-size: 1.08rem;
+            color: var(--black);
+            font-weight: 600;
+            margin-bottom: 0.5em;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5em;
+        }
+        .contact-label {
+            display: inline-block;
+            min-width: 80px;
+        }
+        .contact-link {
+            color: var(--teal);
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .contact-link:hover, .contact-link:focus {
+            text-decoration: underline;
+            color: #019e87;
+        }
+        .contact-ctas {
+            margin-top: 1.2em;
+            display: flex;
+            gap: 1em;
+            flex-wrap: wrap;
+        }
+        @media (max-width: 900px) {
+            .contact-section {
+                flex-direction: column;
+                gap: 1.2rem;
+                align-items: center;
+                padding: 32px 0 32px 0;
+            }
+            .contact-map, .contact-info {
+                max-width: 95vw;
+                width: 100%;
+                padding: 0 1rem;
+            }
+            .contact-info {
+                padding: 0 1rem;
+            }
+        }
+        @media (max-width: 600px) {
+            .contact-section {
+                padding: 24px 0 24px 0;
+            }
+            .contact-map, .contact-info {
+                min-width: 0;
+                max-width: 100vw;
+                padding: 0 0.5rem;
+            }
+            .contact-info h2 {
+                font-size: 1.3rem;
+            }
+            .contact-helper, .contact-detail {
+                font-size: 0.98rem;
+            }
+        }
+        /* Header */
+        header {
+            width: 100%;
+            height: 72px;
+            background: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 48px;
+            box-sizing: border-box;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 20;
+            box-shadow: var(--shadow);
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+        .logo {
+            height: 48px;
+            width: auto;
+            display: block;
+        }
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .lang-switch {
+            display: flex;
+            align-items: center;
+            font-size: 1.08rem;
+            font-weight: 500;
+            background: none;
+            border-radius: 6px;
+            padding: 0.2rem 0.5rem;
+            gap: 0.5rem;
+            cursor: pointer;
+            border: none;
+            font-family: 'Spartan', Arial, Helvetica, sans-serif;
+            text-decoration: none;
+            color: var(--black);
+            transition: color 0.15s, background 0.15s;
+            box-shadow: none;
+        }
+        .lang-switch:hover, .lang-switch:focus {
+            color: var(--teal);
+            background: #f0f0f0;
+            text-decoration: underline;
+        }
+        .lang-switch img {
+            width: 22px;
+            height: 16px;
+            object-fit: cover;
+            border-radius: 3px;
+        }
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        nav a {
+            color: var(--black);
+            text-decoration: none;
+            font-size: 1.08rem;
+            font-weight: 500;
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            transition: color 0.15s, background 0.15s;
+            font-family: 'Spartan', Arial, Helvetica, sans-serif;
+        }
+        nav a:hover, nav a:focus {
+            color: var(--teal);
+            background: #f0f0f0;
+            text-decoration: underline;
+        }
+        .book-now-nav {
+            margin-left: 1.2rem;
+            background: var(--lilac);
+            color: var(--black);
+            font-weight: 700;
+            border: none;
+            border-radius: 999px;
+            padding: 0.6rem 1.6rem;
+            font-size: 1.08rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(209,156,224,0.08);
+            transition: background 0.15s, box-shadow 0.15s;
+            outline: none;
+            font-family: 'Fredoka', Arial, Helvetica, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.01em;
+        }
+        .book-now-nav:hover, .book-now-nav:focus {
+            background: #b97fcf;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(209,156,224,0.13);
+        }
+        /* Hamburger for mobile */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            margin-left: 1rem;
+        }
+        .hamburger span {
+            height: 4px;
+            width: 100%;
+            background: var(--black);
+            margin: 4px 0;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+        /* Mobile nav */
+        @media (max-width: 900px) {
+            header {
+                padding: 0 18px;
+            }
+        }
+        @media (max-width: 700px) {
+            nav, .book-now-nav, .header-center {
+                display: none;
+            }
+            .hamburger {
+                display: flex;
+            }
+            .mobile-nav {
+                display: flex;
+                flex-direction: column;
+                position: fixed;
+                top: 72px;
+                left: 0;
+                width: 100vw;
+                background: var(--white);
+                z-index: 100;
+                box-shadow: var(--shadow);
+                padding: 1.5rem 0;
+                gap: 1.2rem;
+                align-items: center;
+                animation: fadeIn 0.2s;
+            }
+            .mobile-nav a, .mobile-nav button {
+                font-size: 1.15rem;
+                font-weight: 600;
+                color: var(--black);
+                background: none;
+                border: none;
+                padding: 0.7rem 1.5rem;
+                border-radius: 8px;
+                text-decoration: none;
+                transition: background 0.15s, color 0.15s;
+            }
+            .mobile-nav a:hover, .mobile-nav button:hover {
+                background: #f0f0f0;
+                color: var(--teal);
+            }
+            .mobile-nav .book-now-nav {
+                background: var(--lilac);
+                color: var(--black);
+                font-weight: 700;
+                border-radius: 999px;
+                padding: 0.7rem 2.2rem;
+                margin-top: 0.5rem;
+            }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+        /* Hero Section */
+        .hero {
+            display: flex;
+            flex-direction: row;
+            min-height: 100vh;
+            width: 100vw;
+            margin-top: 72px;
+            max-width: 100vw;
+            background: var(--cream);
+        }
+        .hero-left {
+            position: relative;
+            width: 40vw;
+            min-width: 260px;
+            flex: 1 1 40%;
+            background: var(--cream);
+            display: flex;
+            align-items: stretch;
+            justify-content: stretch;
+            overflow: hidden;
+            max-width: 40vw;
+        }
+        .hero-bg-img {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+            object-position: right center;
+            z-index: 1;
+            background: var(--cream);
+        }
+        .decor-confetti {
+            position: absolute;
+            top: 0; left: 0;
+            width: 90px;
+            height: 90px;
+            z-index: 3;
+        }
+        .giraffe-img {
+            position: absolute;
+            right: 2vw;
+            bottom: 2vw;
+            width: 90px;
+            height: auto;
+            z-index: 4;
+        }
+        .rainbow-img {
+            position: absolute;
+            left: 2vw;
+            bottom: 2vw;
+            width: 110px;
+            height: auto;
+            z-index: 4;
+        }
+        /* Hero Right */
+        .hero-right {
+            width: 60vw;
+            min-width: 320px;
+            flex: 1 1 60%;
+            background: var(--cream);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            /* Padding: 20px top/right/bottom, 40px left */
+            padding: 20px 20px 20px 40px;
+            position: relative;
+            z-index: 10;
+            max-width: 60vw;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .hero-content {
+            max-width: 600px;
+            width: 100%;
+        }
+        .hero-headline {
+            font-family: 'Fredoka', Arial, Helvetica, sans-serif;
+            font-size: 3.75rem;
+            font-weight: 800;
+            color: var(--black);
+            margin: 0 0 1.2rem 0;
+            line-height: 1.08;
+            letter-spacing: -0.01em;
+        }
+        .hero-desc {
+            font-size: 1.15rem;
+            color: var(--gray);
+            margin-bottom: 1.5rem;
+            font-weight: 400;
+        }
+        .hero-address {
+            font-size: 1.18rem;
+            font-weight: 700;
+            color: var(--black);
+            margin-bottom: 2.1rem;
+            line-height: 1.4;
+        }
+        /* Pricing Card Styles */
+        .hero-pricing-clean {
+            width: 100%;
+            max-width: 600px;
+        }
+        .pricing-table {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.18em;
+            background: var(--white);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 1.1em 1.3em 1.1em 1.3em;
+            margin: 0;
+        }
+        .pricing-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: var(--black);
+            border-bottom: 1px solid #f2f2f2;
+            padding: 0.32em 0;
+            flex-wrap: wrap;
+        }
+        .pricing-row:last-child {
+            border-bottom: none;
+        }
+        .pricing-label {
+            font-weight: 700;
+            color: var(--black);
+            min-width: 120px;
+            font-family: 'Spartan', Arial, Helvetica, sans-serif;
+        }
+        .pricing-age {
+            font-weight: 500;
+            color: var(--gray);
+            font-size: 0.98em;
+            margin-left: 0.2em;
+        }
+        .pricing-value {
+            text-align: right;
+            font-weight: 600;
+            color: var(--black);
+            display: flex;
+            align-items: center;
+            gap: 0.2em;
+            flex-wrap: wrap;
+        }
+        /* Consistent price font for hourly and package prices */
+        .pricing-amount,
+        .package-amount,
+        .pricing-unit {
+            color: var(--teal);
+            font-weight: 700;
+            font-size: 1.01em;
+            font-family: 'Spartan', Arial, Helvetica, sans-serif;
+            white-space: nowrap;
+            letter-spacing: 0.01em;
+        }
+        .pricing-note {
+            color: var(--gray);
+            font-size: 0.98em;
+            font-weight: 500;
+        }
+        /* Package Table */
+        .package-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 0.5em 0 0.2em 0;
+            table-layout: fixed;
+        }
+        .package-table th,
+        .package-table td {
+            font-family: 'Spartan', Arial, Helvetica, sans-serif;
+            font-size: 1.01rem;
+            padding: 0.35em 0.5em;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .package-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+        .package-table td.package-label,
+        .package-table td.package-time {
+            width: 38%;
+            min-width: 120px;
+            max-width: 38%;
+        }
+        .package-table td.package-amount {
+            width: 24%;
+            min-width: 70px;
+            max-width: 90px;
+            text-align: right;
+            white-space: nowrap;
+            color: var(--teal);
+            font-weight: 700;
+            font-size: 1.01em;
+            font-family: 'Spartan', Arial, Helvetica, sans-serif;
+            letter-spacing: 0.01em;
+        }
+        .package-table th {
+            color: var(--black);
+            font-weight: 700;
+            background: var(--cream);
+            border-radius: 8px 8px 0 0;
+        }
+        .package-table td {
+            color: var(--gray);
+            font-weight: 500;
+            vertical-align: middle;
+            white-space: nowrap;
+            word-break: keep-all;
+            padding: 0.35em 0.5em;
+        }
+        .package-table .package-label {
+            font-weight: 700;
+            color: var(--black);
+            background: none;
+            vertical-align: middle;
+        }
+        .package-table .package-amount {
+            vertical-align: middle;
+            text-align: right;
+            white-space: nowrap;
+        }
+        .package-table .package-time {
+            color: var(--gray);
+            font-weight: 500;
+            vertical-align: middle;
+            white-space: normal;
+            word-break: break-word;
+        }
+        .package-table tr:not(:last-child) td {
+            border-bottom: 1px solid #f2f2f2;
+        }
+        /* Responsive: Table scrolls horizontally on small screens, no stacking */
+        @media (max-width: 900px) {
+            .hero {
+                flex-direction: column;
+                min-height: unset;
+                max-width: 100vw;
+            }
+            .hero-left, .hero-right {
+                width: 100vw;
+                min-width: 0;
+                padding: 0;
+                max-width: 100vw;
+            }
+            .hero-left {
+                height: 340px;
+                min-height: 220px;
+                max-width: 100vw;
+            }
+            .hero-right {
+                padding: 20px 20px 20px 40px;
+                align-items: center;
+                max-width: 100vw;
+                min-height: unset;
+            }
+            .hero-content {
+                max-width: 100%;
+            }
+            .hero-headline {
+                font-size: 2.1rem;
+            }
+            .hero-desc, .hero-address {
+                font-size: 1rem;
+            }
+            .hero-ctas {
+                flex-direction: column;
+                gap: 0.7rem;
+                width: 100%;
+            }
+            .cta-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            .giraffe-img, .rainbow-img {
+                width: 60px;
+            }
+            .decor-confetti {
+                width: 60px;
+                height: 60px;
+            }
+            .hero-pricing-clean {
+                max-width: 100%;
+            }
+            .pricing-table {
+                padding: 0.8em 0.7em 0.8em 0.7em;
+            }
+            .pricing-label {
+                min-width: 90px;
+                font-size: 0.99rem;
+            }
+            .pricing-value {
+                font-size: 0.99rem;
+            }
+        }
+        @media (max-width: 600px) {
+            html, body {
+                font-size: 15px;
+                max-width: 100vw;
+            }
+            .hero {
+                flex-direction: column;
+                min-height: unset;
+                max-width: 100vw;
+            }
+            .hero-left, .hero-right {
+                width: 100vw;
+                min-width: 0;
+                padding: 0;
+                max-width: 100vw;
+            }
+            .hero-left {
+                height: 220px;
+                min-height: 120px;
+                max-width: 100vw;
+            }
+            .hero-right {
+                padding: 20px 20px 20px 40px;
+                max-width: 100vw;
+                min-height: unset;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                box-sizing: border-box;
+            }
+            .hero-content {
+                max-width: 100vw;
+                width: 100%;
+                min-width: 0;
+            }
+            .hero-headline {
+                font-size: 1.5rem;
+            }
+            .hero-desc, .hero-address {
+                font-size: 0.98rem;
+            }
+            .pricing-table {
+                padding: 0.5em 0.3em 0.5em 0.3em;
+            }
+            .pricing-label {
+                min-width: 70px;
+                font-size: 0.97rem;
+            }
+            .pricing-value {
+                font-size: 0.97rem;
+            }
+            .package-table {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            /* Use percentage for column widths on mobile, not vw */
+            .package-table .package-label,
+            .package-table .package-time {
+                width: 38% !important;
+                min-width: 90px !important;
+                max-width: 38% !important;
+            }
+            .package-table .package-amount {
+                min-width: 55px !important;
+                width: 24% !important;
+                max-width: 90px !important;
+            }
+            .package-table tr:last-child td {
+                border-bottom: none !important;
+            }
+        }
+        /* CTA Buttons */
+        .hero-ctas {
+            display: flex;
+            gap: 1.1rem;
+            flex-wrap: wrap;
+            justify-content: center; /* Center the buttons horizontally */
+        }
+        .cta-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            font-size: 1.08rem;
+            font-weight: 700;
+            padding: 0.9rem 2.2rem;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+            text-decoration: none;
+            outline: none;
+            box-shadow: 0 2px 8px rgba(2,191,163,0.08);
+            margin-bottom: 0.5rem;
+            font-family: 'Fredoka', Arial, Helvetica, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.01em;
+        }
+        .cta-whatsapp {
+            background: var(--teal);
+            color: #fff;
+            border: none;
+        }
+        .cta-whatsapp:hover, .cta-whatsapp:focus {
+            background: #019e87;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(2,191,163,0.13);
+        }
+        .cta-book {
+            background: #fff;
+            color: var(--black);
+            border: 2px solid var(--black);
+        }
+        .cta-book:hover, .cta-book:focus {
+            background: #f0f0f0;
+            color: var(--teal);
+            border-color: var(--teal);
+            box-shadow: 0 4px 16px rgba(34,34,34,0.08);
+        }
+        .cta-btn svg {
+            margin-right: 0.7em;
+            width: 1.3em;
+            height: 1.3em;
+            vertical-align: middle;
+        }
+        .cta-btn .cta-icon {
+            margin-right: 5px !important;
+            width: 22px !important;
+            height: 22px !important;
+            min-width: 22px !important;
+            min-height: 22px !important;
+            max-width: 22px !important;
+            max-height: 22px !important;
+            vertical-align: middle;
+        }
+        @media (max-width: 400px) {
+            .cta-btn {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.3em;
+                padding-left: 1em;
+                padding-right: 1em;
+            }
+            .cta-btn .cta-icon {
+                margin-bottom: 0.2em;
+            }
+        }
+        /* Section: Discoveries & Fun */
+        .discover-section {
+            background: var(--white);
+            padding: 64px 0 32px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .discover-section h2 {
+            font-family: 'Fredoka', Arial, Helvetica, sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--black);
+            margin-bottom: 0.5em;
+            letter-spacing: -0.01em;
+        }
+        .discover-section .subheading {
+            font-size: 1.18rem;
+            color: var(--gray);
+            margin-bottom: 2.2em;
+            font-weight: 500;
+            text-align: center;
+            max-width: 600px;
+        }
+        .discover-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2.2rem;
+            justify-content: center;
+            width: 100%;
+            max-width: 1100px;
+        }
+        .discover-card {
+            background: var(--cream);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 2rem 1.5rem 1.5rem 1.5rem;
+            min-width: 220px;
+            max-width: 270px;
+            flex: 1 1 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .discover-card h3 {
+            font-size: 1.45rem;
+            font-weight: 700;
+            margin: 0 0 0.7em 0;
+            color: var(--teal);
+            font-family: 'Fredoka', Arial, Helvetica, sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 0.7em;
+        }
+        .discover-card .activity-icon-placeholder {
+            width: 50px;
+            height: 50px;
+            min-width: 50px;
+            min-height: 50px;
+            background: #e6e6e6;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.7em auto;
+            box-shadow: 0 1px 4px rgba(34,34,34,0.07);
+        }
+        .discover-card ul {
+            margin: 0;
+            padding-left: 1.1em;
+        }
+        .discover-card li {
+            font-size: 1.01rem;
+            color: var(--gray);
+            margin-bottom: 0.3em;
+            font-weight: 500;
+        }
+        @media (max-width: 900px) {
+            .discover-cards {
+                flex-direction: column;
+                gap: 1.2rem;
+                align-items: center;
+            }
+            .discover-card {
+                max-width: 95vw;
+                width: 100%;
+            }
+        }
+        /* About Us Section */
+        .about-section {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: center;
+            background: var(--cream);
+            padding: 64px 0;
+            gap: 2.5rem;
+        }
+        .about-content {
+            flex: 1 1 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 2.5rem;
+        }
+        .about-content h2 {
+            font-family: 'Fredoka', Arial, Helvetica, sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.7em;
+            color: var(--black);
+        }
+        .about-content p {
+            font-size: 1.13rem;
+            color: var(--gray);
+            font-weight: 500;
+            line-height: 1.6;
+        }
+        .about-img-placeholder {
+            flex: 1 1 50%;
+            min-height: 260px;
+            background: linear-gradient(135deg, var(--yellow) 0%, var(--lilac) 100%);
+            border-radius: 22px;
+            margin: 0 2.5rem 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            object-fit: cover;
+            max-width: 100vw;
+        }
+        @media (max-width: 900px) {
+            .about-section {
+                flex-direction: column-reverse;
+                padding: 32px 0;
+                gap: 1.2rem;
+            }
+            .about-content, .about-img-placeholder {
+                padding: 0 1rem;
+                margin: 0;
+            }
+        }
+        /* FAQ Section */
+        .faq-section {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: center;
+            background: var(--white);
+            padding: 64px 0;
+            gap: 2.5rem;
+        }
+        .faq-img-placeholder {
+            flex: 1 1 50%;
+            min-height: 260px;
+            background: linear-gradient(135deg, var(--lavender) 0%, var(--teal) 100%);
+            border-radius: 22px;
+            margin: 0 0 0 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            object-fit: cover;
+            max-width: 100vw;
+        }
+        .faq-content {
+            flex: 1 1 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 2.5rem;
+        }
+        .faq-content h2 {
+            font-family: 'Fredoka', Arial, Helvetica, sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.7em;
+            color: var(--black);
+        }
+        .faq-list {
+            margin: 0;
+            padding: 0;
+        }
+        .faq-list li {
+            margin-bottom: 1.2em;
+            list-style: none;
+        }
+        .faq-q {
+            font-weight: 700;
+            color: var(--teal);
+            margin-bottom: 0.2em;
+        }
+        .faq-a {
+            color: var(--gray);
+            font-size: 1.05rem;
+            font-weight: 500;
+        }
+        @media (max-width: 900px) {
+            .faq-section {
+                flex-direction: column;
+                padding: 32px 0;
+                gap: 1.2rem;
+            }
+            .faq-content, .faq-img-placeholder {
+                padding: 0 1rem;
+                margin: 0;
+            }
+        }
+        /* Testimonial Section */
+        .testimonial-section {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: center;
+            background: var(--cream);
+            padding: 64px 0;
+            gap: 2.5rem;
+        }
+        .testimonial-img-placeholder {
+            flex: 1 1 50%;
+            min-height: 220px;
+            background: linear-gradient(135deg, var(--pink) 0%, var(--mint) 100%);
+            border-radius: 22px;
+            margin: 0 2.5rem 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            object-fit: cover;
+            max-width: 100vw;
+        }
+        .testimonial-content {
+            flex: 1 1 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 2.5rem;
+        }
+        .testimonial-quote {
+            font-size: 1.18rem;
+            color: var(--black);
+            font-weight: 600;
+            margin-bottom: 1.1em;
+            line-height: 1.5;
+        }
+        .testimonial-attribution {
+            color: var(--gray);
+            font-size: 1.01rem;
+            font-weight: 500;
+        }
+        @media (max-width: 900px) {
+            .testimonial-section {
+                flex-direction: column;
+                padding: 32px 0;
+                gap: 1.2rem;
+            }
+            .testimonial-content, .testimonial-img-placeholder {
+                padding: 0 1rem;
+                margin: 0;
+            }
+        }
+        /* Footer Hero Section */
+        .footer-hero {
+            position: relative;
+            width: 100%;
+            min-height: 220px;
+            background: linear-gradient(135deg, var(--yellow) 0%, var(--lavender) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2rem;
+            border-radius: 0 0 22px 22px;
+            overflow: hidden;
+            max-width: 100vw;
+        }
+        .footer-hero-text {
+            position: absolute;
+            left: 0; right: 0; top: 0; bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-align: center;
+            padding: 0 2rem;
+            background: none;
+            border-radius: 0 0 22px 22px;
+            font-family: 'Fredoka', Arial, Helvetica, sans-serif;
+            text-shadow: 0 2px 16px rgba(0,0,0,0.18);
+        }
+        @media (max-width: 600px) {
+            .footer-hero-text {
+                font-size: 1.7rem;
+                padding: 0 0.7rem;
+            }
+        }
+        /* Footer */
+        footer {
+            width: 100%;
+            text-align: center;
+            padding: 1.5rem 0 1.2rem 0;
+            font-size: 1rem;
+            color: #bbb;
+            background: none;
+            margin-top: auto;
+            font-family: 'Spartan', Arial, Helvetica, sans-serif;
+        }
+        /* Accessibility: focus outlines */
+        a:focus, button:focus {
+            outline: 2px solid var(--teal);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header / Navigation -->
+    <header>
+        <div class="header-left">
+            <a href="#" aria-label="My Kids Club Home">
+                <img src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/logo.png" alt="My Kids Club Logo" class="logo" loading="eager" />
+            </a>
+        </div>
+        <div class="header-center">
+            <a class="lang-switch" href="/ka" aria-label="Switch to Georgian">
+                <img src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/Flag_of_Georgia.svg" alt="Georgian flag" width="22" height="16" />
+                ქართული
+            </a>
+        </div>
+        <nav>
+            <a href="#">Home</a>
+            <a href="#about">About us</a>
+            <a href="#contact">Contact</a>
+        </nav>
+        <button class="book-now-nav" onclick="window.location.href='#';" aria-label="Book Now">Book Now</button>
+        <div class="hamburger" id="hamburger" aria-label="Open navigation" tabindex="0">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </header>
+    <!-- Mobile Nav (hidden by default) -->
+    <div id="mobileNav" class="mobile-nav" style="display:none;">
+        <a href="#">Home</a>
+        <a href="#about">About us</a>
+        <a href="#contact">Contact</a>
+        <button class="book-now-nav" onclick="window.location.href='#';" aria-label="Book Now">Book Now</button>
+    </div>
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <!-- Left: Image & Decorations -->
+        <div class="hero-left" style="background: #f9f5ef;">
+            <img src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/Hero_My_kids.png"
+                 alt="My Kids Club – teacher and child in playroom"
+                 class="hero-bg-img"
+                 loading="eager"
+                 srcset="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/Hero_My_kids.png 1x, https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/Hero_My_kids.png 2x"
+                 style="object-fit:cover;object-position:right center;background:var(--cream);" />
+            <img src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/svg-element-1.svg" alt="Confetti decoration" class="decor-confetti" loading="lazy" />
+            <img src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/home-main-3.png" alt="Giraffe illustration" class="giraffe-img" loading="lazy" />
+            <img src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/home-main-4.png" alt="Pastel rainbow arc" class="rainbow-img" loading="lazy" />
+        </div>
+        <!-- Right: Content -->
+        <div class="hero-right">
+            <div class="hero-content">
+                <h1 class="hero-headline">Safe and Reliable Daycare in My!</h1>
+                <div class="hero-desc">
+                    A comfortable, joyful space for your child while you enjoy skiing in My.
+                </div>
+                <div class="hero-address">
+                    New My, 1st floor.<br>
+                     555 529 933
+                </div>
+                <div class="hero-pricing-clean" style="margin-bottom:1.7rem;">
+                    <div class="pricing-table">
+                        <div class="pricing-row">
+                            <span class="pricing-label">Hours</span>
+                            <span class="pricing-value">10:00 AM – 5:00 PM <span class="pricing-note">(Daily)</span></span>
+                        </div>
+                        <div class="pricing-row">
+                            <span class="pricing-label">Children <span class="pricing-age">(1.8+ yrs)</span></span>
+                            <span class="pricing-value"><span class="pricing-amount">40 GEL</span> <span class="pricing-unit">/hr</span></span>
+                        </div>
+                        <div class="pricing-row">
+                            <span class="pricing-label">Babies <span class="pricing-age">(&lt;1.8 yrs)</span></span>
+                            <span class="pricing-value"><span class="pricing-amount">60 GEL</span> <span class="pricing-unit">/hr</span></span>
+                        </div>
+                        <div class="pricing-row" style="flex-direction:column;align-items:flex-start;gap:0.2em;">
+                            <span class="pricing-label" style="font-size:1.08em;margin-bottom:0.2em;">Packages</span>
+                            <div style="width:100%;overflow-x:auto;">
+                            <table class="package-table" aria-label="Packages">
+                                <tbody>
+                                    <tr>
+                                        <td class="package-label">Full Day</td>
+                                        <td class="package-time">10:00–17:00</td>
+                                        <td class="package-amount">200 GEL</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="package-label" rowspan="2" style="vertical-align:middle;">Half Day</td>
+                                        <td class="package-time">Morning:<br>10:00–13:30</td>
+                                        <td class="package-amount">120 GEL</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="package-time">Afternoon:<br>13:30–17:00</td>
+                                        <td class="package-amount">120 GEL</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:0.2em;margin-top:0.5em;">
+                                <span class="package-note" style="font-size:0.99em;">
+                                    <span style="color:#02bfa3;font-weight:600;">All packages include light meals &amp; 1h outdoor play</span>
+                                </span>
+                                <span class="package-note" style="font-size:0.99em;">
+                                    <span style="color:#f06292;font-weight:600;">Evening care available on request</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-ctas">
+                    <a class="cta-btn cta-whatsapp" href="https://xyz/555529933" target="_blank" rel="noopener" aria-label="Call via WhatsApp" style="padding-left:1.2em;padding-right:1.2em;">
+                        <img src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/WhatsAppGlyph.svg" alt="WhatsApp" class="cta-icon" loading="lazy" />
+                        Call via WhatsApp
+                    </a>
+                    <a class="cta-btn cta-book" href="#" aria-label="Book Now!">Book Now!</a>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Discoveries & Fun Section -->
+    <section class="discover-section" id="discover">
+        <h2>A day full of discoveries and fun!</h2>
+        <div class="subheading">
+            Every day is full of fun, with games, stories, and new friends in a safe, caring place.
+        </div>
+        <div class="discover-cards">
+            <div class="discover-card">
+                <div class="activity-icon-placeholder">
+                    <img src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/bulb.svg" alt="Activities Icon" width="40" height="40" style="display:block;max-width:40px;max-height:40px;" loading="lazy" />
+                </div>
+                <h3>Activities</h3>
+                <ul>
+                    <li>Playing games</li>
+                    <li>Arts &amp; Crafts</li>
+                    <li>Reading Stories</li>
+                    <li>Outdoor activities</li>
+                </ul>
+            </div>
+            <div class="discover-card">
+                <div class="activity-icon-placeholder">
+                    <img src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/star.svg" alt="Flexible Options Icon" width="40" height="40" style="display:block;max-width:40px;max-height:40px;" loading="lazy" />
+                </div>
+                <h3>Flexible Options for Parents</h3>
+                <ul>
+                    <li>Daycare</li>
+                    <li>Eveningcare</li>
+                    <li>Hire a personal Nanny</li>
+                    <li>Pay per hour or Day</li>
+                </ul>
+            </div>
+            <div class="discover-card">
+                <div class="activity-icon-placeholder">
+                    <img src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/hand.svg" alt="Best Practices Icon" width="40" height="40" style="display:block;max-width:40px;max-height:40px;" loading="lazy" />
+                </div>
+                <h3>Best practices &amp; Standards</h3>
+                <ul>
+                    <li>Aligns with local guidelines</li>
+                    <li>Experienced and caring nannies</li>
+                </ul>
+            </div>
+            <div class="discover-card">
+                <div class="activity-icon-placeholder">
+                    <img src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/heart.svg" alt="Engaging Playtime Icon" width="40" height="40" style="display:block;max-width:40px;max-height:40px;" loading="lazy" />
+                </div>
+                <h3>Engaging Active Playtime</h3>
+                <ul>
+                    <li>Ensuring fun for every child</li>
+                    <li>Toys and Games</li>
+                    <li>Educative play</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+    <!-- About Us Section -->
+    <section class="about-section" id="about">
+        <div class="about-content">
+            <h2>About Us</h2>
+            <p>
+                At <b>My Kids Club</b>, located in My, Georgia, we offer flexible day care and per-hour bookings. Our caring staff provides a safe, fun environment where children can learn, grow, and make friends.
+            </p>
+        </div>
+        <img
+            src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/AboutUs.png"
+            alt="About Us – My Kids Club team with kids"
+            class="about-img-placeholder"
+            loading="lazy"
+        />
+    </section>
+    <!-- FAQ Section -->
+    <section class="faq-section" id="faq">
+        <img
+            src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/FAQSection.png"
+            alt="FAQ – Parents’ common questions about My Kids Club"
+            class="faq-img-placeholder"
+            loading="lazy"
+        />
+        <div class="faq-content">
+            <h2>Frequently Asked Questions</h2>
+            <ul class="faq-list">
+                <li>
+                    <div class="faq-q">Q: What is the age range for children accepted at the day care?</div>
+                    <div class="faq-a">A: We welcome children of all ages at our day care! Our team is experienced in providing personalized care for infants, toddlers, and school-aged children, ensuring that each age group enjoys appropriate activities, attention, and support.</div>
+                </li>
+                <li>
+                    <div class="faq-q">Q: What are your hours of operation?</div>
+                    <div class="faq-a">A: We are open from 10:00 AM to 5:00 PM, Monday through Sunday. If you have specific scheduling needs, feel free to reach out, and we’ll do our best to accommodate you.</div>
+                </li>
+                <li>
+                    <div class="faq-q">Q: What safety measures are in place?</div>
+                    <div class="faq-a">A: At My Kids Club, your child’s safety is our priority. We ensure secure premises, trained and attentive staff, constant supervision, strict hygiene standards. We also tailor care to each child’s health and dietary needs, keeping parents informed at all times.</div>
+                </li>
+            </ul>
+        </div>
+    </section>
+    <!-- Testimonial Section -->
+    <section class="testimonial-section" id="testimonial">
+        <img
+            src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/TestimonialsSection.png"
+            alt="Testimonials – What parents say about My Kids Club"
+            class="testimonial-img-placeholder"
+            loading="lazy"
+        />
+        <div class="testimonial-content">
+            <div class="testimonial-quote">
+                “My Kids Club was a lifesaver! We felt so comfortable leaving our 3-year-old there while we skied. The staff was warm and attentive, and our little one had a fantastic time with new friends. Highly recommend!”
+            </div>
+            <div class="testimonial-attribution">
+                Luca’s Parents — from Google Reviews
+            </div>
+        </div>
+    </section>
+    <!-- Contact Us Section -->
+    <section class="contact-section" id="contact" style="background: #fff; padding: 64px 0 48px 0; display: flex; flex-direction: row; gap: 2.5rem; align-items: stretch; justify-content: center;">
+        <div class="contact-map" style="flex: 1 1 50%; min-width: 260px; max-width: 520px; border-radius: 18px; overflow: hidden; box-shadow: 0 2px 12px rgba(34,34,34,0.08); min-height: 320px;">
+            <iframe
+                title="My Kids Club Location"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2962.073073289074!2d44.47781231557044!3d42.47308797917809!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4044f6e2e2c7e2c1%3A0x7b7e2e2e2e2e2e2e!2sNew%20My%2C%20%20apartment%20%23140!5e0!3m2!1sen!2sge!4v1700000000000!5m2!1sen!2sge"
+                width="100%"
+                height="320"
+                style="border:0; width:100%; height:100%; min-height:320px;"
+                allowfullscreen=""
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
+        </div>
+        <div class="contact-info" style="flex: 1 1 50%; display: flex; flex-direction: column; justify-content: center; padding: 0 2.5rem;">
+            <h2 style="font-family: 'Fredoka', Arial, Helvetica, sans-serif; font-size: 2rem; font-weight: 800; margin-bottom: 0.7em; color: var(--black);">Contact Us</h2>
+            <div style="font-size: 1.13rem; color: var(--gray); font-weight: 500; margin-bottom: 1.2em;">
+                Have questions or want to book? Reach out to us!
+            </div>
+            <div style="font-size: 1.08rem; color: var(--black); font-weight: 600; margin-bottom: 0.5em;">
+                <span style="display:inline-block; min-width: 80px;">Phone:</span>
+                <a href="tel:555529933" style="color: var(--teal); text-decoration: none; font-weight: 700;"> 555 529 933</a>
+            </div>
+            <div style="font-size: 1.08rem; color: var(--black); font-weight: 600; margin-bottom: 0.5em;">
+                <span style="display:inline-block; min-width: 80px;">Email:</span>
+                <a href="mailto:Mykidsclub@example.com" style="color: var(--teal); text-decoration: none; font-weight: 700;">Mykidsclub@example.com</a>
+            </div>
+            <div style="font-size: 1.08rem; color: var(--black); font-weight: 600; margin-bottom: 0.5em;">
+                <span style="display:inline-block; min-width: 80px;">Address:</span>
+                New My,  apartment #140, 1st floor
+            </div>
+            <div style="margin-top: 1.2em; display: flex; gap: 1em; flex-wrap: wrap;">
+                <a class="cta-btn cta-whatsapp" href="https://xyz/555529933" target="_blank" rel="noopener" aria-label="Call via WhatsApp">
+                    <img src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/WhatsAppGlyph.svg" alt="WhatsApp" class="cta-icon" loading="lazy" />
+                    <span>WhatsApp</span>
+                </a>
+                <a class="cta-btn cta-book" href="#" aria-label="Book Now!">Book Now!</a>
+            </div>
+        </div>
+    </section>
+    <!-- Footer Hero Section -->
+    <section class="footer-hero">
+        <img
+            src="https://cdn.breba.app/temp/457f209d-bcc5-41f7-803a-c1ba0880f949/footer_hero.jpg"
+            alt="Footer Hero – My Kids Club"
+            loading="lazy"
+            style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;z-index:0;border-radius:0 0 22px 22px;"
+        />
+        <div class="footer-hero-text" style="position:relative;z-index:1; background:none; color:#fff; font-size:2.5rem; font-weight:800; text-shadow:0 2px 16px rgba(0,0,0,0.18);">
+            We provide parents with peace of mind, helping them enjoy their ski trip by giving children exceptional care every fun-filled day in a place as nurturing as home.        </div>
+    </section>
+    <!-- Footer -->
+    <footer>
+        &copy; 2025 My Kids Club. All rights reserved.
+    </footer>
+    <script>
+        // Mobile nav toggle
+        const hamburger = document.getElementById('hamburger');
+        const mobileNav = document.getElementById('mobileNav');
+        let navOpen = false;
+        function toggleMobileNav() {
+            navOpen = !navOpen;
+            mobileNav.style.display = navOpen ? 'flex' : 'none';
+            hamburger.setAttribute('aria-expanded', navOpen ? 'true' : 'false');
+        }
+        hamburger.addEventListener('click', toggleMobileNav);
+        hamburger.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') toggleMobileNav();
+        });
+        // Smooth scroll for nav links
+        document.querySelectorAll('a[href^="#"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    e.preventDefault();
+                    window.scrollTo({ top: target.offsetTop - 70, behavior: 'smooth' });
+                    if (window.innerWidth < 700 && typeof toggleMobileNav === 'function') toggleMobileNav();
+                }
+            });
+        });
+        // (Optional) GA4 event tracking placeholder
+        document.querySelectorAll('.cta-whatsapp, .cta-book').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // window.gtag && window.gtag('event', 'cta_click', { label: this.textContent.trim() });
+            });
+        });
+    </script>
+</body>
+</html>

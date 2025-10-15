@@ -13,7 +13,7 @@ from langgraph.prebuilt.chat_agent_executor import AgentState
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
-from breba_app.diff import apply_diff_no_line_numbers, get_diff
+from breba_app.diff import get_diff
 from .diffing import diff_text
 from .generate_image import generate_image
 from .instruction_reader import get_instructions
@@ -23,9 +23,11 @@ logger = logging.getLogger(__name__)
 
 memory = MemorySaver()
 
+HTML_OUTPUT_MARKER = "::final html output::"
+
 
 def extract_html_content(content: str):
-    split_message = content.split("::final html output::")
+    split_message = content.split(HTML_OUTPUT_MARKER)
     if len(split_message) > 1:
         return split_message[1]
     else:
@@ -150,17 +152,19 @@ class HTMLAgent:
             raise Exception("No current spec found. This is not supported for a diffing update.")
         if current_spec == spec:
             logger.info("Provided spec is the same as the current spec. This is not supported for a diffing update.")
-            raise Exception("Provided spec is the same as the current spec. This is not supported for a diffing update.")
+            raise Exception(
+                "Provided spec is the same as the current spec. This is not supported for a diffing update.")
 
         diff = get_diff(current_spec, spec)
-        # if the spec change is more than 20% of the spec, we want to fall back to full spec update
-        acceptable_diff_percentage = 0.6
+        # if the spec change is more than 70% of the spec, we want to fall back to full spec update
+        acceptable_diff_percentage = 0.7
         diff_lines = diff.split("\n")
         current_spec_lines = current_spec.split("\n")
         if len(diff_lines) > len(current_spec_lines) * acceptable_diff_percentage:
             # when there are lots of changes to the spec, we will stream the full spec update
-            logger.info("Spec diff is too big, streaming full spec update")
-            raise Exception(f"Spec diff is too big. Diff length is: {len(diff_lines)}, current spec length is: {len(current_spec_lines)}")
+            logger.info("Spec diff is too big. You have to treat it like a new specification")
+            raise Exception(
+                f"Spec diff is too big. Diff length is: {len(diff_lines)}, current spec length is: {len(current_spec_lines)}")
         else:
             try:
                 query = f"I changed the spec given the following diff:\n{diff}"
@@ -182,18 +186,12 @@ class HTMLAgent:
         """
         logger.info("Generator diffing update")
         html = self.get_last_html(session_id)
-        # Will raise an exception if the diff is too long
-        diff = await diff_text(html, query)
-        logger.info(f"Diff was successfully generated: {diff}")
-        try:
-            modified = apply_diff_no_line_numbers(html, diff)
-            self.set_last_html(session_id, modified)
-            # TODO: this violates the interface because the agent returns text instead of agent response
-            return modified
-        except Exception as e:
-            logger.error(f"Failed to apply diff: {e}\n"
-                         f"Failed diff: {diff}")
-            raise e
+        # TODO: This currently doesn't support tool calling and can only handle simple html changes
+        modified = await diff_text(html, query)
+        logger.info(f"Diff was successfully applied")
+        self.set_last_html(session_id, modified)
+        # TODO: this violates the interface because the agent returns text instead of agent response
+        return modified
 
     async def editing_stream(self, query: str, user_name: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
         """
@@ -205,10 +203,12 @@ class HTMLAgent:
         #  For this need to redo the generator agent using custom graph or using baml
         # The difference between editing and regular stream is that this function gets the last specification to work with
         # that last specification was set by the original stream call
-        inputs = {"messages": [("user", f"Your session id is: {session_id}."),
-                               ("user", f"The user name for tool use is: {user_name}."),
-                               ("user", f"Current time is: {current_time}"),
-                               ("user", f"Current specification is: {self.get_last_specification(session_id)}"),
+        inputs = {"messages": [("user", f"Current specification is: {self.get_last_specification(session_id)}"),
+                               ("assistant", f"{HTML_OUTPUT_MARKER}\n{self.get_last_html(session_id)}\n"
+                                             f"{HTML_OUTPUT_MARKER}"),
+                               ("system", f"Your session id is: {session_id}.\n"
+                                          f"The user name for tool use is: {user_name}.\n"
+                                          f"Current time is: {current_time}"),
                                ("user", query)],
                   }
 
@@ -247,7 +247,7 @@ class HTMLAgent:
     def set_last_html(self, session_id, html_output):
         config = {"configurable": {"thread_id": session_id}}
         self.graph.update_state(config,
-                                {"messages": [("user", f"::final html output::{html_output}::final html output::")]})
+                                {"messages": [("user", f"{HTML_OUTPUT_MARKER}{html_output}{HTML_OUTPUT_MARKER}")]})
 
     def get_agent_response(self, config):
         current_state = self.graph.get_state(config)

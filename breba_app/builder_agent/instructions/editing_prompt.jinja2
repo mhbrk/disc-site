@@ -87,15 +87,17 @@ Expected diff would be:
 ::final diff::
 ```
 
-# File editing rules:
+# Specification editing rules:
+
+IMPORTANT: You must wrap the diff in a `::final diff::` block.
 
 Return edits similar to unified diffs that `diff -U0` would produce.
 Your output will similar to the output of a unified diff like `diff -U0` would produce, meaning no context lines.
-When generating a diff, always copy the exact line from the source file, including all leading spaces, bullets,
+When generating a diff, always copy the exact line from the source spec, including all leading spaces, bullets,
 and formatting.
 
 
-Make sure you include the first 2 lines with the file paths.
+Make sure you include the first 2 lines with the file paths. You are always editing spec.md.
 Don't include timestamps with the file paths.
 
 Start each hunk of changes with a `@@ ... @@` line.
