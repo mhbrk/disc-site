@@ -66,8 +66,6 @@ async def diff_stream(html: str, prompt: str):
 
 
 async def diff_text(html: str, prompt: str):
-    # TODO: max_lines means we will abort, caller needs to start streaming
-    #  from scratch before we abort in order to avoid delays
     message = ""
     agen = diff_stream(html, prompt)
     try:
