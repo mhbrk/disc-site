@@ -495,6 +495,13 @@ def apply_search_replace_to_html(html: str, search_replace_text: str):
     edits = list(find_original_update_blocks(search_replace_text))
     logger.info(f"Found {len(edits)} edits")
 
+    if not edits:
+        raise ValueError(f"No edits found in the following search and replace pattern:\n{search_replace_text}")
     applied_edits, modified = apply_edits(html, edits)
+    if not applied_edits:
+        raise ValueError(f"No edits applied in the following search and replace pattern:\n{search_replace_text}")
+
+    if html and not modified:
+        raise ValueError(f"Unknown error occurred. After applying the following search and replace pattern, original text was deleted:\n{search_replace_text}")
     logger.info(f"Successfully applied {len(applied_edits)} out of {len(edits)} edits")
     return modified

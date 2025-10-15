@@ -16,23 +16,6 @@ client = AsyncOpenAI()
 
 SYSTEM_PROMPT = get_instructions("search_replace")
 
-HEAD = r"^<{5,9} SEARCH>?\s*$"
-DIVIDER = r"^={5,9}\s*$"
-UPDATED = r"^>{5,9} REPLACE\s*$"
-
-HEAD_ERR = "<<<<<<< SEARCH"
-DIVIDER_ERR = "======="
-UPDATED_ERR = ">>>>>>> REPLACE"
-
-DEFAULT_FENCE = ("`" * 3, "`" * 3)
-
-TRIPLE_BACKTICKS = "`" * 3
-
-missing_filename_err = (
-    "Bad/missing filename. The filename must be alone on the line before the opening fence"
-    " {fence[0]}"
-)
-
 
 async def diff_stream(html: str, prompt: str):
     logger.info(f"Generating diff for prompt: {prompt}")
