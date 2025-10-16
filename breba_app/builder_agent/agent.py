@@ -14,7 +14,8 @@ from langgraph.graph import StateGraph, MessagesState
 from langgraph.types import interrupt, Command
 
 from breba_app.agent_model import Message
-from breba_app.diff import apply_diff_no_line_numbers
+from breba_app.builder_agent.search_replace_example_messages import example_messages, system_reminder
+from breba_app.search_replace_editing import has_search_replace_edits, apply_search_replace_to_html
 from breba_app.storage import list_files_in_private
 from .instruction_reader import get_instructions
 
@@ -83,7 +84,6 @@ class BuilderAgent:
             return {"current_agent": state["current_agent"]}
         return {"current_agent": "new_spec_agent"}
 
-
     async def get_last_spec(self, session_id) -> str:
         config = {"configurable": {"thread_id": session_id}}
         current_state = await self.app.aget_state(config)
@@ -111,10 +111,8 @@ class BuilderAgent:
             if message == "builder":
                 # TODO: hand off should be explicit not through raising an exception
                 raise Exception("Not an editing task, need to rebuild the spec")
-            split_message = message.split("::final diff::")
 
-            logger.info(f"Length of message split is: {len(split_message)}")
-            if len(split_message) > 1 and split_message[1]:
+            if has_search_replace_edits(message):
                 return True
         return False
 
@@ -190,23 +188,21 @@ class BuilderAgent:
         """
         last_message = state["messages"][-1]
         message = last_message.content
-        split_message = message.split("::final diff::")
-        if len(split_message) > 1:
-            diff = split_message[1]
-            if not diff:
-                raise Exception(f"Cloud not extract diff, something went wrong: {diff}")
-            logger.info(f"Attempting to apply diff: {diff}")
-            try:
-                new_prompt = apply_diff_no_line_numbers(state["prompt"], diff)
-                logger.info(f"Diff was successfully applied: {diff}")
-                # In this case we are not replacing the last message to preserve the context of the diff
-                last_message = {"role": "user", "content": f"This the full spec for my site: {new_prompt}"}
-            except Exception as e:
-                logger.error(f"Failed to apply diff: {e}\n"
-                             f"Failed diff: {diff}")
-                raise e
+        logger.info(f"Attempting to apply diff: {message}")
 
-        return {"prompt": new_prompt, "messages": [last_message]}
+        try:
+            new_spec = apply_search_replace_to_html(state["prompt"], message)
+            if not new_spec:
+                raise ValueError(f"Something went wrong, modified spec could not be generated.")
+            logger.info(f"Diff was successfully applied: {message}")
+            # In this case we are not replacing the last message to preserve the context of the diff
+            last_message = {"role": "user", "content": f"This the full spec for my site: {new_spec}"}
+        except Exception as e:
+            logger.error(f"Failed to apply diff: {e}\n"
+                         f"Failed diff: {message}")
+            raise e
+
+        return {"prompt": new_spec, "messages": [last_message]}
 
     async def editing_spec_agent(self, state: State, config: RunnableConfig) -> State:
         # TODO: use callback or class to get files, probably usersessioncontext class to get userid, user time, and zone
@@ -221,12 +217,14 @@ class BuilderAgent:
         )
 
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        system_message = SystemMessage(content=get_instructions("editing_prompt",
+        system_message = SystemMessage(content=get_instructions("search_replace",
                                                                 files=list_files_in_private(state["user_name"],
                                                                                             config['configurable'][
                                                                                                 "thread_id"]),
                                                                 current_time=current_time))
-        response = await self.editing_model.ainvoke([system_message] + trimmed_messages)
+        input_messages = [system_message] + example_messages
+        reminder = SystemMessage(content=system_reminder)
+        response = await self.editing_model.ainvoke(input_messages + trimmed_messages + [reminder])
         return {"messages": [response], "current_agent": "editing_spec_agent"}
 
     def visualize(self):

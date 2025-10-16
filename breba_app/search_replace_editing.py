@@ -485,7 +485,7 @@ Just reply with fixed versions of the {blocks} above that failed to match.
     raise ValueError(res)
 
 
-def apply_search_replace_to_html(html: str, search_replace_text: str):
+def apply_search_replace_to_html(html: str, search_replace_text: str) -> str:
     """
     This method is used to apply the diff to the html.
     :param html: html to apply the diff to
@@ -505,3 +505,7 @@ def apply_search_replace_to_html(html: str, search_replace_text: str):
         raise ValueError(f"Unknown error occurred. After applying the following search and replace pattern, original text was deleted:\n{search_replace_text}")
     logger.info(f"Successfully applied {len(applied_edits)} out of {len(edits)} edits")
     return modified
+
+def has_search_replace_edits(search_replace_text: str):
+    return HEAD_ERR in search_replace_text
+
