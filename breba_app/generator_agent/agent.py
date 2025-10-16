@@ -140,6 +140,13 @@ class HTMLAgent:
 
         yield self.get_agent_response(config)
 
+    def is_spec_similar(self, current_spec: str, new_spec: str) -> bool:
+        new_spec_lines = new_spec.splitlines()
+        current_spec_lines = current_spec.splitlines()
+        diff_count = len(set(new_spec_lines) ^ set(current_spec_lines))
+        relative_diff = diff_count / max(len(set(current_spec_lines) | set(new_spec_lines)), 1)
+        return relative_diff < 0.5
+
     async def diffing_spec_update(self, spec: str, user_name: str, session_id: str):
         """
         This method is used to update the specification.
@@ -156,15 +163,11 @@ class HTMLAgent:
                 "Provided spec is the same as the current spec. This is not supported for a diffing update.")
 
         diff = get_diff(current_spec, spec)
-        # if the spec change is more than 70% of the spec, we want to fall back to full spec update
-        acceptable_diff_percentage = 0.7
-        diff_lines = diff.split("\n")
-        current_spec_lines = current_spec.split("\n")
-        if len(diff_lines) > len(current_spec_lines) * acceptable_diff_percentage:
+        if not self.is_spec_similar(current_spec, spec):
             # when there are lots of changes to the spec, we will stream the full spec update
             logger.info("Spec diff is too big. You have to treat it like a new specification")
             raise Exception(
-                f"Spec diff is too big. Diff length is: {len(diff_lines)}, current spec length is: {len(current_spec_lines)}")
+                f"Spec diff is too big.")
         else:
             try:
                 query = f"I changed the spec given the following diff:\n{diff}"
