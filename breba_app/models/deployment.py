@@ -1,5 +1,6 @@
 import datetime
 import logging
+import re
 
 from beanie import Document, Link, PydanticObjectId
 from bson import DBRef
@@ -10,6 +11,10 @@ from .product import Product
 from .user import User
 
 logger = logging.getLogger(__name__)
+
+
+def sanitize_deployment_id(deployment_id: str) -> str:
+    return re.sub("[^0-9a-zA-Z]+", "-", deployment_id).strip(" -").lower()
 
 
 class Deployment(Document):
@@ -43,6 +48,7 @@ class Deployment(Document):
         - Product doesn't exist or doesn't belong to user
         - User does not exist
         """
+        deployment_id = sanitize_deployment_id(deployment_id)
         # The key here is that we want to insert, only if it doesn't exist, but we don't want to update it if it exists.
         # If it exists, we just want to return it after checking ownership
         result = await Deployment.get_motor_collection().find_one_and_update(
@@ -69,3 +75,5 @@ class Deployment(Document):
             raise ValueError(f"Deployment {deployment_id} exists but belongs to a different user")
 
         return deployment
+
+
