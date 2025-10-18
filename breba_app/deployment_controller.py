@@ -1,11 +1,12 @@
 import logging
 
-from storage import upload_site
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product
 from breba_app.models.user import User
+from storage import upload_site
 
 logger = logging.getLogger(__name__)
+
 
 async def run_deployment(username: str, product: Product, deployment_id: str) -> str:
     # TODO: optimize this. User should be fully stored in session at login
