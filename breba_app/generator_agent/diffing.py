@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
 from breba_app.generator_agent.instruction_reader import get_instructions
-from breba_app.generator_agent.search_replace_example_messages import example_messages
-from breba_app.generator_agent.search_replace_example_messages import system_reminder
+from breba_app.generator_agent.search_replace_example_messages import example_messages, system_reminder
+from breba_app.generator_agent.static_html_example_messages import html_best_practices
 from breba_app.search_replace_editing import apply_search_replace_to_html
 
 load_dotenv()
@@ -14,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 client = AsyncOpenAI()
 
-SYSTEM_PROMPT = get_instructions("search_replace")
-
+SYSTEM_PROMPT = get_instructions("search_replace", system_reminder=system_reminder, best_practices=html_best_practices)
 
 async def diff_stream(html: str, prompt: str):
     logger.info(f"Generating diff for prompt: {prompt}")
@@ -46,7 +45,7 @@ async def diff_stream(html: str, prompt: str):
         },
         {
             "role": "system",
-            "content": system_reminder,
+            "content": f"{html_best_practices}\n\n{system_reminder}",
         }
     ])
     stream = await client.responses.create(

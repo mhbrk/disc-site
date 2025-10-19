@@ -86,9 +86,9 @@ A static HTML website that displays the text "Hello World" centered both vertica
 
 ## Technical Implementation
 
-- Use only standard HTML and minimal inline CSS (if needed) to achieve centering.
+- Use only standard HTML
 - The text must be selectable.
-- The site must be fully responsive (centering works on all screen sizes)."""
+- The site must be fully responsive"""
     ),
     dict(
         role="assistant",

@@ -17,6 +17,7 @@ from breba_app.diff import get_diff
 from .diffing import diff_text
 from .generate_image import generate_image
 from .instruction_reader import get_instructions
+from .static_html_example_messages import html_best_practices
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ class GeneratorState(AgentState):
 
 
 class HTMLAgent:
-    SYSTEM_INSTRUCTION = get_instructions("generator_system_prompt")
+    SYSTEM_INSTRUCTION = get_instructions("generator_system_prompt", best_practices=html_best_practices)
 
     def __init__(self):
         self.model = None

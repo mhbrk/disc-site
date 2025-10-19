@@ -58,7 +58,7 @@ hello.md
 - Center text vertically and horizontally.
 
 ## Implementation
-- Pure HTML with minimal inline CSS only; no external CSS/JS.
+- Pure HTML, JS, CSS
 - Ensure responsiveness: centering works at all viewport sizes.
 >>>>>>> REPLACE
 ```
