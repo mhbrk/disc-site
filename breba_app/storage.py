@@ -4,7 +4,6 @@ import asyncio
 import logging
 import mimetypes
 import os
-import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Tuple, TypedDict, Union
@@ -301,9 +300,6 @@ async def upload_site(user_name: str, session_id: str, site_name: str):
     :param site_name: site name where all the files will be stored
     :return: public url of deployed site
     """
-    # Sanitize site name so that it is a valid URL, but also not case-sensitive
-    site_name = re.sub("[^0-9a-zA-Z]+", "-", site_name).strip(" -").lower()
-
     # TODO: convert to async because GCP is a blocking call, we don't want to have to wait
     # TODO: when empty dir is being uploaded, should pass back an error message
     await _copy_directory_s3(
