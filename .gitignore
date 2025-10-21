@@ -46,3 +46,4 @@ $RECYCLE.BIN/
 *.db
 .cache/
 *.pid
+scripts/mongo-data/
