@@ -1,11 +1,76 @@
-<iframe id="generator-frame" class="w-100 h-100 d-block"></iframe>
+<style>
+#generator-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
 
-<div id="spinner"
-     class="position-absolute top-50 start-50 d-none"
-     style="z-index: 200;">
-    <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div>
+#generator-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 220ms ease-in-out;
+    overflow: hidden;
+}
+
+    #generator-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    #generator-overlay::before,
+    #generator-overlay::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+    }
+
+    #generator-overlay::before {
+        background: rgba(15,23,42,0.85);
+    }
+
+    #generator-overlay::after {
+        background: linear-gradient(100deg, rgba(148,163,184,0) 10%, rgba(148,163,184,0.45) 50%, rgba(148,163,184,0) 90%);
+        animation: generator-shimmer 2s linear infinite;
+        opacity: 0.28;
+        mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+    }
+
+    #generator-overlay .message {
+        position: relative;
+        color: #E2E8F0;
+        font-weight: 500;
+        font-size: 2rem;
+        letter-spacing: 0.04em;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        background: rgba(61, 80, 126, 0.25);
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(8px);
+    }
+
+    @keyframes generator-shimmer {
+        0% { transform: translateX(-20%); }
+        50% { transform: translateX(20%); }
+        100% { transform: translateX(60%); }
+    }
+</style>
+
+<div id="generator-wrapper" class="position-relative w-100 h-100">
+<iframe id="generator-frame" class="w-100 h-100 d-block position-relative"></iframe>
+
+<div id="generator-overlay">
+    <div class="shimmer"></div>
+    <div class="message">Generating your preview…</div>
+    <span class="visually-hidden">Generating preview…</span>
+</div>
 </div>
 
 <script>
@@ -20,11 +85,25 @@
         doc.close();
     }
 
+    const overlay = document.getElementById('generator-overlay');
+
+    function showOverlay() {
+        overlay.classList.add('active');
+    }
+
+    function hideOverlay() {
+        overlay.classList.remove('active');
+    }
+
     function processChunk(chunk) {
         console.log("chunk:" + chunk);
 
-        const spinner = document.getElementById('spinner');
-        spinner.classList.remove('d-none');
+        if (chunk === "__start__") {
+            showOverlay();
+            return;
+        }
+
+        showOverlay();
 
         // Check for image references
         const imageUrls = [
@@ -57,7 +136,7 @@
                 docOpened = false;
                 reload();
             }
-            spinner.classList.add('d-none');
+            hideOverlay();
             return;
         }
 
@@ -182,6 +261,12 @@
         if (event.data.method === "to_generator") {
             console.log('Generator panel message:', event.data);
             processChunk(event.data.body);
+        } else if (event.data.method === "generator_overlay") {
+            if (event.data.body === "show") {
+                showOverlay();
+            } else {
+                hideOverlay();
+            }
         }
     });
 

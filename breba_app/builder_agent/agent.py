@@ -106,14 +106,17 @@ class BuilderAgent:
 
         if len(state["messages"]) > 1:
             message = state["messages"][-1].content
-            logger.info(f"Verifying if diff message: {message}")
+            clean_preview = " ".join(message.split())
+            if len(clean_preview) > 200:
+                clean_preview = clean_preview[:200] + "..."
+            logger.info("Verifying diff response | preview=%s", clean_preview)
             # builder is a special case when LLM decides that it needs to rebuild the spec
             if message == "builder":
                 # TODO: hand off should be explicit not through raising an exception
                 raise Exception("Not an editing task, need to rebuild the spec")
             split_message = message.split("::final diff::")
 
-            logger.info(f"Length of message split is: {len(split_message)}")
+            logger.debug("Diff message split length=%s", len(split_message))
             if len(split_message) > 1 and split_message[1]:
                 return True
         return False
@@ -195,10 +198,10 @@ class BuilderAgent:
             diff = split_message[1]
             if not diff:
                 raise Exception(f"Cloud not extract diff, something went wrong: {diff}")
-            logger.info(f"Attempting to apply diff: {diff}")
+            logger.info("Attempting to apply diff | length=%s", len(diff))
             try:
                 new_prompt = apply_diff_no_line_numbers(state["prompt"], diff)
-                logger.info(f"Diff was successfully applied: {diff}")
+                logger.info("Diff was successfully applied | length=%s", len(diff))
                 # In this case we are not replacing the last message to preserve the context of the diff
                 last_message = {"role": "user", "content": f"This the full spec for my site: {new_prompt}"}
             except Exception as e:
@@ -260,7 +263,15 @@ class BuilderAgent:
             await self.app.ainvoke(Command(resume=user_input), config)
         else:
             # This happens in only with the first task request, if task is being continued this will not work
-            logger.info(f"Invoking builder editing agent with user input: {user_input}")
+            snippet = user_input.parts[0].text if user_input.parts else ""
+            clean_preview = " ".join(snippet.split()) if snippet else ""
+            if clean_preview and len(clean_preview) > 200:
+                clean_preview = clean_preview[:200] + "..."
+            logger.info(
+                "Invoking builder editing agent | session=%s | preview=%s",
+                session_id,
+                clean_preview,
+            )
             await self.app.ainvoke(
                 {"messages": [{"role": user_input.role, "content": user_input.parts[0].text}], "user_name": user_name,
                  "current_agent": "editing_spec_agent"},

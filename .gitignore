@@ -47,3 +47,4 @@ $RECYCLE.BIN/
 .cache/
 *.pid
 scripts/mongo-data/
+.chainlit/translations/

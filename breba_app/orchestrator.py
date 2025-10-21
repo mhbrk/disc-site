@@ -104,6 +104,7 @@ async def to_generator(user_name: str, session_id: str, message: str,
                        message_to_user_callback):
     old_html = generator_agent.get_last_html(session_id)
     await message_to_user_callback("Generator is processing your request...")
+    await process_generator_message_callback("__start__")
     await start_editing_task(user_name, session_id, message, process_generator_message_callback)
     new_html = generator_agent.get_last_html(session_id)
     diff = get_html_diff(old_html, new_html)
@@ -124,9 +125,11 @@ async def to_generator(user_name: str, session_id: str, message: str,
 
     if is_task_completed:
         await builder_completed_callback(content)
+        await process_generator_message_callback("__completed__")
     else:
         logger.info(f"Waiting for user input: {content}")
         await message_to_user_callback(content)
+        await process_generator_message_callback("__completed__")
 
 
 async def to_builder(user_name: str, session_id: str, message: str,
@@ -134,6 +137,7 @@ async def to_builder(user_name: str, session_id: str, message: str,
                      process_generator_message_callback,
                      message_to_user_callback):
     await message_to_user_callback("Builder is working on the specification...")
+    await process_generator_message_callback("__start__")
     spec = await builder_agent.get_last_spec(session_id)
     if spec:
         agent_response = await builder_editing_task(user_name, session_id, message)
@@ -146,14 +150,15 @@ async def to_builder(user_name: str, session_id: str, message: str,
     if is_task_completed:
         spec = agent_response.get("content")
         await builder_completed_callback(spec)
-        await process_generator_message_callback("__start__")
         await message_to_user_callback(
             "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec")
         await generator_task(user_name, session_id, spec, process_generator_message_callback)
+        await process_generator_message_callback("__completed__")
     else:
         message = agent_response.get("content")
         logger.info(f"Waiting for user input: {message}")
         await message_to_user_callback(message)
+        await process_generator_message_callback("__completed__")
 
 
 async def update_builder_spec(session_id: str, message: str):

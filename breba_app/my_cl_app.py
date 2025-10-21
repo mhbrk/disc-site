@@ -155,11 +155,19 @@ async def generator_completed() -> None:
         content="The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website").send()
 
 async def process_generator_message(message: str) -> None:
+    if message == "__start__":
+        await set_generator_overlay(True)
     if message == "__completed__":
+        await set_generator_overlay(False)
         # Default path uses generator_completed to post final message.
         await generator_completed()
     generator_message = {"method": "to_generator", "body": message}
     await cl.send_window_message(generator_message)
+
+
+async def set_generator_overlay(visible: bool) -> None:
+    command = "show" if visible else "hide"
+    await cl.send_window_message({"method": "generator_overlay", "body": command})
 
 
 # ----------------------------
@@ -242,6 +250,7 @@ async def window_message(message: str | dict) -> None:
             "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec",
             process_generator_message,
         )
+        await set_generator_overlay(True)
         clear_status_log("builder_step")
         async with cl.Step(name="Builder is working on the specification...") as builder_step:
             register_step("builder_step", builder_step)
@@ -256,9 +265,11 @@ async def window_message(message: str | dict) -> None:
                 )
             finally:
                 clear_step("builder_step")
+                await set_generator_overlay(False)
 
     elif method == "to_generator":
         # Optional: small step for the generator-only start (non-nested)
+        await set_generator_overlay(True)
         clear_status_log("generator_step")
         async with cl.Step(name="Generator is processing your request...") as generator_step:
             register_step("generator_step", generator_step)
@@ -273,6 +284,7 @@ async def window_message(message: str | dict) -> None:
                 )
             finally:
                 clear_step("generator_step")
+                await set_generator_overlay(False)
 
     elif method == "load_template":
         load_template(user_name, product_id, message.get("body"))
@@ -325,6 +337,7 @@ async def respond(message: Message) -> None:
                 "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec",
                 process_generator_message,
             )
+            await set_generator_overlay(True)
             clear_status_log("builder_step")
             async with cl.Step(name="Builder is working on the specification...") as builder_step:
                 register_step("builder_step", builder_step)
@@ -339,6 +352,7 @@ async def respond(message: Message) -> None:
                     )
                 finally:
                     clear_step("builder_step")
+                    await set_generator_overlay(False)
         except ValueError as e:
             await cl.Message(content=str(e)).send()
         except Exception:
@@ -352,6 +366,7 @@ async def respond(message: Message) -> None:
         "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec",
         process_generator_message,
     )
+    await set_generator_overlay(True)
     clear_status_log("builder_step")
     async with cl.Step(name="Builder is working on the specification...") as builder_step:
         register_step("builder_step", builder_step)
@@ -366,6 +381,7 @@ async def respond(message: Message) -> None:
             )
         finally:
             clear_step("builder_step")
+            await set_generator_overlay(False)
 
 @cl.password_auth_callback
 async def auth_callback(username: str, password: str):

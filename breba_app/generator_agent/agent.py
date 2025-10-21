@@ -133,8 +133,8 @@ class HTMLAgent:
                         "require_user_input": False,
                         "content": chunk.content,
                     }
-            if mode == "values":
-                logger.info(data["messages"][-1].pretty_repr())
+            # if mode == "values":
+            #     logger.info(data["messages"][-1].pretty_repr())
 
         yield self.get_agent_response(config)
 
@@ -184,7 +184,7 @@ class HTMLAgent:
         html = self.get_last_html(session_id)
         # Will raise an exception if the diff is too long
         diff = await diff_text(html, query)
-        logger.info(f"Diff was successfully generated: {diff}")
+        logger.info("Diff was successfully generated", extra={"diff_length": len(diff), "session_id": session_id})
         try:
             modified = apply_diff_no_line_numbers(html, diff)
             self.set_last_html(session_id, modified)
@@ -223,8 +223,8 @@ class HTMLAgent:
                         "require_user_input": False,
                         "content": chunk.content,
                     }
-            if mode == "values":
-                logger.info(data["messages"][-1].pretty_repr())
+            # if mode == "values":
+            #     logger.info(data["messages"][-1].pretty_repr())
 
         yield self.get_agent_response(config)
 

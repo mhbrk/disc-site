@@ -15,7 +15,10 @@ SYSTEM_PROMPT = get_instructions("generator_diffing_prompt")
 
 
 async def diff_stream(html: str, prompt: str):
-    logger.info(f"Generating diff for prompt: {prompt}")
+    preview = " ".join(prompt.split())
+    if len(preview) > 200:
+        preview = preview[:200] + "..."
+    logger.info("Generating diff for prompt | preview=%s", preview)
     stream = await client.responses.create(
         model="gpt-4.1",
         temperature=0,
