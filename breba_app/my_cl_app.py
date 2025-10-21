@@ -255,7 +255,7 @@ async def window_message(message: str | dict) -> None:
         async with cl.Step(name="Builder is working on the specification...") as builder_step:
             register_step("builder_step", builder_step)
             try:
-                await to_builder(
+                builder_done = await to_builder(
                     user_name,
                     product_id,
                     message.get("body", "INVALID REQUEST"),
@@ -266,6 +266,8 @@ async def window_message(message: str | dict) -> None:
             finally:
                 clear_step("builder_step")
                 await set_generator_overlay(False)
+        if builder_done:
+            await generator_completed()
 
     elif method == "to_generator":
         # Optional: small step for the generator-only start (non-nested)
@@ -274,7 +276,7 @@ async def window_message(message: str | dict) -> None:
         async with cl.Step(name="Generator is processing your request...") as generator_step:
             register_step("generator_step", generator_step)
             try:
-                await to_generator(
+                generator_done = await to_generator(
                     user_name,
                     product_id,
                     message.get("body", "INVALID REQUEST"),
@@ -285,6 +287,9 @@ async def window_message(message: str | dict) -> None:
             finally:
                 clear_step("generator_step")
                 await set_generator_overlay(False)
+        if generator_done:
+            logger.info("Generator flow complete; posting final message")
+            await generator_completed()
 
     elif method == "load_template":
         load_template(user_name, product_id, message.get("body"))
