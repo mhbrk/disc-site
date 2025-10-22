@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import json
+import asyncio
 import hashlib
+import json
 import mimetypes
 import posixpath
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Iterable, List, Optional, Dict, Any
+from typing import Iterable, List, Dict, Any
 
-import boto3
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 
@@ -19,7 +19,7 @@ class FileWrite:
     """A single file write operation for batch_write."""
     path: str
     content: bytes | str
-    content_type: Optional[str] = None
+    content_type: str | None = None
 
 
 @dataclass
@@ -53,34 +53,24 @@ class VersionedR2FileSystem:
     """
 
     def __init__(
-        self,
-        *,
-        bucket_name: str,
-        endpoint_url: str,
-        user_name: str,
-        session_id: str,
-        root_prefix: str = "workspaces",
-        boto3_session: Optional[boto3.session.Session] = None,
-        s3_client: Optional[BaseClient] = None,
-        use_content_addressed_storage: bool = False,
+            self,
+            *,
+            bucket_name: str,
+            root_prefix: str,
+            s3_client: BaseClient,
+            use_content_addressed_storage: bool = False,
     ) -> None:
         if not bucket_name:
             raise ValueError("bucket_name is required")
-        if not endpoint_url:
-            raise ValueError("endpoint_url is required")
-        if not user_name or not session_id:
-            raise ValueError("user_name and session_id are required")
+        if not s3_client:
+            raise ValueError("s3_client is required")
+        if not root_prefix:
+            raise ValueError("root_prefix are required")
 
         self._bucket = bucket_name
-        self._endpoint = endpoint_url.rstrip("/")
-        self._prefix = f"{root_prefix}/{_clean(user_name)}/{_clean(session_id)}"
+        self._prefix = root_prefix
+        self._s3 = s3_client
         self._use_cas = use_content_addressed_storage
-
-        if s3_client is not None:
-            self._s3 = s3_client
-        else:
-            session = boto3_session or boto3.session.Session()
-            self._s3 = session.client("s3", endpoint_url=self._endpoint)
 
     # ----------------------------- Public API ----------------------------- #
 
@@ -102,13 +92,13 @@ class VersionedR2FileSystem:
             raise NotFound(f"Version {version} does not exist")
         self._put_text(self._latest_key(), str(version))
 
-    def list_files(self, version: Optional[int] = None, prefix: str = "") -> List[str]:
+    def list_files(self, version: int | None = None, prefix: str = "") -> List[str]:
         """List all logical file paths in the given version."""
         v = self.get_version() if version is None else version
         manifest = self._get_manifest(v)
         return sorted(p for p in manifest["files"].keys() if p.startswith(prefix))
 
-    def file_exists(self, path: str, version: Optional[int] = None) -> bool:
+    def file_exists(self, path: str, version: int | None = None) -> bool:
         """Check if a file exists in the given version."""
         try:
             v = self.get_version() if version is None else version
@@ -117,26 +107,34 @@ class VersionedR2FileSystem:
         except (NotFound, ClientError):
             return False
 
-    def read_file(self, path: str, *, version: Optional[int] = None) -> bytes:
+    async def read_file(self, path: str, *, version: int | None = None) -> bytes:
         """Read file bytes from the given version."""
-        path = _sanitize_path(path)
-        v = self.get_version() if version is None else version
-        manifest = self._get_manifest(v)
-        meta = manifest["files"].get(path)
-        if not meta:
-            raise NotFound(f"{path} not found in version {v}")
-        key = meta["key"]
-        try:
-            obj = self._s3.get_object(Bucket=self._bucket, Key=key)
-            return obj["Body"].read()
-        except (ClientError, self._s3.exceptions.NoSuchKey):
-            raise NotFound(f"Object for {path} not found (key={key})")
+        sanitized_path = _sanitize_path(path)
 
-    def read_text(self, path: str, *, version: Optional[int] = None, encoding: str = "utf-8") -> str:
+        def _sync_read():
+            resolved_version = self.get_version() if version is None else version
+            if resolved_version > 0:
+                manifest = self._get_manifest(resolved_version)
+                meta = manifest["files"].get(sanitized_path)
+                if not meta:
+                    raise NotFound(f"{sanitized_path} not found in version {resolved_version}")
+                key = meta["key"]
+            else:
+                # If version is 0 or None, we are reading the unversioned copy
+                key = self._prefix + "/" + sanitized_path
+            try:
+                obj = self._s3.get_object(Bucket=self._bucket, Key=key)
+                return obj["Body"].read()
+            except (ClientError, self._s3.exceptions.NoSuchKey):
+                raise NotFound(f"Object for {sanitized_path} not found (key={key})")
+
+        return await asyncio.to_thread(_sync_read)
+
+    async def read_text(self, path: str, *, version: int | None = None, encoding: str = "utf-8") -> str:
         """Read file content as text."""
-        return self.read_file(path, version=version).decode(encoding)
+        return (await self.read_file(path, version=version)).decode(encoding)
 
-    def write_file(self, path: str, content: bytes | str, *, content_type: Optional[str] = None) -> int:
+    def write_file(self, path: str, content: bytes | str, *, content_type: str | None = None) -> int:
         """Write a single file and create a new version."""
         return self.batch_write([FileWrite(path=path, content=content, content_type=content_type)])
 

@@ -10,30 +10,27 @@ from auth import verify_password
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product
 from breba_app.models.user import User
+from breba_app.orchestrator import init_state
+from breba_app.storage import save_index_html, has_cloud_storage
+from breba_app.ui_bus import send_index_html_to_ui, send_specification_to_ui, send_index_html_chunk_to_ui
 from deployment_controller import run_deployment
 from llm_utils import get_product_name
-from orchestrator import get_generator_response, to_builder, update_builder_spec, set_generator_response, to_generator
-from storage import save_file_to_private, save_image_file_to_private, load_template, read_spec_text, \
+from orchestrator import get_generator_response, to_builder, to_generator
+from storage import save_image_file_to_private, load_template, read_spec_text, \
     read_index_html, get_public_url, save_spec
 
 PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
 
 
-# TODO: move this and others to storage module of some kind
-async def has_cloud_storage(user_name: str, session_id: str):
-    spec = read_spec_text(user_name, session_id)
-    return spec is not None
-
-
 async def populate_from_cloud_storage(user_name: str, session_id: str):
-    spec = read_spec_text(user_name, session_id)
-    product = read_index_html(user_name, session_id)
-    set_generator_response(session_id, spec, product)
+    spec = await read_spec_text(user_name, session_id)
+    product = await read_index_html(user_name, session_id)
 
-    await process_generator_message(product)
-
-    await asyncio.gather(update_builder_spec(session_id, spec), builder_completed(spec),
-                         process_generator_message("__completed__"))
+    await asyncio.gather(
+        init_state(session_id, spec, product),
+        send_specification_to_ui(spec),
+        send_index_html_to_ui(product)
+    )
 
 
 async def create_blank_product_for(user_name: str):
@@ -92,28 +89,24 @@ async def builder_completed(payload: str):
         product = await create_or_update_product_for(user_name, product_id, payload, product_name)
         cl.user_session.set("product_name", product.name)
 
-    save_spec(user_name, product_id, payload)
-    builder_message = {"method": "to_builder", "body": payload}
-    await cl.send_window_message(builder_message)
-
-
-async def generator_completed():
-    product_id = cl.user_session.get("product_id")
-    user_name = cl.user_session.get("user").identifier
-
-    html = get_generator_response(product_id)
-
-    save_file_to_private(user_name, product_id, "index.html", html, "text/html")
-
-    await cl.Message(
-        content="The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website").send()
+    await save_spec(user_name, product_id, payload)
+    await send_specification_to_ui(payload)
 
 
 async def process_generator_message(message: str):
     if message == "__completed__":
-        await generator_completed()
-    generator_message = {"method": "to_generator", "body": message}
-    await cl.send_window_message(generator_message)
+        product_id = cl.user_session.get("product_id")
+        user_name = cl.user_session.get("user").identifier
+
+        html = get_generator_response(product_id)
+
+        await save_index_html(user_name, product_id, html)
+
+        await send_index_html_to_ui(message)
+        await cl.Message(
+            content="The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website").send()
+    else:
+        await send_index_html_chunk_to_ui(message)
 
 
 async def ask_user(message: str):

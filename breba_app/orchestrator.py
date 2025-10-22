@@ -13,7 +13,8 @@ def get_generator_response(session_id: str):
     return generator_agent.get_last_html(session_id)
 
 
-def set_generator_response(session_id: str, spec: str, html_output: str):
+async def init_state(session_id: str, spec: str, html_output: str):
+    await builder_agent.set_agent_prompt(session_id, spec)
     generator_agent.set_last_html(session_id, html_output)
     generator_agent.set_spec(session_id, spec)
 
@@ -152,7 +153,3 @@ async def to_builder(user_name: str, session_id: str, message: str, builder_comp
         logger.info(f"Waiting for user input: {message}")
         await message_to_user_callback(message)
 
-
-async def update_builder_spec(session_id: str, message: str):
-    agent_response = await builder_agent.set_agent_prompt(session_id, message)
-    return agent_response
