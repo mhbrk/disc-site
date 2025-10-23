@@ -58,7 +58,7 @@ async def set_product_active(user_name: str, product_id: str):
     await product.update(Set({Product.active: True}))
 
 
-async def create_or_update_product_for(user_name: str, product_id: str | None = None, product_spec: str = "",
+async def create_or_update_product_for(user_name: str, product_id: str | None = None,
                                        product_name: str | None = None):
     user_obj = await User.find_one(User.username == user_name, fetch_links=False)
 
@@ -86,7 +86,7 @@ async def builder_completed(payload: str):
     # The only time product_name is empty is when we are creating a new product
     if not product_name or product_name == PRODUCT_NAME_PLACEHOLDER:
         product_name = await get_product_name(payload)
-        product = await create_or_update_product_for(user_name, product_id, payload, product_name)
+        product = await create_or_update_product_for(user_name, product_id, product_name)
         cl.user_session.set("product_name", product.name)
 
     await save_spec(user_name, product_id, payload)

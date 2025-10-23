@@ -38,7 +38,7 @@ async def process_chunk(accumulator: TagAccumulator, chunk: dict, generator_call
 
     is_task_completed = chunk.get("is_task_complete")
 
-    # TODO: handle the case when input is required
+    # This does not handle the case when input is required
     if is_task_completed:
         await generator_callback("__completed__")
     else:
@@ -77,7 +77,7 @@ async def generator_task(user_name: str, session_id: str, spec: str, generator_c
 async def start_editing_task(user_name: str, session_id: str, query: str, generator_callback):
     try:
         update = await generator_agent.diffing_update(query, session_id)
-        # TODO: this is funky. Using generator_callback like this needs to be codified. Maybe use a class instead of a function
+        # TODO: this is funky. Using generator_callback like this. Need to use a specialized declarative generator_completed event
         await generator_callback(update)
         await generator_callback("__completed__")
     except Exception as e:
