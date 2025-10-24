@@ -80,7 +80,8 @@ class VersionedR2FileSystem:
             obj = self._s3.list_objects_v2(Bucket=self._bucket, Prefix=self._prefix + "/versions/", Delimiter="/")
             if "CommonPrefixes" not in obj:
                 return [0]
-            return [0] + [int(prefix["Prefix"].split("/")[-2]) for prefix in obj["CommonPrefixes"]]
+            sorted_versions = sorted([int(prefix["Prefix"].split("/")[-2]) for prefix in obj["CommonPrefixes"]])
+            return [0] + sorted_versions
         except (ClientError, self._s3.exceptions.NoSuchKey):
             return []
 
@@ -156,7 +157,8 @@ class VersionedR2FileSystem:
             raise ValueError("batch_write requires at least one FileWrite")
 
         base_version = self.get_version()
-        new_version = base_version + 1
+        max_version = max(self.list_versions())
+        new_version = max_version + 1
         base_manifest = self._get_manifest(base_version)
         new_manifest = {
             "version": new_version,
