@@ -217,7 +217,12 @@
     function updateVersionLabel() {
         const label = document.getElementById('versionLabel');
         const v = versionsState.active;
-        label.textContent = v ? `v${v}${v === Math.max(...versionsState.list) ? " • Latest" : ""}` : "Select version";
+        if (v !== undefined && v !== null) {
+            const isLatest = v === Math.max(...versionsState.list);
+            label.textContent = `v${v}${isLatest ? " • Latest" : ""}`;
+        } else {
+            label.textContent = "Select version";
+        }
     }
 
     function renderVersionsMenu() {

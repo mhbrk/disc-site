@@ -130,7 +130,6 @@ class VersionedR2FileSystem:
                     raise NotFound(f"{sanitized_path} not found in version {resolved_version}")
                 key = meta["key"]
             else:
-                # TODO: we can read 0 version, but because the manifest for it is empty, the next version is corrupt.
                 # If version is 0 or None, we are reading the unversioned copy
                 key = self._prefix + "/" + sanitized_path
             try:
@@ -202,15 +201,27 @@ class VersionedR2FileSystem:
         """Initialize version 0 manifest if missing."""
         key = self._manifest_key(0)
         if not self._object_exists(key):
-            self._put_json(
-                key,
-                {
-                    "version": 0,
-                    "parent": None,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                    "files": {},
-                },
-            )
+            new_manifest = {
+                "version": 0,
+                "parent": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "files": {},
+            }
+            # Hardcode to spec.txt and index.html if they exit in unversioned format
+            if self._object_exists(self._prefix + "/spec.txt"):
+                new_manifest["files"]["spec.txt"] = {
+                    "key": self._prefix + "/spec.txt",
+                    "sha256": 0,
+                    "size": 0,
+                    "content_type": "text/plain",
+                }
+                new_manifest["files"]["index.html"] = {
+                    "key": self._prefix + "/index.html",
+                    "sha256": 0,
+                    "size": 0,
+                    "content_type": "text/html",
+                }
+            self._put_json(key, new_manifest)
         self._put_text(self._latest_key(), "0")
 
     def _get_manifest(self, version: int) -> Dict[str, Any]:
