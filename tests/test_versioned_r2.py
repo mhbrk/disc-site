@@ -39,9 +39,7 @@ def mock_s3():
 def fs(mock_s3):
     return VersionedR2FileSystem(
         bucket_name="test-bucket",
-        endpoint_url="https://fake.endpoint",
-        user_name="alice",
-        session_id="s1",
+        root_prefix="s1/alice",
         s3_client=mock_s3,
     )
 
@@ -53,10 +51,11 @@ def test_init_and_version_zero(fs, mock_s3):
     assert any("0.json" in k[1] for k in mock_s3._storage.keys())
 
 
-def test_write_and_read(fs):
+@pytest.mark.asyncio
+async def test_write_and_read(fs):
     v1 = fs.write_file("app/main.txt", "hello world")
     assert v1 == 1
-    content = fs.read_text("app/main.txt")
+    content = await fs.read_text("app/main.txt")
     assert content == "hello world"
 
 
