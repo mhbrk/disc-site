@@ -6,11 +6,13 @@ import mimetypes
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import Tuple, TypedDict, Union
+from typing import TypedDict, Union
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
+
+from breba_app.filesystem.versioned_r2 import VersionedR2FileSystem, NotFound, FileWrite
 
 load_dotenv()
 
@@ -184,46 +186,52 @@ def save_image_file_to_private(user_name: str, session_id: str, file_name: str, 
         raise
 
 
-def save_spec(user_name: str, session_id: str, spec: str):
-    save_file_to_private(user_name, session_id, "spec.txt", spec.encode("utf8"), "text/plain")
+async def save_spec(user_name: str, session_id: str, spec: str) -> None:
+    data = spec.encode("utf-8")
+    await save_file_versioned(user_name, session_id, "spec.txt", data, "text/plain")
 
 
-def read_spec_text(user_name: str, session_id: str) -> str | None:
-    key = f"{user_name}/{session_id}/spec.txt"
-    try:
-        obj = s3.Object(USERS_BUCKET_NAME, key)
-        return obj.get()["Body"].read().decode("utf-8")
-    except s3_client.exceptions.NoSuchKey:
-        return None
+async def save_index_html(user_name: str, session_id: str, html: str) -> None:
+    data = html.encode("utf-8")
+    await save_file_versioned(user_name, session_id, "index.html", data, "text/html")
 
 
-def read_index_html(user_name: str, session_id: str) -> str:
-    key = f"{user_name}/{session_id}/index.html"
-    obj = s3.Object(USERS_BUCKET_NAME, key)
-    return obj.get()["Body"].read().decode("utf-8")
-
-
-def read_image_from_private(user_name: str, session_id: str, image_name: str) -> Tuple[bytes, dict[str, str]] | None:
-    key = f"{user_name}/{session_id}/images/{image_name}"
-    obj = s3.Object(USERS_BUCKET_NAME, key)
-
-    try:
-        response = obj.get()
-    except s3_client.exceptions.NoSuchKey:
-        return None
-
-    metadata = obj.metadata or {}
-    return response["Body"].read(), metadata
-
-
-def save_file_to_private(user_name: str, session_id: str, file_name: str, content: bytes, content_type: str):
-    key = f"{user_name}/{session_id}/{file_name}"
-    s3_client.put_object(
-        Bucket=USERS_BUCKET_NAME,
-        Key=key,
-        Body=content,
-        ContentType=content_type
+async def save_files(user_name: str, session_id: str, files: list[tuple[str, bytes, str]]):
+    files_writes = [FileWrite(name, content, type) for name, content, type in files]
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
     )
+    await asyncio.to_thread(filesystem.batch_write, files_writes)
+
+
+async def read_spec_text(user_name: str, session_id: str) -> str | None:
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+    return await filesystem.read_text("spec.txt")
+
+
+async def read_index_html(user_name: str, session_id: str) -> str:
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+    return await filesystem.read_text("index.html")
+
+
+async def save_file_versioned(user_name: str, session_id: str, file_name: str, content: bytes, content_type: str):
+    root_prefix = f"{user_name}/{session_id}"
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=root_prefix,
+        s3_client=s3_client,
+    )
+    await asyncio.to_thread(filesystem.write_file, file_name, content, content_type=content_type)
 
 
 def load_template(user_name: str, session_id: str, template_name: str):
@@ -310,3 +318,11 @@ async def upload_site(user_name: str, session_id: str, site_name: str):
     )
 
     return get_public_url(site_name)
+
+
+async def has_cloud_storage(user_name: str, session_id: str):
+    try:
+        spec = await read_spec_text(user_name, session_id)
+        return bool(spec)
+    except NotFound:
+        return False
