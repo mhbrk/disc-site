@@ -74,6 +74,16 @@ class VersionedR2FileSystem:
 
     # ----------------------------- Public API ----------------------------- #
 
+    def list_versions(self) -> list[int]:
+        """Return a list of all version integers."""
+        try:
+            obj = self._s3.list_objects_v2(Bucket=self._bucket, Prefix=self._prefix + "/versions/", Delimiter="/")
+            if "CommonPrefixes" not in obj:
+                return [0]
+            return [0] + [int(prefix["Prefix"].split("/")[-2]) for prefix in obj["CommonPrefixes"]]
+        except (ClientError, self._s3.exceptions.NoSuchKey):
+            return []
+
     def get_version(self) -> int:
         """Return the currently selected (latest) version integer."""
         try:
@@ -120,6 +130,7 @@ class VersionedR2FileSystem:
                     raise NotFound(f"{sanitized_path} not found in version {resolved_version}")
                 key = meta["key"]
             else:
+                # TODO: we can read 0 version, but because the manifest for it is empty, the next version is corrupt.
                 # If version is 0 or None, we are reading the unversioned copy
                 key = self._prefix + "/" + sanitized_path
             try:
@@ -140,6 +151,7 @@ class VersionedR2FileSystem:
 
     def batch_write(self, files: Iterable[FileWrite]) -> int:
         """Atomically write a batch of files and create one new version."""
+        # TODO: when creating a new version, don't override existing versions if we are back in time
         files = list(files)
         if not files:
             raise ValueError("batch_write requires at least one FileWrite")

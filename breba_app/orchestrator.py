@@ -1,10 +1,12 @@
 import difflib
 import logging
 
+import breba_app.storage
 from agent_model import TextPart, Message
 from breba_app.generator_agent.accumulator import TagAccumulator
 from breba_app.generator_agent.agent import agent as generator_agent
 from breba_app.storage import save_files
+from breba_app.ui_bus import update_versions_list
 from builder_agent.agent import agent as builder_agent
 
 logger = logging.getLogger(__name__)
@@ -155,8 +157,10 @@ async def to_builder(user_name: str, session_id: str, message: str, builder_comp
         await generator_task(user_name, session_id, new_spec, generator_callback)
         new_html = generator_agent.get_last_html(session_id)
 
-        await save_files(user_name, session_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
-                                                 ("index.html", new_html.encode("utf-8"), "text/html")])
+        new_version = await save_files(user_name, session_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
+                                                               ("index.html", new_html.encode("utf-8"), "text/html")])
+        versions = await breba_app.storage.list_versions(user_name, session_id)
+        await update_versions_list(versions, new_version)
     else:
         message = agent_response.get("content")
         logger.info(f"Waiting for user input: {message}")

@@ -186,6 +186,30 @@ def save_image_file_to_private(user_name: str, session_id: str, file_name: str, 
         raise
 
 
+async def list_versions(user_name: str, session_id: str) -> list[int]:
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+    return await asyncio.to_thread(filesystem.list_versions)
+
+async def get_active_version(user_name: str, session_id: str) -> int:
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+    return await asyncio.to_thread(filesystem.get_version)
+
+async def set_version_active(user_name: str, session_id: str, version: int) -> None:
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+    await asyncio.to_thread(filesystem.set_version, version)
+
 async def save_spec(user_name: str, session_id: str, spec: str) -> None:
     data = spec.encode("utf-8")
     await save_file_versioned(user_name, session_id, "spec.txt", data, "text/plain")
@@ -197,13 +221,20 @@ async def save_index_html(user_name: str, session_id: str, html: str) -> None:
 
 
 async def save_files(user_name: str, session_id: str, files: list[tuple[str, bytes, str]]):
+    """
+    Save files to user's namespace
+    :param user_name: Used to find user namespace
+    :param session_id: Used to find product namespace
+    :param files: files to write to system
+    :return: The new version number
+    """
     files_writes = [FileWrite(name, content, type) for name, content, type in files]
     filesystem = VersionedR2FileSystem(
         bucket_name=USERS_BUCKET_NAME,
         root_prefix=f"{user_name}/{session_id}",
         s3_client=s3_client,
     )
-    await asyncio.to_thread(filesystem.batch_write, files_writes)
+    return await asyncio.to_thread(filesystem.batch_write, files_writes)
 
 
 async def read_spec_text(user_name: str, session_id: str) -> str | None:

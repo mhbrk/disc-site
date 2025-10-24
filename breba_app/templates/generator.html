@@ -1,3 +1,17 @@
+<!-- Versions Bar -->
+<div id="version-bar" class="d-flex align-items-center gap-2 p-2 border-bottom bg-light">
+    <div class="dropdown">
+        <button id="versionDropdown"
+                class="btn btn-version dropdown-toggle"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+            <span id="versionLabel">v? • Latest</span>
+        </button>
+        <ul id="versionMenu" class="dropdown-menu shadow-sm"></ul>
+    </div>
+</div>
+
 <iframe id="generator-frame" class="w-100 h-100 d-block"></iframe>
 
 <div id="spinner"
@@ -192,4 +206,58 @@
             popup.style.display = 'none';
         }
     });
+
+
+    // ===== Versions dropdown state & rendering =====
+    const versionsState = {
+        active: null,
+        list: []
+    };
+
+    function updateVersionLabel() {
+        const label = document.getElementById('versionLabel');
+        const v = versionsState.active;
+        label.textContent = v ? `v${v}${v === Math.max(...versionsState.list) ? " • Latest" : ""}` : "Select version";
+    }
+
+    function renderVersionsMenu() {
+        const menu = document.getElementById('versionMenu');
+        menu.innerHTML = '';
+
+        versionsState.list.sort((a, b) => b - a).forEach(v => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.className = 'dropdown-item';
+            if (v === versionsState.active) a.classList.add('active');
+            a.href = '#';
+            a.textContent = `Version ${v}${v === Math.max(...versionsState.list) ? " - Latest" : ""}`;
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                if (v === versionsState.active) return;
+                versionsState.active = v;
+                updateVersionLabel();
+                renderVersionsMenu();
+
+                const chat = document.getElementById('chainlit');
+                if (chat && chat.contentWindow) {
+                    chat.contentWindow.postMessage({method: 'select_version', body: v}, '*');
+                }
+            });
+            li.appendChild(a);
+            menu.appendChild(li);
+        });
+
+        updateVersionLabel();
+    }
+
+    // Listen for update_versions_list messages
+    window.addEventListener('message', (event) => {
+        if (event.data.method === 'update_versions_list') {
+            const {versions, active} = event.data.body;
+            versionsState.list = Array.isArray(versions) ? versions : [];
+            versionsState.active = active;
+            renderVersionsMenu();
+        }
+    });
+
 </script>
