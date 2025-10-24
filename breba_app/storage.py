@@ -12,7 +12,7 @@ import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
 
-from breba_app.filesystem.versioned_r2 import VersionedR2FileSystem, NotFound
+from breba_app.filesystem.versioned_r2 import VersionedR2FileSystem, NotFound, FileWrite
 
 load_dotenv()
 
@@ -194,6 +194,16 @@ async def save_spec(user_name: str, session_id: str, spec: str) -> None:
 async def save_index_html(user_name: str, session_id: str, html: str) -> None:
     data = html.encode("utf-8")
     await save_file_versioned(user_name, session_id, "index.html", data, "text/html")
+
+
+async def save_files(user_name: str, session_id: str, files: list[tuple[str, bytes, str]]):
+    files_writes = [FileWrite(name, content, type) for name, content, type in files]
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+    await asyncio.to_thread(filesystem.batch_write, files_writes)
 
 
 async def read_spec_text(user_name: str, session_id: str) -> str | None:

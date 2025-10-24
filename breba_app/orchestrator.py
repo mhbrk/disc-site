@@ -2,9 +2,10 @@ import difflib
 import logging
 
 from agent_model import TextPart, Message
-from builder_agent.agent import agent as builder_agent
 from breba_app.generator_agent.accumulator import TagAccumulator
 from breba_app.generator_agent.agent import agent as generator_agent
+from breba_app.storage import save_files
+from builder_agent.agent import agent as builder_agent
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ async def process_chunk(accumulator: TagAccumulator, chunk: dict, generator_call
             return
         logger.info(f"HTML tag exists: {tag_html}")
         await generator_callback(tag_html)
+
 
 async def generate_full_website(user_name: str, session_id: str, spec: str, generator_callback):
     logger.info("Generating full website")
@@ -119,22 +121,25 @@ async def to_generator(user_name: str, session_id: str, message: str, builder_co
     agent_response = await builder_editing_task(user_name, session_id, message_with_instructions)
     await message_to_user_callback("Rebuild specification task is now complete.")
 
-    content = agent_response.get("content")
+    new_spec = agent_response.get("content")
     is_task_completed = agent_response.get("is_task_complete")
 
     if is_task_completed:
-        await builder_completed_callback(content)
+        await builder_completed_callback(new_spec)
     else:
-        logger.info(f"Waiting for user input: {content}")
-        await message_to_user_callback(content)
+        logger.info(f"Waiting for user input: {new_spec}")
+        await message_to_user_callback(new_spec)
+
+    await save_files(user_name, session_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
+                                             ("index.html", new_html.encode("utf-8"), "text/html")])
 
 
 async def to_builder(user_name: str, session_id: str, message: str, builder_completed_callback,
                      message_to_user_callback,
                      generator_callback):
     await message_to_user_callback("Builder is working on the specification...")
-    spec = await builder_agent.get_last_spec(session_id)
-    if spec:
+    new_spec = await builder_agent.get_last_spec(session_id)
+    if new_spec:
         agent_response = await builder_editing_task(user_name, session_id, message)
     else:
         agent_message = Message(role="user", parts=[TextPart(text=message)])
@@ -143,13 +148,16 @@ async def to_builder(user_name: str, session_id: str, message: str, builder_comp
     is_task_completed = agent_response.get("is_task_complete")
 
     if is_task_completed:
-        spec = agent_response.get("content")
-        await builder_completed_callback(spec)
+        new_spec = agent_response.get("content")
+        await builder_completed_callback(new_spec)
         await message_to_user_callback(
             "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec")
-        await generator_task(user_name, session_id, spec, generator_callback)
+        await generator_task(user_name, session_id, new_spec, generator_callback)
+        new_html = generator_agent.get_last_html(session_id)
+
+        await save_files(user_name, session_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
+                                                 ("index.html", new_html.encode("utf-8"), "text/html")])
     else:
         message = agent_response.get("content")
         logger.info(f"Waiting for user input: {message}")
         await message_to_user_callback(message)
-

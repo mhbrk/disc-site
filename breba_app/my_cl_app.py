@@ -11,13 +11,13 @@ from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product
 from breba_app.models.user import User
 from breba_app.orchestrator import init_state
-from breba_app.storage import save_index_html, has_cloud_storage
+from breba_app.storage import has_cloud_storage
 from breba_app.ui_bus import send_index_html_to_ui, send_specification_to_ui, send_index_html_chunk_to_ui
 from deployment_controller import run_deployment
 from llm_utils import get_product_name
-from orchestrator import get_generator_response, to_builder, to_generator
+from orchestrator import to_builder, to_generator
 from storage import save_image_file_to_private, load_template, read_spec_text, \
-    read_index_html, get_public_url, save_spec
+    read_index_html, get_public_url
 
 PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
 
@@ -82,6 +82,7 @@ async def create_or_update_product_for(user_name: str, product_id: str | None = 
 async def builder_completed(payload: str):
     product_id = cl.user_session.get("product_id")
     user_name = cl.user_session.get("user").identifier
+    # TODO: this product creating and naming needs to have a declarative method not piggy back off builder completed
     product_name = cl.user_session.get("product_name")
     # The only time product_name is empty is when we are creating a new product
     if not product_name or product_name == PRODUCT_NAME_PLACEHOLDER:
@@ -89,19 +90,11 @@ async def builder_completed(payload: str):
         product = await create_or_update_product_for(user_name, product_id, product_name)
         cl.user_session.set("product_name", product.name)
 
-    await save_spec(user_name, product_id, payload)
     await send_specification_to_ui(payload)
 
 
 async def process_generator_message(message: str):
     if message == "__completed__":
-        product_id = cl.user_session.get("product_id")
-        user_name = cl.user_session.get("user").identifier
-
-        html = get_generator_response(product_id)
-
-        await save_index_html(user_name, product_id, html)
-
         await send_index_html_to_ui(message)
         await cl.Message(
             content="The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website").send()
