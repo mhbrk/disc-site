@@ -194,6 +194,7 @@ async def list_versions(user_name: str, session_id: str) -> list[int]:
     )
     return await asyncio.to_thread(filesystem.list_versions)
 
+
 async def get_active_version(user_name: str, session_id: str) -> int:
     filesystem = VersionedR2FileSystem(
         bucket_name=USERS_BUCKET_NAME,
@@ -202,6 +203,7 @@ async def get_active_version(user_name: str, session_id: str) -> int:
     )
     return await asyncio.to_thread(filesystem.get_version)
 
+
 async def set_version_active(user_name: str, session_id: str, version: int) -> None:
     filesystem = VersionedR2FileSystem(
         bucket_name=USERS_BUCKET_NAME,
@@ -209,6 +211,7 @@ async def set_version_active(user_name: str, session_id: str, version: int) -> N
         s3_client=s3_client,
     )
     await asyncio.to_thread(filesystem.set_version, version)
+
 
 async def save_spec(user_name: str, session_id: str, spec: str) -> None:
     data = spec.encode("utf-8")
@@ -352,8 +355,9 @@ async def upload_site(user_name: str, session_id: str, site_name: str):
 
 
 async def has_cloud_storage(user_name: str, session_id: str):
-    try:
-        spec = await read_spec_text(user_name, session_id)
-        return bool(spec)
-    except NotFound:
-        return False
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+    return filesystem.file_exists("spec.txt")
