@@ -151,12 +151,12 @@ class VersionedR2FileSystem:
 
     def batch_write(self, files: Iterable[FileWrite]) -> int:
         """Atomically write a batch of files and create one new version."""
-        # TODO: when creating a new version, don't override existing versions if we are back in time
         files = list(files)
         if not files:
             raise ValueError("batch_write requires at least one FileWrite")
 
         base_version = self.get_version()
+        # Always create a new version
         max_version = max(self.list_versions())
         new_version = max_version + 1
         base_manifest = self._get_manifest(base_version)
