@@ -103,10 +103,13 @@ class VersionedR2FileSystem:
             raise NotFound(f"Version {version} does not exist")
         self._put_text(self._latest_key(), str(version))
 
-    def list_files(self, version: int | None = None, prefix: str = "") -> List[str]:
+
+    def list_files(self, version: int | None = None, prefix: str = "", absolute: bool = False) -> List[str]:
         """List all logical file paths in the given version."""
         v = self.get_version() if version is None else version
         manifest = self._get_manifest(v)
+        if absolute:
+            return sorted(metadata["key"] for filename, metadata in manifest["files"].items() if filename.startswith(prefix))
         return sorted(p for p in manifest["files"].keys() if p.startswith(prefix))
 
     def file_exists(self, path: str, version: int | None = None) -> bool:

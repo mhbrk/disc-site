@@ -55,6 +55,39 @@ def _join_prefix(base: str) -> str:
     return base if base.endswith("/") else base + "/"
 
 
+def _copy_one_file(source_bucket, target_bucket, source_path, target_path):
+    copy_source = {"Bucket": source_bucket.name, "Key": source_path}
+    target_bucket.copy(copy_source, target_path)  # blocking boto3 call
+    logger.info(f"Copied {source_path} -> {target_path}")
+
+
+async def _copy_files(source_bucket, target_bucket, files: list[str], target_prefix: str = None,
+                      max_concurrency: int = 16):
+    sem = asyncio.Semaphore(max_concurrency)
+
+    async def _concurrency_copy(source_path: str):
+        filename = source_path.split("/")[-1]
+        target_path = target_prefix + filename
+        async with sem:
+            await asyncio.to_thread(_copy_one_file, source_bucket, target_bucket, source_path, target_path)
+
+    tasks = [asyncio.create_task(_concurrency_copy(file_path)) for file_path in files]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    copied = 0
+    failed = 0
+    for file_path, r in zip(files, results):
+        if isinstance(r, Exception):
+            failed += 1
+            logger.error(f"Failed to copy {file_path}: {r}")
+        else:
+            copied += 1
+
+    logger.info(f"Copy complete. Copied: {copied}, Failed: {failed}")
+    if failed > 0:
+        raise Exception(f"Failed to copy {failed} objects.")
+
+
 async def _copy_directory_s3(source_bucket, target_bucket, prefix: str, target_prefix: str = None,
                              max_concurrency: int = 16):
     """
@@ -344,12 +377,16 @@ async def upload_site(user_name: str, session_id: str, site_name: str):
     """
     # TODO: convert to async because GCP is a blocking call, we don't want to have to wait
     # TODO: when empty dir is being uploaded, should pass back an error message
-    await _copy_directory_s3(
-        source_bucket=s3_bucket,
-        target_bucket=public_s3_bucket,
-        prefix=f"{user_name}/{session_id}/",
-        target_prefix=site_name + "/"
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
     )
+
+    # Need to get full path to files, because we are copying across buckets
+    files = filesystem.list_files(absolute=True)
+
+    await _copy_files(s3_bucket, public_s3_bucket, files, site_name + "/")
 
     return get_public_url(site_name)
 

@@ -18,7 +18,6 @@ async def run_deployment(username: str, product: Product, deployment_id: str) ->
         url = await upload_site(username, product.product_id, deployment.deployment_id)
         logger.info(f"User: {username}, Product: {product.product_id}, uploaded site to url: {url}")
 
-        # TODO: Why are we updating the timestamp? maybe instead of get_or create should update or create
         await deployment.update_deployment_timestamp()
         return f"Deployed your website to: {url}"
     except Exception as e:
