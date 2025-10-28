@@ -143,8 +143,6 @@ async def main():
 
         versions = await list_versions(user_name, active_product.product_id)
         active_version = await get_active_version(user_name, active_product.product_id)
-
-
         asyncio.create_task(update_versions_list(versions, active_version))
 
     if active_product:
@@ -194,8 +192,10 @@ async def window_message(message: str | dict):
         await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
                            builder_completed, process_generator_message, ask_user)
     elif method == "load_template":
-        load_template(user_name, product_id, message.get("body"))
+        created_version = await load_template(user_name, product_id, message.get("body"))
         await populate_from_cloud_storage(user_name, product_id)
+        versions = await list_versions(user_name, product_id)
+        asyncio.create_task(update_versions_list(versions, created_version))
     elif method == "deploy":
         site_name = message.get("body")
         # TODO: This needs to go awaay

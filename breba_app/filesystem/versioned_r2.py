@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import mimetypes
 import posixpath
 import re
@@ -12,6 +13,8 @@ from typing import Iterable, List, Dict, Any
 
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -103,13 +106,13 @@ class VersionedR2FileSystem:
             raise NotFound(f"Version {version} does not exist")
         self._put_text(self._latest_key(), str(version))
 
-
     def list_files(self, version: int | None = None, prefix: str = "", absolute: bool = False) -> List[str]:
         """List all logical file paths in the given version."""
         v = self.get_version() if version is None else version
         manifest = self._get_manifest(v)
         if absolute:
-            return sorted(metadata["key"] for filename, metadata in manifest["files"].items() if filename.startswith(prefix))
+            return sorted(
+                metadata["key"] for filename, metadata in manifest["files"].items() if filename.startswith(prefix))
         return sorted(p for p in manifest["files"].keys() if p.startswith(prefix))
 
     def file_exists(self, path: str, version: int | None = None) -> bool:
@@ -152,6 +155,22 @@ class VersionedR2FileSystem:
         """Write a single file and create a new version."""
         return self.batch_write([FileWrite(path=path, content=content, content_type=content_type)])
 
+    def batch_copy_dir(self, source_bucket_name: str, source_prefix):
+        try:
+            source_objects = self._s3.list_objects_v2(Bucket=source_bucket_name, Prefix=source_prefix)["Contents"]
+        except Exception as e:
+            logger.error(f"Failed to list objects for prefix '{source_prefix}': {e}")
+            raise
+
+        files = []
+        for obj in source_objects:
+            resp = self._s3.get_object(Bucket=source_bucket_name, Key=obj["Key"])
+            data = resp["Body"].read()
+            ctype = resp.get("ContentType")
+            files.append(FileWrite(path=obj["Key"][len(source_prefix):], content=data, content_type=ctype))
+
+        return self.batch_write(files)
+
     def batch_write(self, files: Iterable[FileWrite]) -> int:
         """Atomically write a batch of files and create one new version."""
         files = list(files)
@@ -160,8 +179,7 @@ class VersionedR2FileSystem:
 
         base_version = self.get_version()
         # Always create a new version
-        max_version = max(self.list_versions())
-        new_version = max_version + 1
+        new_version = self._get_next_version()
         base_manifest = self._get_manifest(base_version)
         new_manifest = {
             "version": new_version,
@@ -228,6 +246,9 @@ class VersionedR2FileSystem:
                 }
             self._put_json(key, new_manifest)
         self._put_text(self._latest_key(), "0")
+
+    def _get_next_version(self) -> int:
+        return max(self.list_versions()) + 1
 
     def _get_manifest(self, version: int) -> Dict[str, Any]:
         try:

@@ -88,61 +88,6 @@ async def _copy_files(source_bucket, target_bucket, files: list[str], target_pre
         raise Exception(f"Failed to copy {failed} objects.")
 
 
-async def _copy_directory_s3(source_bucket, target_bucket, prefix: str, target_prefix: str = None,
-                             max_concurrency: int = 16):
-    """
-        Asynchronously copy all objects under `prefix` from source_bucket to target_bucket.
-        Each copy runs in a separate thread via asyncio.to_thread.
-
-        Returns (copied_count, failed_count).
-        """
-
-    # Normalize prefixes
-    src_prefix = _join_prefix(prefix)
-    dst_base = _join_prefix(target_prefix if target_prefix is not None else prefix)
-
-    logger.info(f"Listing objects with Prefix='{src_prefix}' in bucket '{source_bucket.name}'...")
-    try:
-        objs = await asyncio.to_thread(lambda: list(source_bucket.objects.filter(Prefix=src_prefix)))
-    except Exception as e:
-        logger.error(f"Failed to list objects for prefix '{src_prefix}': {e}")
-        raise
-
-    if not objs:
-        logger.info("No objects to copy.")
-        raise Exception("No objects to copy.")
-
-    sem = asyncio.Semaphore(max_concurrency)
-
-    async def copy_one(obj_summary):
-        relative_path = obj_summary.key[len(src_prefix):]  # keep folder structure under prefix
-        new_key = f"{dst_base}{relative_path}"
-
-        def _do_copy():
-            copy_source = {"Bucket": source_bucket.name, "Key": obj_summary.key}
-            target_bucket.copy(copy_source, new_key)  # blocking boto3 call
-            logger.info(f"Copied {obj_summary.key} -> {new_key}")
-
-        async with sem:
-            await asyncio.to_thread(_do_copy)
-
-    tasks = [asyncio.create_task(copy_one(o)) for o in objs]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-    copied = 0
-    failed = 0
-    for o, r in zip(objs, results):
-        if isinstance(r, Exception):
-            failed += 1
-            logger.error(f"Failed to copy {o.key}: {r}")
-        else:
-            copied += 1
-
-    logger.info(f"Copy complete. Copied: {copied}, Failed: {failed}")
-    if failed > 0:
-        raise Exception(f"Failed to copy {failed} objects.")
-
-
 def _user_session_object(user_name: str, session_id: str, relative_path: str, description: str | None = None):
     key = f"{user_name}/{session_id}/{relative_path}"
     obj = s3.Object(USERS_BUCKET_NAME, key)
@@ -301,13 +246,39 @@ async def save_file_versioned(user_name: str, session_id: str, file_name: str, c
     await asyncio.to_thread(filesystem.write_file, file_name, content, content_type=content_type)
 
 
-def load_template(user_name: str, session_id: str, template_name: str):
-    _copy_directory_s3(
-        source_bucket=s3_bucket,
-        target_bucket=s3_bucket,
-        prefix=f"templates/{template_name}/",
-        target_prefix=f"{user_name}/{session_id}/"
+async def load_template(user_name: str, session_id: str, template_name: str):
+    source_prefix = f"templates/{template_name}"
+
+    def get_file_write(obj):
+        resp = s3_client.get_object(Bucket=USERS_BUCKET_NAME, Key=obj["Key"])
+        data = resp["Body"].read()
+        ctype = resp.get("ContentType")
+        # This helps maintain path relative to the source prefix
+        relative_path = obj["Key"][len(source_prefix):]
+        return FileWrite(path=relative_path, content=data, content_type=ctype)
+
+    paginator = s3_client.get_paginator('list_objects_v2')
+    pages = paginator.paginate(Bucket=USERS_BUCKET_NAME, Prefix=source_prefix)
+    tasks = []
+    # Pagination avoids listing and iterating over all objects. Instead, we just iterate
+    for page in pages:
+        if "Contents" in page:
+            for obj in page['Contents']:
+                tasks.append(asyncio.to_thread(get_file_write, obj))
+
+    # Need to read file contents concurrently to save time
+    # cannot use copy_object because need to calculate sha for the manifest
+    if len(tasks) == 0:
+        raise Exception("No files found for prefix: " + source_prefix)
+    files = await asyncio.gather(*tasks)
+
+    root_prefix = f"{user_name}/{session_id}"
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=root_prefix,
+        s3_client=s3_client,
     )
+    return await asyncio.to_thread(filesystem.batch_write, files)
 
 
 def make_dir_tree() -> DirTree:
