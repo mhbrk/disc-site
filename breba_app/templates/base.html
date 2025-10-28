@@ -356,28 +356,6 @@
             });
         });
 
-        // Template selection logic
-        document.querySelectorAll(".start-template").forEach(button => {
-            button.addEventListener("click", async () => {
-                const templateName = button.dataset.template;
-
-                const cards = document.getElementById("template-cards");
-                const iframe = document.getElementById("generator-frame");
-
-                // Hide cards and show iframe
-                if (cards) cards.style.display = "none";
-                if (iframe) iframe.style.display = "block";
-
-                const chat = document.getElementById('chainlit');
-                if (chat) {
-                    chat.contentWindow.postMessage({
-                        method: "load_template",
-                        body: templateName
-                    }, '*');
-                }
-            });
-        });
-
         // Escape key closes all panels
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape" || event.key === "Esc") {
