@@ -7,8 +7,13 @@
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link rel="stylesheet" href="{{ asset('styles.css') }}">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+            crossorigin="anonymous"></script>
     <link rel="stylesheet" href="{{ asset('styles.css') }}">
+
 
     <style>
         html,
@@ -190,6 +195,23 @@
 
     </style>
 
+    <style>
+        .btn-version {
+            background: #efece5; /* soft beige like the mock */
+            border: none;
+            border-radius: 12px;
+            padding: .4rem .6rem;
+            font-weight: 500;
+        }
+
+        /* make active item show a checkmark on the right */
+        #versionMenu .dropdown-item.active::after {
+            content: "✓";
+            margin-left: .5rem;
+            font-weight: 600;
+        }
+    </style>
+
 </head>
 
 <body style="background-color: #c8c9ca;">
@@ -331,28 +353,6 @@
                 const panelName = button.id.replace('toggle-', '');
                 const panel = document.getElementById(panelName + '-panel');
                 if (panel) togglePanel(panel);
-            });
-        });
-
-        // Template selection logic
-        document.querySelectorAll(".start-template").forEach(button => {
-            button.addEventListener("click", async () => {
-                const templateName = button.dataset.template;
-
-                const cards = document.getElementById("template-cards");
-                const iframe = document.getElementById("generator-frame");
-
-                // Hide cards and show iframe
-                if (cards) cards.style.display = "none";
-                if (iframe) iframe.style.display = "block";
-
-                const chat = document.getElementById('chainlit');
-                if (chat) {
-                    chat.contentWindow.postMessage({
-                        method: "load_template",
-                        body: templateName
-                    }, '*');
-                }
             });
         });
 

@@ -11,8 +11,9 @@ from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product
 from breba_app.models.user import User
 from breba_app.orchestrator import init_state
-from breba_app.storage import has_cloud_storage
-from breba_app.ui_bus import send_index_html_to_ui, send_specification_to_ui, send_index_html_chunk_to_ui
+from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active
+from breba_app.ui_bus import send_index_html_to_ui, send_specification_to_ui, send_index_html_chunk_to_ui, \
+    update_products_list, update_versions_list
 from deployment_controller import run_deployment
 from llm_utils import get_product_name
 from orchestrator import to_builder, to_generator
@@ -118,12 +119,6 @@ async def update_deployments_list(product_id: PydanticObjectId):
     await cl.send_window_message({"method": "update_deployments_list", "body": deployments_list})
 
 
-async def update_products_list(products: list[Product]):
-    products_list = [{"product_id": product.product_id, "name": product.name, "active": product.active} for product in
-                     products]
-    await cl.send_window_message({"method": "update_products_list", "body": products_list})
-
-
 @cl.on_chat_start
 async def main():
     user_name = cl.user_session.get("user").identifier
@@ -145,6 +140,10 @@ async def main():
             ).sort([("_id", SortDirection.DESCENDING)]).first_or_none()
 
         asyncio.create_task(update_products_list(user.products))
+
+        versions = await list_versions(user_name, active_product.product_id)
+        active_version = await get_active_version(user_name, active_product.product_id)
+        asyncio.create_task(update_versions_list(versions, active_version))
 
     if active_product:
         asyncio.create_task(update_deployments_list(active_product.id))
@@ -193,8 +192,10 @@ async def window_message(message: str | dict):
         await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
                            builder_completed, process_generator_message, ask_user)
     elif method == "load_template":
-        load_template(user_name, product_id, message.get("body"))
+        created_version = await load_template(user_name, product_id, message.get("body"))
         await populate_from_cloud_storage(user_name, product_id)
+        versions = await list_versions(user_name, product_id)
+        asyncio.create_task(update_versions_list(versions, created_version))
     elif method == "deploy":
         site_name = message.get("body")
         # TODO: This needs to go awaay
@@ -211,6 +212,9 @@ async def window_message(message: str | dict):
         await cl.send_window_message({"method": "reload_product"})
     elif method == "product_selected":
         await set_product_active(user_name, message.get("body"))
+        await cl.send_window_message({"method": "reload_product"})
+    elif method == "select_version":
+        await set_version_active(user_name, product_id, message.get("body"))
         await cl.send_window_message({"method": "reload_product"})
     else:
         # TODO: remove this, it is replaced by the "ask_user" function callback

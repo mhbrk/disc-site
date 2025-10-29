@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import mimetypes
 import posixpath
 import re
@@ -12,6 +13,8 @@ from typing import Iterable, List, Dict, Any
 
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -74,6 +77,17 @@ class VersionedR2FileSystem:
 
     # ----------------------------- Public API ----------------------------- #
 
+    def list_versions(self) -> list[int]:
+        """Return a list of all version integers."""
+        try:
+            obj = self._s3.list_objects_v2(Bucket=self._bucket, Prefix=self._prefix + "/versions/", Delimiter="/")
+            if "CommonPrefixes" not in obj:
+                return [0]
+            sorted_versions = sorted([int(prefix["Prefix"].split("/")[-2]) for prefix in obj["CommonPrefixes"]])
+            return [0] + sorted_versions
+        except (ClientError, self._s3.exceptions.NoSuchKey):
+            return []
+
     def get_version(self) -> int:
         """Return the currently selected (latest) version integer."""
         try:
@@ -92,10 +106,13 @@ class VersionedR2FileSystem:
             raise NotFound(f"Version {version} does not exist")
         self._put_text(self._latest_key(), str(version))
 
-    def list_files(self, version: int | None = None, prefix: str = "") -> List[str]:
+    def list_files(self, version: int | None = None, prefix: str = "", absolute: bool = False) -> List[str]:
         """List all logical file paths in the given version."""
         v = self.get_version() if version is None else version
         manifest = self._get_manifest(v)
+        if absolute:
+            return sorted(
+                metadata["key"] for filename, metadata in manifest["files"].items() if filename.startswith(prefix))
         return sorted(p for p in manifest["files"].keys() if p.startswith(prefix))
 
     def file_exists(self, path: str, version: int | None = None) -> bool:
@@ -138,6 +155,22 @@ class VersionedR2FileSystem:
         """Write a single file and create a new version."""
         return self.batch_write([FileWrite(path=path, content=content, content_type=content_type)])
 
+    def batch_copy_dir(self, source_bucket_name: str, source_prefix):
+        try:
+            source_objects = self._s3.list_objects_v2(Bucket=source_bucket_name, Prefix=source_prefix)["Contents"]
+        except Exception as e:
+            logger.error(f"Failed to list objects for prefix '{source_prefix}': {e}")
+            raise
+
+        files = []
+        for obj in source_objects:
+            resp = self._s3.get_object(Bucket=source_bucket_name, Key=obj["Key"])
+            data = resp["Body"].read()
+            ctype = resp.get("ContentType")
+            files.append(FileWrite(path=obj["Key"][len(source_prefix):], content=data, content_type=ctype))
+
+        return self.batch_write(files)
+
     def batch_write(self, files: Iterable[FileWrite]) -> int:
         """Atomically write a batch of files and create one new version."""
         files = list(files)
@@ -145,7 +178,8 @@ class VersionedR2FileSystem:
             raise ValueError("batch_write requires at least one FileWrite")
 
         base_version = self.get_version()
-        new_version = base_version + 1
+        # Always create a new version
+        new_version = self._get_next_version()
         base_manifest = self._get_manifest(base_version)
         new_manifest = {
             "version": new_version,
@@ -190,16 +224,31 @@ class VersionedR2FileSystem:
         """Initialize version 0 manifest if missing."""
         key = self._manifest_key(0)
         if not self._object_exists(key):
-            self._put_json(
-                key,
-                {
-                    "version": 0,
-                    "parent": None,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                    "files": {},
-                },
-            )
+            new_manifest = {
+                "version": 0,
+                "parent": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "files": {},
+            }
+            # Hardcode to spec.txt and index.html if they exit in unversioned format
+            if self._object_exists(self._prefix + "/spec.txt"):
+                new_manifest["files"]["spec.txt"] = {
+                    "key": self._prefix + "/spec.txt",
+                    "sha256": 0,
+                    "size": 0,
+                    "content_type": "text/plain",
+                }
+                new_manifest["files"]["index.html"] = {
+                    "key": self._prefix + "/index.html",
+                    "sha256": 0,
+                    "size": 0,
+                    "content_type": "text/html",
+                }
+            self._put_json(key, new_manifest)
         self._put_text(self._latest_key(), "0")
+
+    def _get_next_version(self) -> int:
+        return max(self.list_versions()) + 1
 
     def _get_manifest(self, version: int) -> Dict[str, Any]:
         try:
