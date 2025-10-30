@@ -2,11 +2,11 @@ import datetime
 import logging
 from typing import Any, Dict, AsyncIterable
 
-from langchain_community.tools import TavilySearchResults
 from langchain_core.messages import trim_messages, HumanMessage
 from langchain_core.messages.utils import count_tokens_approximately
 from langchain_mcp_adapters.tools import load_mcp_tools
 from langchain_openai import ChatOpenAI
+from langchain_tavily import TavilySearch
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from langgraph.prebuilt.chat_agent_executor import AgentState
@@ -68,7 +68,7 @@ class HTMLAgent:
         if self._initialized:
             return
 
-        search_tool = TavilySearchResults(max_results=5, include_images=True)
+        search_tool = TavilySearch(max_results=5, include_images=True)
         base_tools = [generate_image, search_tool]
 
         headers = {
