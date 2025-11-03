@@ -166,6 +166,16 @@
 
     <!-- Main content -->
     <main class="settings-main">
+        {% if error %}
+        <div class="alert alert-danger mb-3">
+            {{ error }}
+        </div>
+        {% elif request.query_params.get('success') %}
+        <div class="alert alert-success mb-3">
+            Password updated successfully.
+        </div>
+        {% endif %}
+
         <header class="settings-header">
             <h1>Account Settings</h1>
         </header>
