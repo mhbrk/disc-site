@@ -73,13 +73,13 @@ async def index(request: Request):
     """
     Home page route.
     If cookie "X-Chainlit-Session-id" is set, render home.html
-    otherwise render base.html
+    otherwise render app.html
     """
     session_cookie = request.cookies.get("X-Chainlit-Session-id")
 
     if session_cookie:
-        # Cookie missing → render base.html
-        return templates.TemplateResponse("base.html", {"request": request})
+        # Cookie missing → render app.html
+        return templates.TemplateResponse("app.html", {"request": request})
     else:
         # Cookie exists → render home.html
         return templates.TemplateResponse("home.html", {"request": request})
@@ -90,7 +90,7 @@ async def login(request: Request):
     """
     Home page route. This just renders the HTML. All communication with the server is done through chianlit.
     """
-    return templates.TemplateResponse("base.html", {"request": request})
+    return templates.TemplateResponse("app.html", {"request": request})
 
 
 @app.get("/home", response_class=HTMLResponse)
