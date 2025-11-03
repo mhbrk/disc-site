@@ -101,6 +101,11 @@ async def home(request: Request):
     return templates.TemplateResponse("home.html", {"request": request})
 
 
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    return templates.TemplateResponse("settings.html", {"request": request})
+
+
 current_file_dir = Path(__file__).parent
 mount_chainlit(app=app, target=str(current_file_dir / "my_cl_app.py"), path="/chainlit")
 

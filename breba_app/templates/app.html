@@ -3,201 +3,201 @@
 {% block title %}Breba Builder{% endblock %}
 
 {% block extra_head %}
-    <style>
-        html,
-        body {
-            height: 100%;
-            margin: 0;
-        }
+<style>
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+    }
 
-        .panel {
-            height: auto;
-        }
+    .panel {
+        height: auto;
+    }
 
-        #input-panel iframe {
-            width: 100%;
-            border: none;
-            height: 100%;
-        }
+    #input-panel iframe {
+        width: 100%;
+        border: none;
+        height: 100%;
+    }
 
-        /* Generator iframe sizing */
+    /* Generator iframe sizing */
+    #generator-panel > iframe,
+    #generator-frame {
+        width: 100%;
+        border: 0;
+    }
+
+    @media (max-width: 767.98px) {
+
         #generator-panel > iframe,
         #generator-frame {
-            width: 100%;
-            border: 0;
-        }
-
-        @media (max-width: 767.98px) {
-
-            #generator-panel > iframe,
-            #generator-frame {
-                height: auto;
-                min-height: 66vh;
-                display: block;
-            }
-        }
-
-        @media (min-width: 768px) {
-
-            #generator-panel > iframe,
-            #generator-frame {
-                height: 100%;
-            }
-        }
-
-        /* Make parent panels tall on small screens so iframe can fill them */
-        @media (max-width: 767.98px) {
-
-            #right-panel,
-            #generator-panel {
-                min-height: 100vh;
-            }
-
-            #generator-panel > iframe,
-            #generator-frame {
-                height: auto;
-                min-height: 100vh;
-            }
-
-            #generator-panel {
-                overflow: visible !important;
-            }
-        }
-
-        /* Small screens: left column ~2/3 only when input panel is visible */
-        @media (max-width: 767.98px) {
-            #left-panels.min-66 {
-                min-height: 66vh;
-            }
-        }
-
-        #right-panel {
             height: auto;
-            /* small screens: let content define height */
+            min-height: 66vh;
+            display: block;
+        }
+    }
+
+    @media (min-width: 768px) {
+
+        #generator-panel > iframe,
+        #generator-frame {
+            height: 100%;
+        }
+    }
+
+    /* Make parent panels tall on small screens so iframe can fill them */
+    @media (max-width: 767.98px) {
+
+        #right-panel,
+        #generator-panel {
+            min-height: 100vh;
         }
 
-        @media (min-width: 768px) {
-
-            /* panels and their container fill viewport height on desktop */
-            .panel {
-                height: 100%;
-            }
-
-            #left-panels,
-            #right-panel {
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-            }
-
-            #left-panels .panel,
-            #generator-panel {
-                flex: 1 1 auto;
-                min-height: 0;
-            }
+        #generator-panel > iframe,
+        #generator-frame {
+            height: auto;
+            min-height: 100vh;
         }
 
-        /* Normalize sidebar button boxes and icon sizing */
-        #sidebar-buttons .btn {
-            width: 48px;
-            height: 48px;
-            padding: 0;
+        #generator-panel {
+            overflow: visible !important;
+        }
+    }
+
+    /* Small screens: left column ~2/3 only when input panel is visible */
+    @media (max-width: 767.98px) {
+        #left-panels.min-66 {
+            min-height: 66vh;
+        }
+    }
+
+    #right-panel {
+        height: auto;
+        /* small screens: let content define height */
+    }
+
+    @media (min-width: 768px) {
+
+        /* panels and their container fill viewport height on desktop */
+        .panel {
+            height: 100%;
+        }
+
+        #left-panels,
+        #right-panel {
+            height: 100%;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-            border: 0;
-            box-shadow: none;
+            flex-direction: column;
         }
 
-        #sidebar-buttons .btn > .icon {
-            font-size: 24px;
-            line-height: 1;
+        #left-panels .panel,
+        #generator-panel {
+            flex: 1 1 auto;
+            min-height: 0;
         }
+    }
 
-        #sidebar-buttons a.btn img {
-            width: 24px;
-            height: 24px;
-        }
+    /* Normalize sidebar button boxes and icon sizing */
+    #sidebar-buttons .btn {
+        width: 48px;
+        height: 48px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        border: 0;
+        box-shadow: none;
+    }
 
-        #sidebar-buttons .btn.active {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
+    #sidebar-buttons .btn > .icon {
+        font-size: 24px;
+        line-height: 1;
+    }
 
-        #sidebar-buttons .btn.active,
-        #sidebar-buttons .btn:active {
-            border: 0;
-            box-shadow: none;
-        }
+    #sidebar-buttons a.btn img {
+        width: 24px;
+        height: 24px;
+    }
 
-        #sidebar-buttons .btn:focus {
-            outline: none;
-            box-shadow: none;
-        }
+    #sidebar-buttons .btn.active {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
 
-        #sidebar-buttons .btn:focus-visible {
-            outline: none;
-            box-shadow: none;
-        }
+    #sidebar-buttons .btn.active,
+    #sidebar-buttons .btn:active {
+        border: 0;
+        box-shadow: none;
+    }
 
-        #left-panels {
-            position: relative;
-        }
+    #sidebar-buttons .btn:focus {
+        outline: none;
+        box-shadow: none;
+    }
 
-        #left-panels > .panel-overlay {
-            position: absolute;
-            inset: calc(var(--bs-gutter-y) * .5) calc(var(--bs-gutter-x) * .5);
-            background: white;
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            z-index: 2;
-            transition: opacity 300ms ease-out, visibility 0s linear 300ms;
-            border-radius: .5rem;
-        }
+    #sidebar-buttons .btn:focus-visible {
+        outline: none;
+        box-shadow: none;
+    }
 
-        #left-panels.reveal-overlay > .panel-overlay {
-            opacity: 1;
-            visibility: visible;
-            transition: none;
-        }
-    </style>
+    #left-panels {
+        position: relative;
+    }
 
-    <!-- Styles for builder -->
-    <style>
-        .no-resize {
-            resize: none;
-        }
+    #left-panels > .panel-overlay {
+        position: absolute;
+        inset: calc(var(--bs-gutter-y) * .5) calc(var(--bs-gutter-x) * .5);
+        background: white;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        z-index: 2;
+        transition: opacity 300ms ease-out, visibility 0s linear 300ms;
+        border-radius: .5rem;
+    }
 
-        .backdrop-blur {
-            backdrop-filter: blur(8px);
-        }
+    #left-panels.reveal-overlay > .panel-overlay {
+        opacity: 1;
+        visibility: visible;
+        transition: none;
+    }
+</style>
 
-        .builder-wrapper {
-            border: 2px solid transparent;
-        }
+<!-- Styles for builder -->
+<style>
+    .no-resize {
+        resize: none;
+    }
 
-        .builder-wrapper:focus-within {
-            border-color: #86b7fe;
-        }
-    </style>
+    .backdrop-blur {
+        backdrop-filter: blur(8px);
+    }
 
-    <style>
-        .btn-version {
-            background: #efece5; /* soft beige like the mock */
-            border: none;
-            border-radius: 12px;
-            padding: .4rem .6rem;
-            font-weight: 500;
-        }
+    .builder-wrapper {
+        border: 2px solid transparent;
+    }
 
-        /* make active item show a checkmark on the right */
-        #versionMenu .dropdown-item.active::after {
-            content: "✓";
-            margin-left: .5rem;
-            font-weight: 600;
-        }
-    </style>
+    .builder-wrapper:focus-within {
+        border-color: #86b7fe;
+    }
+</style>
+
+<style>
+    .btn-version {
+        background: #efece5; /* soft beige like the mock */
+        border: none;
+        border-radius: 12px;
+        padding: .4rem .6rem;
+        font-weight: 500;
+    }
+
+    /* make active item show a checkmark on the right */
+    #versionMenu .dropdown-item.active::after {
+        content: "✓";
+        margin-left: .5rem;
+        font-weight: 600;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -236,6 +236,11 @@
                         title="Templates">
                     <span class="icon">&#x1F4C1;</span>
                 </button>
+                <a href="/settings"
+                   class="btn text-white shadow-none focus-ring-0 rounded-0"
+                   title="Account Settings">
+                    <span class="icon">&#9881;</span> <!-- simple gear icon -->
+                </a>
             </div>
         </div>
 
