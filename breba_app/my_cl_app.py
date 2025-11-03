@@ -141,11 +141,13 @@ async def main():
 
         asyncio.create_task(update_products_list(user.products))
 
+    if active_product:
+        # Update versions list in the UI
         versions = await list_versions(user_name, active_product.product_id)
         active_version = await get_active_version(user_name, active_product.product_id)
         asyncio.create_task(update_versions_list(versions, active_version))
 
-    if active_product:
+        # Update deployments list in the UI
         asyncio.create_task(update_deployments_list(active_product.id))
 
         has_storage = await has_cloud_storage(user_name, active_product.product_id)
