@@ -24,8 +24,10 @@ PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
 
 
 async def populate_from_cloud_storage(user_name: str, session_id: str):
-    spec = await read_spec_text(user_name, session_id)
-    product = await read_index_html(user_name, session_id)
+    spec, product = await asyncio.gather(
+        read_spec_text(user_name, session_id),
+        read_index_html(user_name, session_id),
+    )
 
     await asyncio.gather(
         init_state(session_id, spec, product),
@@ -194,10 +196,20 @@ async def window_message(message: str | dict):
         await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
                            builder_completed, process_generator_message, ask_user)
     elif method == "load_template":
+        # Copy template files to versioned filesystem
         created_version = await load_template(user_name, product_id, message.get("body"))
-        await populate_from_cloud_storage(user_name, product_id)
-        versions = await list_versions(user_name, product_id)
-        asyncio.create_task(update_versions_list(versions, created_version))
+        async def refresh_versions(user_name: str, product_id: str, created_version: int):
+            versions = await list_versions(user_name, product_id)
+            await update_versions_list(versions, created_version)
+
+        # Now we can hydrate UI and agents and refresh versions list
+        await asyncio.gather(
+            populate_from_cloud_storage(user_name, product_id),
+            refresh_versions(user_name, product_id, created_version),
+        )
+
+
+
     elif method == "deploy":
         site_name = message.get("body")
         # TODO: This needs to go awaay
