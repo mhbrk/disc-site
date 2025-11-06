@@ -1,7 +1,9 @@
+import asyncio
 import datetime
 import logging
 from typing import Any, Dict, AsyncIterable
 
+from langchain_core.callbacks import UsageMetadataCallbackHandler
 from langchain_core.messages import trim_messages, HumanMessage
 from langchain_core.messages.utils import count_tokens_approximately
 from langchain_mcp_adapters.tools import load_mcp_tools
@@ -18,6 +20,7 @@ from .diffing import diff_text
 from .generate_image import generate_image
 from .instruction_reader import get_instructions
 from .static_html_example_messages import html_best_practices
+from ..controllers.usage_controller import report_usage
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -125,7 +128,8 @@ class HTMLAgent:
             "specification": spec
         }
 
-        config = {"configurable": {"thread_id": session_id}}
+        usage_callback = UsageMetadataCallbackHandler()
+        config = {"configurable": {"thread_id": session_id}, "callbacks": [usage_callback]}
 
         async for mode, data in self.graph.astream(inputs, config, stream_mode=["messages", "values"]):
             if mode == "messages":
@@ -139,6 +143,8 @@ class HTMLAgent:
             if mode == "values":
                 logger.info(data["messages"][-1].pretty_repr())
 
+        # TODO: This should be an Agent Bus event
+        asyncio.create_task(report_usage(user_name, session_id, usage_callback.usage_metadata))
         yield self.get_agent_response(config)
 
     def is_spec_similar(self, current_spec: str, new_spec: str) -> bool:
@@ -148,12 +154,12 @@ class HTMLAgent:
         relative_diff = diff_count / max(len(set(current_spec_lines) | set(new_spec_lines)), 1)
         return relative_diff < 0.5
 
-    async def diffing_spec_update(self, spec: str, user_name: str, session_id: str):
+    async def diffing_spec_update(self, spec: str, user_name: str, product_id: str):
         """
         This method is used to update the specification.
         """
         logger.info("Generator diffing spec update")
-        current_spec = self.get_last_specification(session_id)
+        current_spec = self.get_last_specification(product_id)
 
         if not current_spec:
             logger.info("No current spec found. This is not supported for a diffing update.")
@@ -172,28 +178,28 @@ class HTMLAgent:
         else:
             try:
                 query = f"I changed the spec given the following diff:\n{diff}"
-                update = await self.diffing_update(query, session_id)
-                self.set_spec(session_id, spec)
+                update = await self.diffing_update(user_name, product_id, query)
+                self.set_spec(product_id, spec)
                 # We will just stream the entire spec
-                self.set_last_html(session_id, update)
-                config = {"configurable": {"thread_id": session_id}}
+                self.set_last_html(product_id, update)
+                config = {"configurable": {"thread_id": product_id}}
                 yield self.get_agent_response(config)
             except Exception as e:
                 logger.error(f"Failed to diff spec: {e}")
                 raise e
 
-    async def diffing_update(self, query: str, session_id: str):
+    async def diffing_update(self, user_name: str, product_id: str, query: str, ):
         """
         This method is used to update only the parts of the html that need to be updated.
         :return: modified html
         :raises: Exception if the diff is too long, or malformed
         """
         logger.info("Generator diffing update")
-        html = self.get_last_html(session_id)
+        html = self.get_last_html(product_id)
         # TODO: This currently doesn't support tool calling and can only handle simple html changes
-        modified = await diff_text(html, query)
+        modified = await diff_text(user_name, product_id, html, query)
         logger.info(f"Diff was successfully applied")
-        self.set_last_html(session_id, modified)
+        self.set_last_html(product_id, modified)
         # TODO: this violates the interface because the agent returns text instead of agent response
         return modified
 
@@ -215,8 +221,8 @@ class HTMLAgent:
                                           f"Current time is: {current_time}"),
                                ("user", query)],
                   }
-
-        config = {"configurable": {"thread_id": session_id}}
+        usage_callback = UsageMetadataCallbackHandler()
+        config = {"configurable": {"thread_id": session_id}, "callbacks": [usage_callback]}
 
         async for mode, data in self.graph.astream(inputs, config, stream_mode=["messages", "values"]):
             if mode == "messages":
@@ -230,6 +236,8 @@ class HTMLAgent:
             if mode == "values":
                 logger.info(data["messages"][-1].pretty_repr())
 
+        # TODO: This should be an Agent Bus event
+        asyncio.create_task(report_usage(user_name, session_id, usage_callback.usage_metadata))
         yield self.get_agent_response(config)
 
     def set_spec(self, session_id: str, spec: str):

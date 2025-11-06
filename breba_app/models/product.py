@@ -13,6 +13,7 @@ class Product(Document):
     name: Optional[str] = None
     user: Link[User]
     active: bool = False
+    cost: float = 0
     created_at: datetime.datetime = Field(default_factory=lambda: datetime.datetime.now(datetime.UTC))
 
     # Back-reference to deployments
@@ -23,3 +24,8 @@ class Product(Document):
 
     class Settings:
         name = "products"
+
+    async def increment_cost(self, amount: float):
+        """Atomically increment the product's cost"""
+        await self.inc({Product.cost: amount})
+

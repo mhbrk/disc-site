@@ -4,6 +4,7 @@ import logging
 import os
 
 from dotenv import load_dotenv
+from langchain_core.callbacks import UsageMetadataCallbackHandler
 from langchain_core.messages import SystemMessage, trim_messages, HumanMessage
 from langchain_core.messages.utils import count_tokens_approximately
 from langchain_core.runnables import RunnableConfig
@@ -15,6 +16,7 @@ from langgraph.types import interrupt, Command
 
 from breba_app.agent_model import Message
 from breba_app.builder_agent.search_replace_example_messages import example_messages, system_reminder
+from breba_app.controllers.usage_controller import report_usage
 from breba_app.search_replace_editing import has_search_replace_edits, apply_search_replace_to_html
 from breba_app.storage import list_files_in_private
 from .instruction_reader import get_instructions
@@ -241,7 +243,8 @@ class BuilderAgent:
             self.final_state = event
 
     async def invoke(self, user_name: str, session_id: str, user_input: Message):
-        config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id})
+        usage_callback = UsageMetadataCallbackHandler()
+        config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id}, callbacks=[usage_callback])
         if self.is_waiting_for_user_input(config):
             await self.app.ainvoke(Command(update={"current_agent": "new_spec_agent"}, resume=user_input), config)
         else:
@@ -250,10 +253,13 @@ class BuilderAgent:
             await self.app.ainvoke({"messages": [{"role": user_input.role, "content": user_input.parts[0].text}],
                                     "user_name": user_name, "current_agent": "new_spec_agent"},
                                    config)
+        # Report usage as a parallel task
+        asyncio.create_task(report_usage(user_name, session_id, usage_callback.usage_metadata))
         return await self.get_agent_response(config)
 
     async def edit_invoke(self, user_name: str, session_id: str, user_input: Message):
-        config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id})
+        usage_callback = UsageMetadataCallbackHandler()
+        config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id}, callbacks=[usage_callback])
         if self.is_waiting_for_user_input(config):
             await self.app.ainvoke(Command(update={"current_agent": "editing_spec_agent"}, resume=user_input), config)
         else:
@@ -263,6 +269,8 @@ class BuilderAgent:
                 {"messages": [{"role": user_input.role, "content": user_input.parts[0].text}], "user_name": user_name,
                  "current_agent": "editing_spec_agent"},
                 config)
+        # Report usage as a parallel task
+        asyncio.create_task(report_usage(user_name, session_id, usage_callback.usage_metadata))
         return await self.get_agent_response(config)
 
     def is_waiting_for_user_input(self, config: dict):

@@ -80,7 +80,7 @@ async def generator_task(user_name: str, session_id: str, spec: str, generator_c
 
 async def start_editing_task(user_name: str, session_id: str, query: str, generator_callback):
     try:
-        update = await generator_agent.diffing_update(query, session_id)
+        update = await generator_agent.diffing_update(user_name, session_id, query)
         # TODO: this is funky. Using generator_callback like this. Need to use a specialized declarative generator_completed event
         await generator_callback(update)
         await generator_callback("__completed__")
