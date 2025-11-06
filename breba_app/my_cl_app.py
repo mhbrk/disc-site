@@ -14,6 +14,7 @@ from breba_app.orchestrator import init_state
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active
 from breba_app.ui_bus import send_index_html_to_ui, send_specification_to_ui, send_index_html_chunk_to_ui, \
     update_products_list, update_versions_list
+from builder_agent.agent import agent as builder_agent
 from deployment_controller import run_deployment
 from llm_utils import get_product_name
 from orchestrator import to_builder, to_generator
@@ -198,6 +199,7 @@ async def window_message(message: str | dict):
     elif method == "load_template":
         # Copy template files to versioned filesystem
         created_version = await load_template(user_name, product_id, message.get("body"))
+
         async def refresh_versions(user_name: str, product_id: str, created_version: int):
             versions = await list_versions(user_name, product_id)
             await update_versions_list(versions, created_version)
@@ -208,7 +210,11 @@ async def window_message(message: str | dict):
             refresh_versions(user_name, product_id, created_version),
         )
 
-
+        template_spec = await builder_agent.get_last_spec(product_id)
+        await to_builder(user_name, product_id,
+                         f"This spec is a template and I need you ask me all the necessary questions to personalize it: \n {template_spec}",
+                         builder_completed,
+                         ask_user, process_generator_message)
 
     elif method == "deploy":
         site_name = message.get("body")
