@@ -210,9 +210,8 @@ async def window_message(message: str | dict):
             refresh_versions(user_name, product_id, created_version),
         )
 
-        template_spec = await builder_agent.get_last_spec(product_id)
         await to_builder(user_name, product_id,
-                         f"This spec is a template and I need you ask me all the necessary questions to personalize it: \n {template_spec}",
+                         "The provided spec is actually a template. Follow the instructions to build the actual specification.",
                          builder_completed,
                          ask_user, process_generator_message)
 
