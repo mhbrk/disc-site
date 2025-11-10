@@ -130,10 +130,6 @@ async def process_generator_message(message: str):
         await send_index_html_chunk_to_ui(message)
 
 
-async def ask_user(message: str):
-    await cl.Message(content=message).send()
-
-
 async def update_deployments_list(product_id: PydanticObjectId):
     deployments = await Deployment.find(Deployment.product == DBRef("products", product_id)).sort(
         [("deployed_at", SortDirection.DESCENDING)]).to_list()
@@ -219,13 +215,13 @@ async def window_message(message: str | dict):
                          ask_user_streaming, process_generator_message)
     elif method == "to_generator":
         await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
-                           builder_completed, process_generator_message, ask_user)
+                           builder_completed, process_generator_message, ask_user_streaming)
     elif method == "load_template":
         template_text = landing_page_instructions
         await start_product(user_name, product_id,
-                             template_text,
-                             builder_completed,
-                             ask_user_streaming, process_generator_message)
+                            template_text,
+                            builder_completed,
+                            ask_user_streaming, process_generator_message)
     elif method == "deploy":
         site_name = message.get("body")
         # TODO: This needs to go awaay
@@ -266,7 +262,7 @@ async def respond(message: Message):
                                                          message.elements[0].path,
                                                          message.content)
             message.content = f"Here is a newly uploaded file: {blob_image_path} \n {message.content}.\n\nDon't forget to ask if the I would like to upload another file."
-            await to_builder(user_name, product_id, message.content, builder_completed, ask_user,
+            await to_builder(user_name, product_id, message.content, builder_completed, ask_user_streaming,
                              process_generator_message)
         except ValueError as e:
             await cl.Message(content=str(e)).send()
