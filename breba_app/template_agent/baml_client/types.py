@@ -41,8 +41,12 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 # #########################################################################
-# Generated classes (2)
+# Generated classes (3)
 # #########################################################################
+
+class LLMMessage(BaseModel):
+    role: typing.Union[typing_extensions.Literal['user'], typing_extensions.Literal['assistant']]
+    content: str
 
 class Question(BaseModel):
     question: str

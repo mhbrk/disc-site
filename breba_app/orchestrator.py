@@ -7,7 +7,7 @@ from breba_app.generator_agent.accumulator import TagAccumulator
 from breba_app.generator_agent.agent import agent as generator_agent
 from breba_app.storage import save_files
 from breba_app.template_agent.agent import TemplateAgent
-from breba_app.template_agent.baml_client.stream_types import WebsiteSpecification
+from breba_app.template_agent.baml_client.types import WebsiteSpecification
 from breba_app.ui_bus import update_versions_list
 from builder_agent.agent import agent as builder_agent
 
@@ -144,40 +144,42 @@ async def to_generator(user_name: str, session_id: str, message: str, builder_co
 async def to_builder(user_name: str, session_id: str, message: str, builder_completed_callback,
                      message_to_user_callback,
                      generator_callback):
-    await message_to_user_callback("Builder is working on the specification...")
-    new_spec = await builder_agent.get_last_spec(session_id)
-    if new_spec:
+    existing_spec = await builder_agent.get_last_spec(session_id)
+    if existing_spec:
+        await message_to_user_callback("Builder is working on the specification...")
         agent_response = await builder_editing_task(user_name, session_id, message)
+
+        is_task_completed = agent_response.get("is_task_complete")
+
+        if is_task_completed:
+            new_spec = agent_response.get("content")
+            await builder_completed_callback(new_spec)
+            await message_to_user_callback(
+                "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec")
+            await generator_task(user_name, session_id, new_spec, generator_callback)
+            new_html = generator_agent.get_last_html(session_id)
+
+            new_version = await save_files(user_name, session_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
+                                                                   ("index.html", new_html.encode("utf-8"),
+                                                                    "text/html")])
+            versions = await breba_app.storage.list_versions(user_name, session_id)
+            await update_versions_list(versions, new_version)
+        else:
+            message = agent_response.get("content")
+            logger.info(f"Waiting for user input: {message}")
+            await message_to_user_callback(message)
     else:
-        agent_message = Message(role="user", parts=[TextPart(text=message)])
-        agent_response = await builder_agent.invoke(user_name, session_id, agent_message)
-
-    is_task_completed = agent_response.get("is_task_complete")
-
-    if is_task_completed:
-        new_spec = agent_response.get("content")
-        await builder_completed_callback(new_spec)
-        await message_to_user_callback(
-            "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec")
-        await generator_task(user_name, session_id, new_spec, generator_callback)
-        new_html = generator_agent.get_last_html(session_id)
-
-        new_version = await save_files(user_name, session_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
-                                                               ("index.html", new_html.encode("utf-8"), "text/html")])
-        versions = await breba_app.storage.list_versions(user_name, session_id)
-        await update_versions_list(versions, new_version)
-    else:
-        message = agent_response.get("content")
-        logger.info(f"Waiting for user input: {message}")
-        await message_to_user_callback(message)
+        await start_product(user_name, session_id, message, builder_completed_callback, message_to_user_callback,
+                            generator_callback)
 
 
-async def start_template(user_name: str, product_id: str, template_text: str, builder_completed_callback,
+async def start_product(user_name: str, product_id: str, message: str, builder_completed_callback,
                          message_to_user_callback,
                          generator_callback):
     t_agent = TemplateAgent(user_name, product_id)
-    response = await t_agent.build_specification(template_text, message_to_user_callback)
+    response = await t_agent.build_specification(message, message_to_user_callback)
 
+    # We will only proceed to next step, if we have a website specification. Otherwise, wait for additional user input
     if isinstance(response, WebsiteSpecification):
         new_spec = response.spec
         await builder_completed_callback(new_spec)

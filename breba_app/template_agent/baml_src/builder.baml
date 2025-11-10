@@ -6,6 +6,11 @@ class WebsiteSpecification {
   spec string @description("Full website specification")
 }
 
+class LLMMessage {
+  role "user" | "assistant"
+  content string
+}
+
 template_string  SystemInfo() #"
     The website will be static, but when generating it, 
     the generator will be able to use tools to fetch dynamic content before generating the static html.  
@@ -109,23 +114,27 @@ http://example.com/my_css.css - Use this supplemental css file
 "#
 
 
-function GenerateSpecificationFromTemplate(
-  template: string,
-) -> Question | WebsiteSpecification {
+function GenerateSpecificationFromTemplate(messages: LLMMessage[]) -> Question | WebsiteSpecification {
   client GptOss
   prompt #"
     You are an AI agent. You are helping a user to craft a website specification (PRD). 
+
+    {{ ctx.output_format }}
 
     {{ SystemInfo() }}
 
     {{ TemplatingInstructions() }}
 
-    {{ GoodWebsiteSpecification() }}
+    {{ GoodWebsiteSpecification() }}    
 
+    {% for message in messages %}
+      {{ _.role(message.role) }} 
+      {{ message.content }}
+    {% endfor %}
+
+    {{ _.role("system") }}
     {{ ctx.output_format }}
 
-    {{ _.role("user") }}
-    Here are the instructions for building my website specification: {{ template }}
   "#
 }
 
@@ -133,7 +142,10 @@ function GenerateSpecificationFromTemplate(
 test SimpleQuestion {
   functions [GenerateSpecificationFromTemplate]
   args {
-    template #"
+    messages [
+      {
+        role "user"
+        content #"
 # Landing Page Template
 
 ## Questions to ask
@@ -203,6 +215,16 @@ Here are some example questions, but you could have more or fewer depending on t
 2) Please guide me through setting up social media links. You must ask questions, there should be no assumptions, or fake details.
 3) Please guide me through finalizing my form. You must ask questions, there should be no assumptions, or fake details.
 4) etc.
-"#
+        "#
+      }
+      {
+        role "assistant"
+        content "Please provide a brief business plan or a detailed description of your business idea."
+      }
+      {
+        role "user"
+        content "We are changing the way people treat documents. We are proposing that everything is a document or deserves a document. You morning routine is a document, your vacation plan is a document. And we will have AI agents who help you organize documents and present you the relevant info and documents when you need it."
+      }
+    ]
   }
 }

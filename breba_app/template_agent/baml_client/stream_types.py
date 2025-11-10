@@ -23,8 +23,12 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (2)
+# Generated classes (3)
 # #########################################################################
+
+class LLMMessage(BaseModel):
+    role: typing.Optional[typing.Union[str, str]] = None
+    content: typing.Optional[str] = None
 
 class Question(BaseModel):
     question: typing.Optional[str] = None

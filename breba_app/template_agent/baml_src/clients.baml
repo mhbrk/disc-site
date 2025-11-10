@@ -5,6 +5,9 @@ client<llm> GptOss {
   options {
     model "gpt-oss-120b"
     api_key env.OPENAI_API_KEY
+    reasoning {
+      effort "low"
+    }
   }
 }
 

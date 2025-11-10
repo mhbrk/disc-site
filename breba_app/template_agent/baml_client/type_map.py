@@ -16,6 +16,9 @@ from . import stream_types
 
 type_map = {
 
+    "types.LLMMessage": types.LLMMessage,
+    "stream_types.LLMMessage": stream_types.LLMMessage,
+
     "types.Question": types.Question,
     "stream_types.Question": stream_types.Question,
 

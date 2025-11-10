@@ -91,18 +91,18 @@ class BamlSyncClient:
     def parse_stream(self):
       return self.__llm_stream_parser
     
-    def GenerateSpecificationFromTemplate(self, template: str,
+    def GenerateSpecificationFromTemplate(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
     ) -> typing.Union["types.Question", "types.WebsiteSpecification"]:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
-            stream = self.stream.GenerateSpecificationFromTemplate(template=template,
+            stream = self.stream.GenerateSpecificationFromTemplate(messages=messages,
                 baml_options=baml_options)
             return stream.get_final_response()
         else:
             # Original non-streaming code
             result = self.__options.merge_options(baml_options).call_function_sync(function_name="GenerateSpecificationFromTemplate", args={
-                "template": template,
+                "messages": messages,
             })
             return typing.cast(typing.Union["types.Question", "types.WebsiteSpecification"], result.cast_to(types, types, stream_types, False, __runtime__))
     
@@ -114,11 +114,11 @@ class BamlStreamClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    def GenerateSpecificationFromTemplate(self, template: str,
+    def GenerateSpecificationFromTemplate(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlSyncStream[typing.Union["stream_types.Question", "stream_types.WebsiteSpecification"], typing.Union["types.Question", "types.WebsiteSpecification"]]:
         ctx, result = self.__options.merge_options(baml_options).create_sync_stream(function_name="GenerateSpecificationFromTemplate", args={
-            "template": template,
+            "messages": messages,
         })
         return baml_py.BamlSyncStream[typing.Union["stream_types.Question", "stream_types.WebsiteSpecification"], typing.Union["types.Question", "types.WebsiteSpecification"]](
           result,
@@ -134,11 +134,11 @@ class BamlHttpRequestClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    def GenerateSpecificationFromTemplate(self, template: str,
+    def GenerateSpecificationFromTemplate(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateSpecificationFromTemplate", args={
-            "template": template,
+            "messages": messages,
         }, mode="request")
         return result
     
@@ -149,11 +149,11 @@ class BamlHttpStreamRequestClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    def GenerateSpecificationFromTemplate(self, template: str,
+    def GenerateSpecificationFromTemplate(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateSpecificationFromTemplate", args={
-            "template": template,
+            "messages": messages,
         }, mode="stream")
         return result
     
