@@ -1,4 +1,5 @@
 import asyncio
+from typing import AsyncIterator
 
 import chainlit as cl
 from beanie import SortDirection, PydanticObjectId
@@ -10,18 +11,33 @@ from auth import verify_password
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product
 from breba_app.models.user import User
-from breba_app.orchestrator import init_state
+from breba_app.orchestrator import init_state, start_template
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active
+from breba_app.template_agent.product_types.landing_page import landing_page_instructions
 from breba_app.ui_bus import send_index_html_to_ui, send_specification_to_ui, send_index_html_chunk_to_ui, \
     update_products_list, update_versions_list
-from builder_agent.agent import agent as builder_agent
 from deployment_controller import run_deployment
 from llm_utils import get_product_name
 from orchestrator import to_builder, to_generator
-from storage import save_image_file_to_private, load_template, read_spec_text, \
+from storage import save_image_file_to_private, read_spec_text, \
     read_index_html, get_public_url
 
 PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
+
+
+async def ask_user_streaming(token_stream: AsyncIterator[str] | str):
+    if isinstance(token_stream, str):
+        msg = cl.Message(content=token_stream)
+    else:
+        msg = cl.Message(content="")
+
+        # Stream each token into it as they arrive
+        async for chunk in token_stream:
+            # TODO: should probably use StreamerClass because this is more of a spaghetti especially because of sequential streaming from BAML
+            await msg.stream_token(str(chunk), is_sequence=True)
+
+    # Send the fully streamed message once complete
+    await msg.send()
 
 
 async def populate_from_cloud_storage(user_name: str, session_id: str):
@@ -84,6 +100,14 @@ async def create_or_update_product_for(user_name: str, product_id: str | None = 
 
 
 async def builder_completed(payload: str):
+    """
+    This is called when the builder agent is done with the specification
+    It's primary job is to send website specification to whoever need to see it.
+    It also updates user_session in case we just created a new product. (This may be bad design)
+
+    :param payload: website specification
+    :return: None
+    """
     product_id = cl.user_session.get("product_id")
     user_name = cl.user_session.get("user").identifier
     # TODO: this product creating and naming needs to have a declarative method not piggy back off builder completed
@@ -197,24 +221,11 @@ async def window_message(message: str | dict):
         await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
                            builder_completed, process_generator_message, ask_user)
     elif method == "load_template":
-        # Copy template files to versioned filesystem
-        created_version = await load_template(user_name, product_id, message.get("body"))
-
-        async def refresh_versions(user_name: str, product_id: str, created_version: int):
-            versions = await list_versions(user_name, product_id)
-            await update_versions_list(versions, created_version)
-
-        # Now we can hydrate UI and agents and refresh versions list
-        await asyncio.gather(
-            populate_from_cloud_storage(user_name, product_id),
-            refresh_versions(user_name, product_id, created_version),
-        )
-
-        await to_builder(user_name, product_id,
-                         "The provided spec is actually a template. Follow the instructions to build the actual specification.",
-                         builder_completed,
-                         ask_user, process_generator_message)
-
+        template_text = landing_page_instructions
+        await start_template(user_name, product_id,
+                             template_text,
+                             builder_completed,
+                             ask_user_streaming, process_generator_message)
     elif method == "deploy":
         site_name = message.get("body")
         # TODO: This needs to go awaay

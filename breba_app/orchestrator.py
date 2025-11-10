@@ -6,6 +6,8 @@ from agent_model import TextPart, Message
 from breba_app.generator_agent.accumulator import TagAccumulator
 from breba_app.generator_agent.agent import agent as generator_agent
 from breba_app.storage import save_files
+from breba_app.template_agent.agent import TemplateAgent
+from breba_app.template_agent.baml_client.stream_types import WebsiteSpecification
 from breba_app.ui_bus import update_versions_list
 from builder_agent.agent import agent as builder_agent
 
@@ -133,7 +135,7 @@ async def to_generator(user_name: str, session_id: str, message: str, builder_co
         await message_to_user_callback(new_spec)
 
     new_version = await save_files(user_name, session_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
-                                             ("index.html", new_html.encode("utf-8"), "text/html")])
+                                                           ("index.html", new_html.encode("utf-8"), "text/html")])
 
     versions = await breba_app.storage.list_versions(user_name, session_id)
     await update_versions_list(versions, new_version)
@@ -168,3 +170,23 @@ async def to_builder(user_name: str, session_id: str, message: str, builder_comp
         message = agent_response.get("content")
         logger.info(f"Waiting for user input: {message}")
         await message_to_user_callback(message)
+
+
+async def start_template(user_name: str, product_id: str, template_text: str, builder_completed_callback,
+                         message_to_user_callback,
+                         generator_callback):
+    t_agent = TemplateAgent(user_name, product_id)
+    response = await t_agent.build_specification(template_text, message_to_user_callback)
+
+    if isinstance(response, WebsiteSpecification):
+        new_spec = response.spec
+        await builder_completed_callback(new_spec)
+        await message_to_user_callback(
+            "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec")
+        await generator_task(user_name, product_id, new_spec, generator_callback)
+        new_html = generator_agent.get_last_html(product_id)
+
+        new_version = await save_files(user_name, product_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
+                                                               ("index.html", new_html.encode("utf-8"), "text/html")])
+        versions = await breba_app.storage.list_versions(user_name, product_id)
+        await update_versions_list(versions, new_version)
