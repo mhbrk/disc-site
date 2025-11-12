@@ -91,7 +91,8 @@ class HTMLAgent:
         mcp_tools = await load_mcp_tools(session)
 
         self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
-        self.tools = base_tools + mcp_tools
+        # self.tools = base_tools + mcp_tools
+        self.tools = base_tools
         self.graph = create_react_agent(
             self.model,
             tools=self.tools,
