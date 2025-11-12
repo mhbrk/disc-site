@@ -1,17 +1,35 @@
-landing_page_instructions = """
-# Landing Page Template
+follow_up_instructions = """
+## Follow up Questions
+In order to avoid asking too many questions at the same time, the spec will contain AI generated text and assumptions.
+To make the website production ready, we will need to address all the assumptions and replace made up content with actual information.
+Follow up question buttons are red round buttons without text or icon and will be spaced across the top over the navbar. 
+The button click will send the questions to chat using: window.parent.postMessage({ action: "sendToChat", message: question });
+The question is from the user's perspective and is a shortcut to start a conversation about making sure the information is correct.
+The Follow up Buttons MUST NOT impact layout. They should be on top of the content.
+
+### Follow up Questions
+**Use these exact phrases**
+1) SEO tags may contain AI generated content. Ask questions to make sure the website has correct SEO tags.
+2) Let's fix the social media icons in the footer. Ask questions to make sure social media in the footer are correct.
+3) Ask questions to make sure form API_Key and other information is not AI Generated?  # Use the actual name of the form/button for the actual user website
+"""
+
+landing_page_instructions = f"""
+# Instructions for building a Landing Page
 
 ## Questions to ask
 - **You will only ask these exact questions, and no other questions**
 1. Ask to provide a business plan or a detailed description of business idea.
 2. Ask about Design system in non-technical terms and may not be familiar website design (ask a couple questions and then come up with the design system)
 
+{follow_up_instructions}
+
 ## Design System
 - You will come up with a color palette, typography, spacing, and other design elements.(Do not ask direct questions about this, just make up whatever you think makes sense given answers to your questions)
 
 ## Layout
 - You will have a navbar that scrolls to different section of the page.
-  - The navbar will have a logo and a call to action button
+  - The navbar will have a logo and a call to action button 
 - At the top the hero section with a call to action button and a catchy slogan.
 - Then Benefits section with 3 benefits
 - Then How It Works section with 3 steps
@@ -43,30 +61,63 @@ landing_page_instructions = """
 - Use Bootstrap 5.3.8 via CDN for core styling (without integrity check):
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+"""
 
+landing_page_coder_instructions = follow_up_instructions + """
 
-## Follow up Questions
-**This section is not supposed to be a part of the final specification. These are instructions for how let user fill in missing information. As information is filled in, you will remove the buttons form the spec.**
+Follow up button style to be put in the head styles tag:
+```css
+/* --- Circular red button --- */
+.follow-up-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background-color: #ff3b30;
+  box-shadow: 0 0 6px rgba(0,0,0,0.25);
+  cursor: pointer;
+  position: absolute;
+  right: 8px;
+  transition: transform 0.15s ease,
+              background-color 0.2s ease,
+              box-shadow 0.2s ease;
+}
 
-### Overview
-Once you are done with the template instructions, you will have produce a clear and concise website specification.
-However, in order to avoid asking too many questions at the same time, the spec will contain AI generated text and assumptions.
-To make the website production ready, we will need to address all the assumptions and replace made up content with actual information.
-To address this, we will place red circular buttons throughout the page that will initiate a conversation with the user to fill in missing information.
+.follow-up-btn:hover {
+  background-color: #d93025;
+  transform: scale(1.2);
+  box-shadow: 0 0 8px rgba(0,0,0,0.35);
+}
+```
 
-### Implementation
-The buttons will be small red circular buttons without text or icon and will be placed in the area where more user information is needed.
-The buttons will be on top of existing content, they should not affect layout.
-For sections not visible to the user such as head element, just put the red buttons at the top of the page.
+Script for adding before the closing body tag
+```javascript
+document.querySelectorAll("[data-follow-up-question]").forEach((btn) => {
+  const question = btn.getAttribute("data-follow-up-question");
+  btn.addEventListener("click", (event) => {
+    event.stopPropagation(); // if needed
+    window.parent.postMessage({ action: "sendToChat", message: question });
+  });
+});
+```
 
-The buttons will execute the following javascript:
-window.parent.postMessage({ action: "sendToChat", message: "Some message here"});
+Use this HTML for the buttons directly on the body tag:
+```html
+<button class="follow-up-btn" style="top: 10px; left: 50%;" 
+  title="Finalize SEO"
+  data-follow-up-question="SEO tags may contain AI generated content. Ask all necessary questions to make sure the website has correct SEO tags.">
+</button>
 
-The message field will be from the user perspective and will initiate a conversation about filling in missing information required to make the site ready for production.
-Here are some example questions, but you could have more or fewer depending on the user provided information and the spec:
-1) Please guide me through the process of finalizing SEO. You must ask questions, there should be no assumptions, or fake details.
-2) Please guide me through setting up social media links. You must ask questions, there should be no assumptions, or fake details.
-3) Please guide me through finalizing my form. You must ask questions, there should be no assumptions, or fake details.
-4) etc.
+<button class="follow-up-btn" style="top: 10px; left: calc(50% + 40px);" 
+  title="Finalize Social Media"
+  data-follow-up-question="Let's fix the social media icons in the footer. Ask all necessary questions to make sure social media in the footer are correct.">
+</button>
+
+<!-- Use the actual name of the form/button for the actual user website -->
+<button class="follow-up-btn" style="top: 10px; left: calc(50% + 80px);" 
+  title="Finalize Form Setup"
+  data-follow-up-question="Ask all necessary questions to make sure form API_Key and other form information is not AI Generated?">
+</button>
+```
 """
 

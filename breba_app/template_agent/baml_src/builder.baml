@@ -52,7 +52,7 @@ It will be shared with friends and should present all key event information clea
 The site must be:
 - Elegant and modern-minimal in visual style
 - Mobile-friendly and easy to navigate
-- Deliverable as a single static site folder (HTML, CSS, and assets)
+- Deliverable as a single static site self-contained in a single index.html file (HTML, CSS, JS)
 
 ---
 
@@ -91,7 +91,9 @@ Display clearly and accessibly:
 - **Location**: 123 ABC St, Seattle, WA
 - **Dress Code**: Black and White
 
-Style suggestion: display as a clean “invitation card” or adjacent to the photo.
+#### Follow Up Questions
+Would you like to finalize event location?
+Would you like to finalize event time?
 
 ---
 
@@ -105,17 +107,19 @@ Style suggestion: display as a clean “invitation card” or adjacent to the ph
 - Introduced with heading like _“Let me know if you’re coming!”_
 - Match the form styling (if possible) to the rest of the site
 
+#### Follow Up Questions
+Are you ready to provide your Google Form URL?
+Would you like to finalize event time?
 ---
 
 ### Available assets
-./images/logo_light.png - Use this for logo image for the light theme
-./images/avatar.png - Use this for my avatar
-http://example.com/my_css.css - Use this supplemental css file
+https://cdn.breba.app/images/logo_light.png - Use this for logo image for the light theme
+https://cdn.breba.app/images/avatar.png - Use this for my avatar
 "#
 
 
 function GenerateSpecificationFromTemplate(messages: LLMMessage[]) -> Question | WebsiteSpecification {
-  client GptOss
+  client CustomGPT5
   prompt #"
     You are an AI agent. You are helping a user to craft a website specification (PRD). 
 
@@ -138,7 +142,6 @@ function GenerateSpecificationFromTemplate(messages: LLMMessage[]) -> Question |
   "#
 }
 
-
 test SimpleQuestion {
   functions [GenerateSpecificationFromTemplate]
   args {
@@ -146,12 +149,27 @@ test SimpleQuestion {
       {
         role "user"
         content #"
-# Landing Page Template
+# Instructions for building a Landing Page
 
 ## Questions to ask
 - **You will only ask these exact questions, and no other questions**
 1. Ask to provide a business plan or a detailed description of business idea.
 2. Ask about Design system in non-technical terms and may not be familiar website design (ask a couple questions and then come up with the design system)
+
+## Follow up Questions
+In order to avoid asking too many questions at the same time, the spec will contain AI generated text and assumptions.
+To make the website production ready, we will need to address all the assumptions and replace made up content with actual information.
+Follow up question buttons are red round buttons without text or icon and will be spaced across the top over the navbar.
+The button click will send the questions to chat using: window.parent.postMessage({ action: "sendToChat", message: question });
+The question is from the user's perspective and is a shortcut to start a conversation about making sure the information is correct.
+The Follow up Buttons MUST NOT impact layout. They should be on top of the content.
+
+### Follow up Questions
+**Use these exact phrases**
+1) SEO tags may contain AI generated content. Ask questions to make sure the website has correct SEO tags.
+2) Let's fix the social media icons in the footer. Ask questions to make sure social media in the footer are correct.
+3) Ask questions to make sure form API_Key and other information is not AI Generated?  # Use the actual name of the form/button for the actual user website
+
 
 ## Design System
 - You will come up with a color palette, typography, spacing, and other design elements.(Do not ask direct questions about this, just make up whatever you think makes sense given answers to your questions)
@@ -189,33 +207,9 @@ test SimpleQuestion {
 - Use https://cdn.breba.app/templates/images/hero.jpg as the hero image in the Hero section.
 - Use Bootstrap 5.3.8 via CDN for core styling (without integrity check):
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script># Landing Page Template
 
-
-## Follow up Questions
-**This section is not supposed to be a part of the final specification. These are instructions for how let user fill in missing information. As information is filled in, you will remove the buttons form the spec.**
-
-### Overview
-Once you are done with the template instructions, you will have produce a clear and concise website specification.
-However, in order to avoid asking too many questions at the same time, the spec will contain AI generated text and assumptions.
-To make the website production ready, we will need to address all the assumptions and replace made up content with actual information.
-To address this, we will place red circular buttons throughout the page that will initiate a conversation with the user to fill in missing information.
-
-### Implementation
-The buttons will be small red circular buttons without text or icon and will be placed in the area where more user information is needed.
-The buttons will be on top of existing content, they should not affect layout.
-For sections not visible to the user such as head element, just put the red buttons at the top of the page.
-
-The buttons will execute the following javascript:
-window.parent.postMessage({ action: "sendToChat", message: "Some message here"});
-
-The message field will be from the user perspective and will initiate a conversation about filling in missing information required to make the site ready for production.
-Here are some example questions, but you could have more or fewer depending on the user provided information and the spec:
-1) Please guide me through the process of finalizing SEO. You must ask questions, there should be no assumptions, or fake details.
-2) Please guide me through setting up social media links. You must ask questions, there should be no assumptions, or fake details.
-3) Please guide me through finalizing my form. You must ask questions, there should be no assumptions, or fake details.
-4) etc.
-        "#
+"#
       }
       {
         role "assistant"
@@ -224,6 +218,14 @@ Here are some example questions, but you could have more or fewer depending on t
       {
         role "user"
         content "We are changing the way people treat documents. We are proposing that everything is a document or deserves a document. You morning routine is a document, your vacation plan is a document. And we will have AI agents who help you organize documents and present you the relevant info and documents when you need it."
+      }
+      {
+        role "assistant"
+        content "What overall vibe should the site convey (e.g., futuristic, friendly, professional, playful) and do you prefer light or dark theme?"
+      }
+      {
+        role "user"
+        content "Brutalist."
       }
     ]
   }

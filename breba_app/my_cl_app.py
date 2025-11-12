@@ -13,7 +13,8 @@ from breba_app.models.product import Product
 from breba_app.models.user import User
 from breba_app.orchestrator import init_state, start_product
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active
-from breba_app.template_agent.product_types.landing_page import landing_page_instructions
+from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
+    landing_page_coder_instructions
 from breba_app.ui_bus import send_index_html_to_ui, send_specification_to_ui, send_index_html_chunk_to_ui, \
     update_products_list, update_versions_list
 from deployment_controller import run_deployment
@@ -217,9 +218,8 @@ async def window_message(message: str | dict):
         await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
                            builder_completed, process_generator_message, ask_user_streaming)
     elif method == "load_template":
-        template_text = landing_page_instructions
         await start_product(user_name, product_id,
-                            template_text,
+                            landing_page_instructions, landing_page_coder_instructions,
                             builder_completed,
                             ask_user_streaming, process_generator_message)
     elif method == "deploy":
