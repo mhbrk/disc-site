@@ -23,15 +23,31 @@
 </div>
 
 <script>
+    let reloadTimeoutId = null;
+
     function reload() {
-        const currentContent = doc.documentElement.outerHTML;
-        const pNode = iframe.parentNode
-        pNode.removeChild(iframe);
-        pNode.appendChild(iframe);
-        doc = iframe.contentWindow.document;
-        doc.open();
-        doc.write(currentContent);
-        doc.close();
+        // reload only at certain internvals. This allows for contents to load before reading currentContent. (Chrome bug)
+        if (reloadTimeoutId === null) {
+            reloadTimeoutId = setTimeout(() => {
+                try {
+                    const currentContent = doc.documentElement.outerHTML;
+                    console.log("currentContent: " + currentContent)
+                    const pNode = iframe.parentNode
+                    pNode.removeChild(iframe);
+                    pNode.appendChild(iframe);
+                    doc = iframe.contentWindow.document;
+                    doc.open();
+                    doc.write(currentContent);
+                    doc.close();
+                } catch (err) {
+                    console.error("Reload failed:", err);
+                } finally {
+                    reloadTimeoutId = null
+                }
+            }, 500);
+        } else {
+            console.info("Reload is already scheduled")
+        }
     }
 
     function processChunk(chunk) {
@@ -46,30 +62,40 @@
         ].map(match => match[1]);
 
         for (const imageUrl of imageUrls) {
-            // Start polling every 5 seconds
-            const intervalId = setInterval(async () => {
-                try {
-                    const res = await fetch(imageUrl + "?v=" + Date.now(), {method: 'HEAD'});
-                    if (res.ok) {
-                        clearInterval(intervalId);
-                        console.log(`Image ${imageUrl} loaded — triggering reload`);
-                        if (!docOpened) {
-                            reload();
+            setTimeout(async () => {
+                const res = await fetch(imageUrl + "?v=" + Date.now(), {method: 'HEAD'});
+                // Only reload if image is not ready
+                if (!res.ok) {
+                    // Start polling every 5 seconds
+                    const intervalId = setInterval(async () => {
+                        try {
+                            const res = await fetch(imageUrl + "?v=" + Date.now(), {method: 'HEAD'});
+                            if (res.ok) {
+                                clearInterval(intervalId);
+                                console.log(`Image ${imageUrl} loaded — triggering reload`);
+                                if (!docOpened) {
+                                    reload();
+                                }
+                            } else {
+                                console.log(`Image ${imageUrl} not ready yet (status: ${res.status})`);
+                            }
+                        } catch (e) {
+                            console.log(`Error checking image ${imageUrl}:`, e);
                         }
-                    } else {
-                        console.log(`Image ${imageUrl} not ready yet (status: ${res.status})`);
-                    }
-                } catch (e) {
-                    console.log(`Error checking image ${imageUrl}:`, e);
+                    }, 5000);
+                } else {
+                    console.log(`Image ${imageUrl} already loaded`);
                 }
-            }, 5000);
+            }, 1);
         }
 
         if (chunk === "__completed__") {
             if (docOpened) {
+                console.log("chunk completed");
                 doc.close();
                 docOpened = false;
-                reload();
+                // Need to wait for page tha loads slowly
+                setTimeout(reload, 100)
             }
             spinner.classList.add('d-none');
             return;
@@ -77,11 +103,12 @@
 
         if (!docOpened) {
             // Initialize iframe content when first chunk arrives
+            console.log("chunk opened");
             doc.open();
             docOpened = true;
         }
 
-        doc.write(chunk);
+        doc.write(chunk.trim());
     }
 
     const iframe = document.getElementById('generator-frame');
@@ -191,11 +218,26 @@
     });
 
 
+    // Promise-based mutex for processChunk
+    let chunkLock = Promise.resolve();
+
+    function processChunkLocked(chunk) {
+        // Chain onto the previous promise
+        chunkLock = chunkLock
+            .then(() => {
+                // If processChunk ever becomes async, this still works
+                return Promise.resolve(processChunk(chunk));
+            })
+            .catch(err => {
+                console.error('Error in processChunk:', err);
+            });
+    }
+
     // Updates to builder panel
     window.addEventListener('message', (event) => {
         if (event.data.method === "to_generator") {
             console.log('Generator panel message:', event.data);
-            processChunk(event.data.body);
+            processChunkLocked(event.data.body);
         }
     });
 
