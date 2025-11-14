@@ -1,6 +1,6 @@
-from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Dict, List, Tuple
 
 from breba_app.template_agent.baml_client.stream_types import LLMMessage
 
@@ -8,7 +8,6 @@ from breba_app.template_agent.baml_client.stream_types import LLMMessage
 @dataclass
 class TemplateAgentState:
     messages: List[LLMMessage]
-    coder_instructions: Optional[str] = None
 
 
 # Keyed by (user_name, product_id)
@@ -23,4 +22,3 @@ def load_state(user_name: str, product_id: str) -> TemplateAgentState:
 def save_state(user_name: str, product_id: str, state: TemplateAgentState) -> None:
     """Persist the given state for a user/product pair."""
     _state_store[(user_name, product_id)] = state
-

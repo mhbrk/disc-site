@@ -19,15 +19,12 @@ async def to_user_stream(streamer: AsyncIterable[StreamQuestion | StreamWebSpeci
 
 
 class TemplateAgent:
-    def __init__(self, user_name: str, product_id: str, messages: list[LLMMessage] | None = None,
-                 coder_instructions: str = ""):
+    def __init__(self, user_name: str, product_id: str, messages: list[LLMMessage] | None = None):
         self.user_name = user_name
         self.product_id = product_id
         self.state = load_state(user_name, product_id)
         if messages:
             self.state.messages = messages
-        if coder_instructions:
-            self.state.coder_instructions = coder_instructions
 
     async def build_specification(self, message: str, ask_user_streaming_callback) -> WebsiteSpecification:
         # TODO: trim messages to allowable number of tokens

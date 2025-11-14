@@ -1,19 +1,3 @@
-follow_up_instructions = """
-## Follow up Questions
-In order to avoid asking too many questions at the same time, the spec will contain AI generated text and assumptions.
-To make the website production ready, we will need to address all the assumptions and replace made up content with actual information.
-Follow up question buttons are red round buttons without text or icon and will be spaced across the top over the navbar. 
-The button click will send the questions to chat using: window.parent.postMessage({ action: "sendToChat", message: question });
-The question is from the user's perspective and is a shortcut to start a conversation about making sure the information is correct.
-The Follow up Buttons MUST NOT impact layout. They should be on top of the content.
-
-### Follow up Questions
-**Use these exact phrases**
-1) SEO tags may contain AI generated content. Ask questions to make sure the website has correct SEO tags.
-2) Let's fix the social media icons in the footer. Ask questions to make sure social media in the footer are correct.
-3) Ask questions to make sure form API_Key and other information is not AI Generated?  # Use the actual name of the form/button for the actual user website
-"""
-
 landing_page_instructions = f"""
 # Instructions for building a Landing Page
 
@@ -21,8 +5,6 @@ landing_page_instructions = f"""
 - **You will only ask these exact questions, and no other questions**
 1. Ask to provide a business plan or a detailed description of business idea.
 2. Ask about Design system in non-technical terms and may not be familiar website design (ask a couple questions and then come up with the design system)
-
-{follow_up_instructions}
 
 ## Design System
 - You will come up with a color palette, typography, spacing, and other design elements.(Do not ask direct questions about this, just make up whatever you think makes sense given answers to your questions)
@@ -63,61 +45,21 @@ landing_page_instructions = f"""
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 """
 
-landing_page_coder_instructions = follow_up_instructions + """
-
-Follow up button style to be put in the head styles tag:
-```css
-/* --- Circular red button --- */
-.follow-up-btn {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: none;
-  background-color: #ff3b30;
-  box-shadow: 0 0 6px rgba(0,0,0,0.25);
-  cursor: pointer;
-  position: absolute;
-  right: 8px;
-  transition: transform 0.15s ease,
-              background-color 0.2s ease,
-              box-shadow 0.2s ease;
-}
-
-.follow-up-btn:hover {
-  background-color: #d93025;
-  transform: scale(1.2);
-  box-shadow: 0 0 8px rgba(0,0,0,0.35);
-}
-```
-
-Script for adding before the closing body tag
-```javascript
-document.querySelectorAll("[data-follow-up-question]").forEach((btn) => {
-  const question = btn.getAttribute("data-follow-up-question");
-  btn.addEventListener("click", (event) => {
-    event.stopPropagation(); // if needed
-    window.parent.postMessage({ action: "sendToChat", message: question });
-  });
-});
-```
-
-Use this HTML for the buttons directly on the body tag:
-```html
-<button class="follow-up-btn" style="top: 10px; left: 50%;" 
-  title="Finalize SEO"
-  data-follow-up-question="SEO tags may contain AI generated content. Ask all necessary questions to make sure the website has correct SEO tags.">
-</button>
-
-<button class="follow-up-btn" style="top: 10px; left: calc(50% + 40px);" 
-  title="Finalize Social Media"
-  data-follow-up-question="Let's fix the social media icons in the footer. Ask all necessary questions to make sure social media in the footer are correct.">
-</button>
-
-<!-- Use the actual name of the form/button for the actual user website -->
-<button class="follow-up-btn" style="top: 10px; left: calc(50% + 80px);" 
-  title="Finalize Form Setup"
-  data-follow-up-question="Ask all necessary questions to make sure form API_Key and other form information is not AI Generated?">
-</button>
-```
-"""
-
+landing_page_follow_up_questions = [
+    {
+        "title": "SEO",
+        "question": "Let's work on SEO. Ask questions to finalize the SEO. Do not make assumptions and do not make anything up. Ask as many questions as necessary."
+    },
+    {
+        "title": "Social Media",
+        "question": "Let's finalize social media icons in the footer. Ask questions to make sure social media in the footer are correct. Do not make assumptions and do not make anything up. Ask as many questions as necessary."
+    },
+    {
+        "title": "Call to action",
+        "question": "Ask questions to make sure form API_Key and other information is not AI Generated? Use the actual name of the form/button for the actual user website. Do not make assumptions and do not make anything up. Ask as many questions as necessary."
+    },
+    {
+        "title": "Analytics",
+        "question": "Ask questions to setup Google Analytics. Do not make assumptions and do not make anything up. Ask as many questions as necessary."
+    }
+]

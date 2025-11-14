@@ -1,5 +1,5 @@
-<!-- Versions Bar -->
-<div id="version-bar" class="d-flex align-items-center gap-2 p-2 border-bottom bg-light">
+<!-- Action Bar -->
+<div id="action-bar" class="d-flex align-items-center gap-2 p-2 border-bottom bg-light">
     <div class="dropdown">
         <button id="versionDropdown"
                 class="btn btn-version dropdown-toggle"
@@ -10,6 +10,9 @@
         </button>
         <ul id="versionMenu" class="dropdown-menu shadow-sm"></ul>
     </div>
+
+    <!-- Follow-up buttons container -->
+    <div id="followup-buttons" class="position-relative ms-3 follow-up-btn-container"></div>
 </div>
 
 <iframe id="generator-frame" class="w-100 h-100 d-block"></iframe>
@@ -297,13 +300,48 @@
         updateVersionLabel();
     }
 
-    // Listen for update_versions_list messages
     window.addEventListener('message', (event) => {
         if (event.data.method === 'update_versions_list') {
             const {versions, active} = event.data.body;
             versionsState.list = Array.isArray(versions) ? versions : [];
             versionsState.active = active;
             renderVersionsMenu();
+        }
+    });
+
+
+    function renderFollowUpButtons(questions) {
+        const container = document.getElementById('followup-buttons');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        questions.forEach((question, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'follow-up-btn';
+            btn.style.left = `${10 + idx * 50}px`;
+            btn.title = question.title || '';
+            btn.dataset.followUpQuestion = question.question || '';
+            btn.innerHTML = '<span class="material-icons">lightbulb_outline</span>';
+            // Attach click handler directly to this button
+            btn.addEventListener('click', () => {
+                const chat = document.getElementById('chainlit');
+                if (chat) {
+                    chat.contentWindow.postMessage({
+                        method: "to_builder",
+                        body: question.question
+                    }, '*');
+                }
+            });
+            container.appendChild(btn);
+        });
+    }
+
+
+    window.addEventListener('message', (event) => {
+        if (event.data.method === 'update_follow_up_questions_list') {
+            const questions_list = event.data.body || [];
+            renderFollowUpButtons(questions_list);
         }
     });
 

@@ -91,10 +91,6 @@ Display clearly and accessibly:
 - **Location**: 123 ABC St, Seattle, WA
 - **Dress Code**: Black and White
 
-#### Follow Up Questions
-Would you like to finalize event location?
-Would you like to finalize event time?
-
 ---
 
 ### RSVP Section
@@ -107,9 +103,6 @@ Would you like to finalize event time?
 - Introduced with heading like _“Let me know if you’re coming!”_
 - Match the form styling (if possible) to the rest of the site
 
-#### Follow Up Questions
-Are you ready to provide your Google Form URL?
-Would you like to finalize event time?
 ---
 
 ### Available assets
@@ -155,21 +148,6 @@ test SimpleQuestion {
 - **You will only ask these exact questions, and no other questions**
 1. Ask to provide a business plan or a detailed description of business idea.
 2. Ask about Design system in non-technical terms and may not be familiar website design (ask a couple questions and then come up with the design system)
-
-## Follow up Questions
-In order to avoid asking too many questions at the same time, the spec will contain AI generated text and assumptions.
-To make the website production ready, we will need to address all the assumptions and replace made up content with actual information.
-Follow up question buttons are red round buttons without text or icon and will be spaced across the top over the navbar.
-The button click will send the questions to chat using: window.parent.postMessage({ action: "sendToChat", message: question });
-The question is from the user's perspective and is a shortcut to start a conversation about making sure the information is correct.
-The Follow up Buttons MUST NOT impact layout. They should be on top of the content.
-
-### Follow up Questions
-**Use these exact phrases**
-1) SEO tags may contain AI generated content. Ask questions to make sure the website has correct SEO tags.
-2) Let's fix the social media icons in the footer. Ask questions to make sure social media in the footer are correct.
-3) Ask questions to make sure form API_Key and other information is not AI Generated?  # Use the actual name of the form/button for the actual user website
-
 
 ## Design System
 - You will come up with a color palette, typography, spacing, and other design elements.(Do not ask direct questions about this, just make up whatever you think makes sense given answers to your questions)

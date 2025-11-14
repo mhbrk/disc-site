@@ -170,13 +170,13 @@ async def to_builder(user_name: str, session_id: str, message: str, builder_comp
             logger.info(f"Waiting for user input: {message}")
             await message_to_user_callback(message)
     else:
-        await start_product(user_name, session_id, message, "", builder_completed_callback, message_to_user_callback,
+        await start_product(user_name, session_id, message, builder_completed_callback, message_to_user_callback,
                             generator_callback)
 
 
-async def start_product(user_name: str, product_id: str, message: str, coder_instructions: str,
+async def start_product(user_name: str, product_id: str, message: str,
                         builder_completed_callback, message_to_user_callback, generator_callback):
-    t_agent = TemplateAgent(user_name, product_id, coder_instructions=coder_instructions)
+    t_agent = TemplateAgent(user_name, product_id)
     response = await t_agent.build_specification(message, message_to_user_callback)
 
     # We will only proceed to next step, if we have a website specification. Otherwise, wait for additional user input
@@ -189,8 +189,7 @@ async def start_product(user_name: str, product_id: str, message: str, coder_ins
             message_to_user_callback(
                 "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec"),
             # This is kind of spaghetti code. The coder instructions should probably be on the orchestrator agent state
-            generator_task(user_name, product_id, new_spec + f"\n {t_agent.state.coder_instructions}",
-                           generator_callback))
+            generator_task(user_name, product_id, new_spec, generator_callback))
 
         new_html = generator_agent.get_last_html(product_id)
 
