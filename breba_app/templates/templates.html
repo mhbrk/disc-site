@@ -1,20 +1,22 @@
-<div id="template-cards" class="d-flex flex-wrap gap-3">
-    <!-- Card #1 -->
-    <div class="card p-2 col-12 col-xl-6">
-        <div class="card-body d-flex flex-column text-center">
-            <div class="mb-2">
-                <h6 class="card-title text-wrap mb-2">Landing Page With Google Form</h6>
-                <p class="card-text small text-wrap mb-4">
-                    Great for collecting user input on your landing page.
-                </p>
+<div id="templates-panel"
+     class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none bg-white w-100 border shadow rounded-3 p-3">
+    <div id="template-cards" class="d-flex flex-wrap gap-3">
+        <!-- Card #1 -->
+        <div class="card p-2 col-12 col-xl-6">
+            <div class="card-body d-flex flex-column text-center">
+                <div class="mb-2">
+                    <h6 class="card-title text-wrap mb-2">Landing Page With Google Form</h6>
+                    <p class="card-text small text-wrap mb-4">
+                        Great for collecting user input on your landing page.
+                    </p>
+                </div>
+                <button class="btn btn-primary btn-sm mt-auto start-template" data-template="landing_with_form">
+                    Start
+                </button>
             </div>
-            <button class="btn btn-primary btn-sm mt-auto start-template" data-template="landing_with_form">
-                Start
-            </button>
         </div>
     </div>
 </div>
-
 <script>
     document.querySelectorAll(".start-template").forEach(button => {
         button.addEventListener("click", async () => {
@@ -34,6 +36,9 @@
                     body: templateName
                 }, '*');
             }
+            const templatesPanel = document.getElementById("templates-panel");
+            hidePanel(templatesPanel)
+
         });
     });
 </script>
