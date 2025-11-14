@@ -48,18 +48,32 @@ landing_page_instructions = f"""
 landing_page_follow_up_questions = [
     {
         "title": "SEO",
-        "question": "Let's work on SEO. Ask questions to finalize the SEO. Do not make assumptions and do not make anything up. Ask as many questions as necessary."
+        "question": """I want to finalize SEO.Let's work on SEO. Ask me questions to make sure SEO is correct. 
+Do not make assumptions and do not make anything up. Ask as many questions as necessary.
+End result must have production ready SEO tags. 
+Ask one question at a time and wait for response before asking the next question."""
     },
     {
         "title": "Social Media",
-        "question": "Let's finalize social media icons in the footer. Ask questions to make sure social media in the footer are correct. Do not make assumptions and do not make anything up. Ask as many questions as necessary."
+        "question": """I want to finalize social media icons in the footer. 
+Ask me questions to make sure social media in the footer are correct. 
+Do not make assumptions and do not make anything up. Ask as many questions as necessary.
+End result must have the correct social media icons in the footer. 
+Ask one question at a time and wait for response before asking the next question."""
     },
     {
         "title": "Call to action",
-        "question": "Ask questions to make sure form API_Key and other information is not AI Generated? Use the actual name of the form/button for the actual user website. Do not make assumptions and do not make anything up. Ask as many questions as necessary."
+        "question": """I want to finalize the call to action form. Ask me questions to make sure form api keys, urls, 
+hidden fields and other information is correct. Do not make assumptions and do not make anything up. 
+Ask as many questions as necessary. End result must have a fully functional form that works with the outside 
+provider and no remaining questions to ask. Ask one question at a time and wait for response before asking 
+the next question."""
     },
     {
         "title": "Analytics",
-        "question": "Ask questions to setup Google Analytics. Do not make assumptions and do not make anything up. Ask as many questions as necessary."
+        "question": """I want to hook up Google Analytics. Ask questions to setup Google Analytics. 
+Do not make assumptions and do not make anything up. Ask as many questions as necessary.
+End result must have Google Analytics properly setup. 
+Ask one question at a time and wait for response before asking the next question."""
     }
 ]
