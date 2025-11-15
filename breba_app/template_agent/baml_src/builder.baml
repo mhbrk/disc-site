@@ -112,7 +112,7 @@ https://cdn.breba.app/images/avatar.png - Use this for my avatar
 
 
 function GenerateSpecificationFromTemplate(messages: LLMMessage[]) -> Question | WebsiteSpecification {
-  client CustomGPT5
+  client Gpt5Low
   prompt #"
     You are an AI agent. You are helping a user to craft a website specification (PRD). 
 

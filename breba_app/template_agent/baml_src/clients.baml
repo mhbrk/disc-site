@@ -11,6 +11,28 @@ client<llm> GptOss {
   }
 }
 
+client<llm> Gpt5Medium {
+  provider openai-responses
+  options {
+    model "gpt-5.1"
+    api_key env.OPENAI_API_KEY
+    reasoning {
+      effort "medium"
+    }
+  }
+}
+
+client<llm> Gpt5Low {
+  provider openai-responses
+  options {
+    model "gpt-5.1"
+    api_key env.OPENAI_API_KEY
+    reasoning {
+      effort "low"
+    }
+  }
+}
+
 // Using the new OpenAI Responses API for enhanced formatting
 client<llm> CustomGPT5 {
   provider openai-responses

@@ -93,7 +93,7 @@ class BamlSyncClient:
     
     def GenerateFollowUpQuestions(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
-    ) -> typing.List["types.Question"]:
+    ) -> str:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             stream = self.stream.GenerateFollowUpQuestions(messages=messages,
@@ -104,7 +104,7 @@ class BamlSyncClient:
             result = self.__options.merge_options(baml_options).call_function_sync(function_name="GenerateFollowUpQuestions", args={
                 "messages": messages,
             })
-            return typing.cast(typing.List["types.Question"], result.cast_to(types, types, stream_types, False, __runtime__))
+            return typing.cast(str, result.cast_to(types, types, stream_types, False, __runtime__))
     def GenerateSpecificationFromTemplate(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
     ) -> typing.Union["types.Question", "types.WebsiteSpecification"]:
@@ -130,14 +130,14 @@ class BamlStreamClient:
 
     def GenerateFollowUpQuestions(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlSyncStream[typing.List["stream_types.Question"], typing.List["types.Question"]]:
+    ) -> baml_py.BamlSyncStream[str, str]:
         ctx, result = self.__options.merge_options(baml_options).create_sync_stream(function_name="GenerateFollowUpQuestions", args={
             "messages": messages,
         })
-        return baml_py.BamlSyncStream[typing.List["stream_types.Question"], typing.List["types.Question"]](
+        return baml_py.BamlSyncStream[str, str](
           result,
-          lambda x: typing.cast(typing.List["stream_types.Question"], x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(typing.List["types.Question"], x.cast_to(types, types, stream_types, False, __runtime__)),
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
     def GenerateSpecificationFromTemplate(self, messages: typing.List["types.LLMMessage"],
