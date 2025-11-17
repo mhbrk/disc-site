@@ -48,10 +48,11 @@ landing_page_instructions = f"""
 landing_page_follow_up_questions = [
     {
         "title": "SEO",
-        "question": """I want to finalize SEO.Let's work on SEO. Ask me questions to make sure SEO is correct. 
+        "question": """I want to finalize SEO. Let's work on SEO. I'm not a developer and don't know anything about html tags.
+Ask me questions to make sure SEO is correct. 
 Do not make assumptions and do not make anything up. Ask as many questions as necessary.
-End result must have production ready SEO tags. 
-Ask one question at a time and wait for response before asking the next question."""
+End result must have production ready SEO tags including images and text that will show up when sharing the website on social media.
+Ask one question at a time and wait for response before asking the next question. When asking questions about text, such as title and description, make a suggestion."""
     },
     {
         "title": "Social Media",
@@ -63,11 +64,18 @@ Ask one question at a time and wait for response before asking the next question
     },
     {
         "title": "Call to action",
-        "question": """I want to finalize the call to action form. Ask me questions to make sure form api keys, urls, 
-hidden fields and other information is correct. Do not make assumptions and do not make anything up. 
-Ask as many questions as necessary. End result must have a fully functional form that works with the outside 
+        "question": """I want to finalize the call to action form. Ask me questions to make sure form api key and subject keys are correct. 
+End result must have a fully functional form that works with the outside 
 provider and no remaining questions to ask. Ask one question at a time and wait for response before asking 
-the next question."""
+the next question. If I don't know something, just use default values. I'm not a developer.
+
+Don't ask questions about:
+1) Email recipient because this is setup on the backend.
+2) replyTo field should be set to "@" which means the email field from the form will be used.
+3) Endpoint URL is always https://api.staticforms.xyz/submit
+4) Always use honeypot field for security
+
+**Notice that apiKey is the name of the field for staticforms.xyz.**"""
     },
     {
         "title": "Analytics",
