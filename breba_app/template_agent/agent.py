@@ -1,10 +1,15 @@
 from typing import AsyncIterable
 
+from langchain_core.messages import trim_messages
+from langchain_core.messages.utils import count_tokens_approximately, convert_to_openai_messages
+
 from breba_app.template_agent.baml_client.async_client import b
 from breba_app.template_agent.baml_client.stream_types import Question as StreamQuestion, LLMMessage, \
     WebsiteSpecification as StreamWebSpecification
 from breba_app.template_agent.baml_client.types import WebsiteSpecification, Question
 from breba_app.template_agent.memory_store import load_state, save_state
+
+TOKEN_LIMIT = 100_000
 
 
 async def to_user_stream(streamer: AsyncIterable[StreamQuestion | StreamWebSpecification]):
@@ -27,19 +32,31 @@ class TemplateAgent:
             self.state.messages = messages
 
     async def build_specification(self, message: str, ask_user_streaming_callback) -> WebsiteSpecification:
-        # TODO: trim messages to allowable number of tokens
         self.state.messages.append(LLMMessage(role="user", content=message))
-        stream = b.stream.GenerateSpecificationFromTemplate(self.state.messages)
+        dict_messages = [message.model_dump() for message in self.state.messages]
+        # "human" is the langchain type for "user" role messages
+        trimmed_messages_lc = trim_messages(dict_messages, strategy="last",
+                                            token_counter=count_tokens_approximately, max_tokens=TOKEN_LIMIT,
+                                            start_on=["human"], include_system=True)
 
-        await ask_user_streaming_callback(to_user_stream(stream))
+        trimmed_messages = convert_to_openai_messages(trimmed_messages_lc)
 
-        agent_response = await stream.get_final_response()
-
-        if isinstance(agent_response, Question):
-            self.state.messages.append(LLMMessage(role="assistant", content=agent_response.question))
-        elif isinstance(agent_response, WebsiteSpecification):
-            self.state.messages.append(LLMMessage(role="assistant", content=agent_response.spec))
-
-        save_state(self.user_name, self.product_id, self.state)
+        if trimmed_messages:
+            # We are just going to pass a dict that has proper duck type
+            stream = b.stream.GenerateSpecificationFromTemplate(trimmed_messages)
+            await ask_user_streaming_callback(to_user_stream(stream))
+            agent_response = await stream.get_final_response()
+            if isinstance(agent_response, Question):
+                self.state.messages.append(LLMMessage(role="assistant", content=agent_response.question))
+            elif isinstance(agent_response, WebsiteSpecification):
+                self.state.messages.append(LLMMessage(role="assistant", content=agent_response.spec))
+            save_state(self.user_name, self.product_id, self.state)
+        else:
+            # This will only happen when the last user message is very long.
+            # We do not want to add it to the state because it will hide all older messages. So we will not save state
+            self.state.messages.pop()
+            message = f"You have exceeded the token limit({TOKEN_LIMIT} tokens). Please provide a shorter description."
+            await ask_user_streaming_callback(message)
+            agent_response = Question(question=message)
 
         return agent_response
