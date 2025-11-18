@@ -31,7 +31,7 @@ class TemplateAgent:
         if messages:
             self.state.messages = messages
 
-    async def build_specification(self, message: str, ask_user_streaming_callback) -> WebsiteSpecification:
+    async def build_specification(self, message: str, ask_user_streaming_callback) -> WebsiteSpecification | Question:
         self.state.messages.append(LLMMessage(role="user", content=message))
         dict_messages = [message.model_dump() for message in self.state.messages]
         # "human" is the langchain type for "user" role messages
