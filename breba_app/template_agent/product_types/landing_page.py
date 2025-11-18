@@ -80,8 +80,10 @@ Don't ask questions about:
     {
         "title": "Analytics",
         "question": """I want to hook up Google Analytics. Ask questions to setup Google Analytics. 
-Do not make assumptions and do not make anything up. Ask as many questions as necessary.
+We will use the instructions for "Add the Google tag directly to your web pages". 
+This means asking the user for the script from Google Analytics and then make sure the script goes into the head element. 
 End result must have Google Analytics properly setup. 
-Ask one question at a time and wait for response before asking the next question."""
+Ask one question at a time and wait for response before asking the next question.
+Remember I'm not a developer. In can follow instructions and copy and paste code from google analytics, but I don't know anything about HTML"""
     }
 ]
