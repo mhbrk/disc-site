@@ -1,5 +1,5 @@
-<!-- Versions Bar -->
-<div id="version-bar" class="d-flex align-items-center gap-2 p-2 border-bottom bg-light">
+<!-- Action Bar -->
+<div id="action-bar" class="d-flex align-items-center gap-2 p-2 border-bottom bg-light">
     <div class="dropdown">
         <button id="versionDropdown"
                 class="btn btn-version dropdown-toggle"
@@ -10,6 +10,9 @@
         </button>
         <ul id="versionMenu" class="dropdown-menu shadow-sm"></ul>
     </div>
+
+    <!-- Follow-up buttons container -->
+    <div id="followup-buttons" class="position-relative ms-3 follow-up-btn-container"></div>
 </div>
 
 <iframe id="generator-frame" class="w-100 h-100 d-block"></iframe>
@@ -23,15 +26,31 @@
 </div>
 
 <script>
+    let reloadTimeoutId = null;
+
     function reload() {
-        const currentContent = doc.documentElement.outerHTML;
-        const pNode = iframe.parentNode
-        pNode.removeChild(iframe);
-        pNode.appendChild(iframe);
-        doc = iframe.contentWindow.document;
-        doc.open();
-        doc.write(currentContent);
-        doc.close();
+        // reload only at certain internvals. This allows for contents to load before reading currentContent. (Chrome bug)
+        if (reloadTimeoutId === null) {
+            reloadTimeoutId = setTimeout(() => {
+                try {
+                    const currentContent = doc.documentElement.outerHTML;
+                    console.log("currentContent: " + currentContent)
+                    const pNode = iframe.parentNode
+                    pNode.removeChild(iframe);
+                    pNode.appendChild(iframe);
+                    doc = iframe.contentWindow.document;
+                    doc.open();
+                    doc.write(currentContent);
+                    doc.close();
+                } catch (err) {
+                    console.error("Reload failed:", err);
+                } finally {
+                    reloadTimeoutId = null
+                }
+            }, 500);
+        } else {
+            console.info("Reload is already scheduled")
+        }
     }
 
     function processChunk(chunk) {
@@ -46,30 +65,40 @@
         ].map(match => match[1]);
 
         for (const imageUrl of imageUrls) {
-            // Start polling every 5 seconds
-            const intervalId = setInterval(async () => {
-                try {
-                    const res = await fetch(imageUrl + "?v=" + Date.now(), {method: 'HEAD'});
-                    if (res.ok) {
-                        clearInterval(intervalId);
-                        console.log(`Image ${imageUrl} loaded — triggering reload`);
-                        if (!docOpened) {
-                            reload();
+            setTimeout(async () => {
+                const res = await fetch(imageUrl + "?v=" + Date.now(), {method: 'HEAD'});
+                // Only reload if image is not ready
+                if (!res.ok) {
+                    // Start polling every 5 seconds
+                    const intervalId = setInterval(async () => {
+                        try {
+                            const res = await fetch(imageUrl + "?v=" + Date.now(), {method: 'HEAD'});
+                            if (res.ok) {
+                                clearInterval(intervalId);
+                                console.log(`Image ${imageUrl} loaded — triggering reload`);
+                                if (!docOpened) {
+                                    reload();
+                                }
+                            } else {
+                                console.log(`Image ${imageUrl} not ready yet (status: ${res.status})`);
+                            }
+                        } catch (e) {
+                            console.log(`Error checking image ${imageUrl}:`, e);
                         }
-                    } else {
-                        console.log(`Image ${imageUrl} not ready yet (status: ${res.status})`);
-                    }
-                } catch (e) {
-                    console.log(`Error checking image ${imageUrl}:`, e);
+                    }, 5000);
+                } else {
+                    console.log(`Image ${imageUrl} already loaded`);
                 }
-            }, 5000);
+            }, 1);
         }
 
         if (chunk === "__completed__") {
             if (docOpened) {
+                console.log("chunk completed");
                 doc.close();
                 docOpened = false;
-                reload();
+                // Need to wait for page tha loads slowly
+                setTimeout(reload, 100)
             }
             spinner.classList.add('d-none');
             return;
@@ -77,11 +106,12 @@
 
         if (!docOpened) {
             // Initialize iframe content when first chunk arrives
+            console.log("chunk opened");
             doc.open();
             docOpened = true;
         }
 
-        doc.write(chunk);
+        doc.write(chunk.trim());
     }
 
     const iframe = document.getElementById('generator-frame');
@@ -191,11 +221,26 @@
     });
 
 
+    // Promise-based mutex for processChunk
+    let chunkLock = Promise.resolve();
+
+    function processChunkLocked(chunk) {
+        // Chain onto the previous promise
+        chunkLock = chunkLock
+            .then(() => {
+                // If processChunk ever becomes async, this still works
+                return Promise.resolve(processChunk(chunk));
+            })
+            .catch(err => {
+                console.error('Error in processChunk:', err);
+            });
+    }
+
     // Updates to builder panel
     window.addEventListener('message', (event) => {
         if (event.data.method === "to_generator") {
             console.log('Generator panel message:', event.data);
-            processChunk(event.data.body);
+            processChunkLocked(event.data.body);
         }
     });
 
@@ -255,13 +300,48 @@
         updateVersionLabel();
     }
 
-    // Listen for update_versions_list messages
     window.addEventListener('message', (event) => {
         if (event.data.method === 'update_versions_list') {
             const {versions, active} = event.data.body;
             versionsState.list = Array.isArray(versions) ? versions : [];
             versionsState.active = active;
             renderVersionsMenu();
+        }
+    });
+
+
+    function renderFollowUpButtons(questions) {
+        const container = document.getElementById('followup-buttons');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        questions.forEach((question, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'follow-up-btn';
+            btn.style.left = `${10 + idx * 50}px`;
+            btn.title = question.title || '';
+            btn.dataset.followUpQuestion = question.question || '';
+            btn.innerHTML = '<span class="material-icons">lightbulb_outline</span>';
+            // Attach click handler directly to this button
+            btn.addEventListener('click', () => {
+                const chat = document.getElementById('chainlit');
+                if (chat) {
+                    chat.contentWindow.postMessage({
+                        method: "to_builder",
+                        body: question.question
+                    }, '*');
+                }
+            });
+            container.appendChild(btn);
+        });
+    }
+
+
+    window.addEventListener('message', (event) => {
+        if (event.data.method === 'update_follow_up_questions_list') {
+            const questions_list = event.data.body || [];
+            renderFollowUpButtons(questions_list);
         }
     });
 

@@ -198,6 +198,33 @@
         font-weight: 600;
     }
 </style>
+<!--Preview Panel styles -->
+<link rel="stylesheet" href="{{ asset('preview_panel_styles.css') }}">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script>
+
+    function triggerOverlay() {
+        const leftContainer = document.getElementById('left-panels');
+        const HOLD_MS = 180;
+        if (!leftContainer) return;
+        void leftContainer.offsetHeight;
+        leftContainer.classList.add('reveal-overlay');
+        setTimeout(() => {
+            leftContainer.classList.remove('reveal-overlay');
+        }, HOLD_MS);
+    }
+
+    function hidePanel(panel) {
+        const buttonId = 'toggle-' + panel.id.replace('-panel', '');
+        const button = document.getElementById(buttonId);
+        const D_NONE = "d-none";
+        const inputTab = document.querySelector('#input-panel');
+        panel.classList.add(D_NONE);
+        if (button) button.classList.remove('active');
+        inputTab.classList.remove(D_NONE);
+        triggerOverlay();
+    }
+</script>
 {% endblock %}
 
 {% block content %}
@@ -260,10 +287,7 @@
                  class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none bg-white w-100 border shadow rounded-3 p-3">
                 {% include "deploy.html" %}
             </div>
-            <div id="templates-panel"
-                 class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none bg-white w-100 border shadow rounded-3 p-3">
-                {% include "templates.html" %}
-            </div>
+            {% include "templates.html" %}
             <div id="products-panel"
                  class="panel left-panel flex-fill d-flex flex-column overflow-auto d-none bg-white w-100 border shadow rounded-3 p-3">
                 {% include "products.html" %}
@@ -293,16 +317,6 @@
             leftContainer.classList.add('min-66');
         }
 
-        function triggerOverlay() {
-            const HOLD_MS = 180;
-            if (!leftContainer) return;
-            void leftContainer.offsetHeight;
-            leftContainer.classList.add('reveal-overlay');
-            setTimeout(() => {
-                leftContainer.classList.remove('reveal-overlay');
-            }, HOLD_MS);
-        }
-
         // initialize
         setLeftMinHeight();
 
@@ -325,13 +339,8 @@
 
         function togglePanel(panel) {
             const isVisible = !panel.classList.contains(D_NONE);
-            const buttonId = 'toggle-' + panel.id.replace('-panel', '');
-            const button = document.getElementById(buttonId);
             if (isVisible) {
-                panel.classList.add(D_NONE);
-                if (button) button.classList.remove('active');
-                inputTab.classList.remove(D_NONE);
-                triggerOverlay();
+                hidePanel(panel);
             } else {
                 panel.classList.remove(D_NONE);
                 inputTab.classList.add(D_NONE);

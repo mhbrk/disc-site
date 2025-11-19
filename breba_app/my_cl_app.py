@@ -1,4 +1,5 @@
 import asyncio
+from typing import AsyncIterator
 
 import chainlit as cl
 from beanie import SortDirection, PydanticObjectId
@@ -10,22 +11,41 @@ from auth import verify_password
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product
 from breba_app.models.user import User
-from breba_app.orchestrator import init_state
+from breba_app.orchestrator import init_state, start_product
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active
+from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
+    landing_page_follow_up_questions
 from breba_app.ui_bus import send_index_html_to_ui, send_specification_to_ui, send_index_html_chunk_to_ui, \
-    update_products_list, update_versions_list
+    update_products_list, update_versions_list, update_follow_up_questions_list
 from deployment_controller import run_deployment
 from llm_utils import get_product_name
 from orchestrator import to_builder, to_generator
-from storage import save_image_file_to_private, load_template, read_spec_text, \
+from storage import save_image_file_to_private, read_spec_text, \
     read_index_html, get_public_url
 
 PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
 
 
+async def ask_user_streaming(token_stream: AsyncIterator[str] | str):
+    if isinstance(token_stream, str):
+        msg = cl.Message(content=token_stream)
+    else:
+        msg = cl.Message(content="")
+
+        # Stream each token into it as they arrive
+        async for chunk in token_stream:
+            await msg.stream_token(str(chunk), is_sequence=True)
+
+    # Send the fully streamed message once complete
+    if msg.content:
+        await msg.send()
+
+
 async def populate_from_cloud_storage(user_name: str, session_id: str):
-    spec = await read_spec_text(user_name, session_id)
-    product = await read_index_html(user_name, session_id)
+    spec, product = await asyncio.gather(
+        read_spec_text(user_name, session_id),
+        read_index_html(user_name, session_id),
+    )
 
     await asyncio.gather(
         init_state(session_id, spec, product),
@@ -81,6 +101,14 @@ async def create_or_update_product_for(user_name: str, product_id: str | None = 
 
 
 async def builder_completed(payload: str):
+    """
+    This is called when the builder agent is done with the specification
+    It's primary job is to send website specification to whoever need to see it.
+    It also updates user_session in case we just created a new product. (This may be bad design)
+
+    :param payload: website specification
+    :return: None
+    """
     product_id = cl.user_session.get("product_id")
     user_name = cl.user_session.get("user").identifier
     # TODO: this product creating and naming needs to have a declarative method not piggy back off builder completed
@@ -101,10 +129,6 @@ async def process_generator_message(message: str):
             content="The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website").send()
     else:
         await send_index_html_chunk_to_ui(message)
-
-
-async def ask_user(message: str):
-    await cl.Message(content=message).send()
 
 
 async def update_deployments_list(product_id: PydanticObjectId):
@@ -189,15 +213,18 @@ async def window_message(message: str | dict):
     if method == "to_builder":
         await to_builder(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
                          builder_completed,
-                         ask_user, process_generator_message)
+                         ask_user_streaming, process_generator_message)
     elif method == "to_generator":
         await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
-                           builder_completed, process_generator_message, ask_user)
+                           builder_completed, process_generator_message, ask_user_streaming)
     elif method == "load_template":
-        created_version = await load_template(user_name, product_id, message.get("body"))
-        await populate_from_cloud_storage(user_name, product_id)
-        versions = await list_versions(user_name, product_id)
-        asyncio.create_task(update_versions_list(versions, created_version))
+        await start_product(
+            user_name, product_id,
+            landing_page_instructions,
+            builder_completed,
+            ask_user_streaming, process_generator_message
+        )
+        await update_follow_up_questions_list(landing_page_follow_up_questions)
     elif method == "deploy":
         site_name = message.get("body")
         # TODO: This needs to go awaay
@@ -238,7 +265,7 @@ async def respond(message: Message):
                                                          message.elements[0].path,
                                                          message.content)
             message.content = f"Here is a newly uploaded file: {blob_image_path} \n {message.content}.\n\nDon't forget to ask if the I would like to upload another file."
-            await to_builder(user_name, product_id, message.content, builder_completed, ask_user,
+            await to_builder(user_name, product_id, message.content, builder_completed, ask_user_streaming,
                              process_generator_message)
         except ValueError as e:
             await cl.Message(content=str(e)).send()
@@ -246,7 +273,7 @@ async def respond(message: Message):
             await cl.Message(
                 content="Something went wrong while uploading the file. Try again later, or contact support.").send()
     else:
-        await to_builder(user_name, product_id, message.content, builder_completed, ask_user,
+        await to_builder(user_name, product_id, message.content, builder_completed, ask_user_streaming,
                          process_generator_message)
 
 

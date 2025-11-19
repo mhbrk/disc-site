@@ -43,7 +43,7 @@ class BuilderAgent:
 
     def __init__(self):
         self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
-        self.editing_model = ChatOpenAI(model="gpt-5", reasoning_effort="minimal")
+        self.editing_model = ChatOpenAI(model="gpt-5", reasoning_effort="minimal", use_responses_api=True)
 
         # Create a checkpointer, could use MongoDB checkpointer in the future
         checkpointer = MemorySaver()
@@ -107,7 +107,7 @@ class BuilderAgent:
         """
 
         if len(state["messages"]) > 1:
-            message = state["messages"][-1].content
+            message = state["messages"][-1].text
             logger.info(f"Verifying if diff message: {message}")
             # builder is a special case when LLM decides that it needs to rebuild the spec
             if message == "builder":
@@ -125,7 +125,7 @@ class BuilderAgent:
         :return: True if last message has a final prompt
         """
         if len(state["messages"]) > 1:
-            message = state["messages"][-1].content
+            message = state["messages"][-1].text
             split_message = message.split("::final website specification::")
 
             if len(split_message) > 1 and split_message[1]:
@@ -138,7 +138,7 @@ class BuilderAgent:
         :param state: state of the graph just before the interrupt.
         :return: state updated with the message from the client.
         """
-        question = state["messages"][-1].content
+        question = state["messages"][-1].text
         answer: Message = interrupt(question)
         logger.info(f"User input: {answer}")
         return {"messages": [{"role": answer.role, "content": answer.parts[0].text}]}
@@ -148,7 +148,7 @@ class BuilderAgent:
         This is a shortcut to structured output without using an extra LLM invokation.
         """
         last_message = state["messages"][-1]
-        message = last_message.content
+        message = last_message.text
         split_message = message.split("::final website specification::")
         prompt = ""
         if len(split_message) > 1:
@@ -189,7 +189,7 @@ class BuilderAgent:
         This is a shortcut to structured output without using an extra LLM invokation.
         """
         last_message = state["messages"][-1]
-        message = last_message.content
+        message = last_message.text
         logger.info(f"Attempting to apply diff: {message}")
 
         try:
@@ -224,9 +224,10 @@ class BuilderAgent:
                                                                                             config['configurable'][
                                                                                                 "thread_id"]),
                                                                 current_time=current_time))
-        input_messages = [system_message] + example_messages
+        system_messages = [system_message] + example_messages
         reminder = SystemMessage(content=system_reminder)
-        response = await self.editing_model.ainvoke(input_messages + trimmed_messages + [reminder])
+        trimmed_messages.insert(-1, reminder)
+        response = await self.editing_model.ainvoke(system_messages + trimmed_messages)
         return {"messages": [response], "current_agent": "editing_spec_agent"}
 
     def visualize(self):
@@ -294,7 +295,7 @@ class BuilderAgent:
             return {
                 "is_task_complete": False,
                 "require_user_input": True,
-                "content": current_state.values["messages"][-1].content
+                "content": current_state.values["messages"][-1].text
             }
         elif current_state.values["prompt"]:
             return {
