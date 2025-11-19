@@ -3,6 +3,7 @@ import datetime
 import logging
 from typing import Any, Dict, AsyncIterable
 
+from langchain.agents.middleware import before_model
 from langchain_core.callbacks import UsageMetadataCallbackHandler
 from langchain_core.messages import trim_messages, HumanMessage
 from langchain_core.messages.utils import count_tokens_approximately
@@ -10,8 +11,7 @@ from langchain_mcp_adapters.tools import load_mcp_tools
 from langchain_openai import ChatOpenAI
 from langchain_tavily import TavilySearch
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.prebuilt import create_react_agent
-from langgraph.prebuilt.chat_agent_executor import AgentState
+from langchain.agents import AgentState, create_agent
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
@@ -37,7 +37,7 @@ def extract_html_content(content: str):
     else:
         return ""
 
-
+@before_model
 def pre_model_hook(state):
     trimmed_messages = trim_messages(
         state["messages"],
@@ -93,13 +93,13 @@ class HTMLAgent:
         self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
         # self.tools = base_tools + mcp_tools
         self.tools = base_tools
-        self.graph = create_react_agent(
+        self.graph = create_agent(
             self.model,
             tools=self.tools,
             state_schema=GeneratorState,
-            pre_model_hook=pre_model_hook,
+            middleware=[pre_model_hook],
             checkpointer=memory,
-            prompt=self.SYSTEM_INSTRUCTION
+            system_prompt=self.SYSTEM_INSTRUCTION
         )
 
         self._mcp_session = session

@@ -130,6 +130,8 @@ async def to_generator(user_name: str, session_id: str, message: str, builder_co
     is_task_completed = agent_response.get("is_task_complete")
 
     if is_task_completed:
+        # TODO: This shouldn't be needed. Future calls to generator need to include the actual spec
+        generator_agent.set_spec(session_id, new_spec)
         await builder_completed_callback(new_spec)
     else:
         logger.info(f"Waiting for user input: {new_spec}")
