@@ -24,6 +24,8 @@ USERS_BUCKET_NAME: str = os.getenv("USERS_BUCKET")
 CLOUDFLARE_ENDPOINT: str = os.getenv("CLOUDFLARE_ENDPOINT")
 CDN_BASE_URL: str = os.getenv("CDN_BASE_URL") or "https://cdn.breba.app"
 
+PUBLIC_BUCKET_NAME: str = os.getenv("PUBLIC_BUCKET")
+
 session = boto3.session.Session()
 # Uses AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from the environment
 s3_client = session.client(
@@ -33,7 +35,7 @@ s3_client = session.client(
 )
 s3 = session.resource("s3", endpoint_url=CLOUDFLARE_ENDPOINT)
 s3_bucket = s3.Bucket(USERS_BUCKET_NAME)
-public_s3_bucket = s3.Bucket(os.getenv("PUBLIC_BUCKET"))
+public_s3_bucket = s3.Bucket(PUBLIC_BUCKET_NAME)
 
 
 class FileMetadata(TypedDict):
@@ -53,6 +55,8 @@ def _join_prefix(base: str) -> str:
     if not base:
         return ""
     return base if base.endswith("/") else base + "/"
+
+    # TODO: Delete breba-public/deployment
 
 
 def _copy_one_file(source_bucket, target_bucket, source_path, target_path):
@@ -336,7 +340,6 @@ def get_public_url(site_name: str) -> str:
     return f"https://{site_name}.breba.site"
 
 
-# TODO: user_name/session_id are state for the entire request, should probably create a user_cloud_storage class
 async def upload_site(user_name: str, session_id: str, site_name: str):
     """
     Uploads site to google cloud
@@ -361,6 +364,32 @@ async def upload_site(user_name: str, session_id: str, site_name: str):
 
     return get_public_url(site_name)
 
+async def delete_uploaded_sites(site_names: list[str]):
+    keys = []
+    # Collect all the files for all the sites
+    for site_name in site_names:
+        prefix = f"{site_name}/"
+        # We are not planning to have more than 100 files for a while
+        list_kwargs = {
+            "Bucket": PUBLIC_BUCKET_NAME,
+            "Prefix": prefix,
+            "MaxKeys": 100,
+        }
+
+        list_response = s3_client.list_objects_v2(**list_kwargs)
+
+        if not list_response.get("Contents"):
+            break
+
+        keys += [{"Key": obj["Key"]} for obj in list_response["Contents"]]
+
+
+    delete_response = s3_client.delete_objects(
+        Bucket=PUBLIC_BUCKET_NAME,
+        Delete={"Objects": keys, "Quiet": True}
+    )
+    return delete_response
+
 
 async def has_cloud_storage(user_name: str, session_id: str):
     filesystem = VersionedR2FileSystem(
@@ -369,3 +398,55 @@ async def has_cloud_storage(user_name: str, session_id: str):
         s3_client=s3_client,
     )
     return filesystem.file_exists("spec.txt")
+
+
+async def delete_product_files(user_name: str, session_id: str) -> int:
+    prefix = f"{user_name}/{session_id}/"
+    deleted_total = 0
+
+    def _bulk_delete_prefix() -> int:
+        nonlocal deleted_total
+        continuation_token = None
+
+        while True:
+            list_kwargs = {
+                "Bucket": USERS_BUCKET_NAME,
+                "Prefix": prefix,
+                "MaxKeys": 1000,
+            }
+            if continuation_token:
+                list_kwargs["ContinuationToken"] = continuation_token
+
+            list_response = s3_client.list_objects_v2(**list_kwargs)
+
+            if not list_response.get("Contents"):
+                break
+
+            keys = [{"Key": obj["Key"]} for obj in list_response["Contents"]]
+
+            delete_response = s3_client.delete_objects(
+                Bucket=USERS_BUCKET_NAME,
+                Delete={"Objects": keys, "Quiet": True}
+            )
+
+            deleted_this_batch = len(keys)
+            deleted_total += deleted_this_batch
+            logger.info("Deleted %d objects (prefix: %s)", deleted_this_batch, prefix)
+
+            # Handle partial failures
+            if delete_response.get("Errors"):
+                for err in delete_response["Errors"]:
+                    logger.warning("Failed to delete %s: %s", err["Key"], err["Code"])
+
+            # Continue paginating
+            if not list_response.get("IsTruncated"):
+                break
+            continuation_token = list_response.get("NextContinuationToken")
+
+        return deleted_total
+
+    try:
+        return await asyncio.to_thread(_bulk_delete_prefix)
+    except Exception as e:
+        logger.error("Failed to delete product %s/%s: %s", user_name, session_id, e)
+        raise
