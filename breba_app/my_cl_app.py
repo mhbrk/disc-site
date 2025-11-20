@@ -3,13 +3,12 @@ from typing import AsyncIterator
 
 import chainlit as cl
 from beanie import SortDirection, PydanticObjectId
-from beanie.odm.operators.update.general import Set
 from bson import DBRef
 from chainlit import Message
 
 from auth import verify_password
 from breba_app.models.deployment import Deployment
-from breba_app.models.product import Product
+from breba_app.models.product import Product, create_or_update_product_for, create_blank_product_for, set_product_active
 from breba_app.models.user import User
 from breba_app.orchestrator import init_state, start_product
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active
@@ -53,51 +52,6 @@ async def populate_from_cloud_storage(user_name: str, session_id: str):
         send_index_html_to_ui(product)
     )
 
-
-async def create_blank_product_for(user_name: str):
-    user_obj = await User.find_one(User.username == user_name)
-
-    # Clear all active products
-    await Product.find(Product.user.id == user_obj.id, Product.active == True).update(
-        Set({Product.active: False})
-    )
-
-    product = Product(user=user_obj, name=PRODUCT_NAME_PLACEHOLDER, active=True)
-    await product.insert()
-    return product
-
-
-async def set_product_active(user_name: str, product_id: str):
-    user_obj = await User.find_one(User.username == user_name)
-
-    # Clear all active products
-    await Product.find(Product.user.id == user_obj.id, Product.active == True).update(
-        Set({Product.active: False})
-    )
-
-    product = await Product.find_one(Product.product_id == product_id)
-    await product.update(Set({Product.active: True}))
-
-
-async def create_or_update_product_for(user_name: str, product_id: str | None = None,
-                                       product_name: str | None = None):
-    user_obj = await User.find_one(User.username == user_name, fetch_links=False)
-
-    # Clear all active products
-    await Product.find(Product.user.id == user_obj.id, Product.active == True).update(
-        Set({Product.active: False})
-    )
-
-    # Insert new active product
-    product = Product(product_id=product_id, user=user_obj, name=product_name, active=True)
-    await Product.find_one(Product.product_id == product_id).upsert(
-        Set({
-            Product.name: product_name,
-            Product.active: True
-        }),
-        on_insert=product
-    )
-    return product
 
 
 async def builder_completed(payload: str):
@@ -237,7 +191,7 @@ async def window_message(message: str | dict):
                              cl.send_window_message({"method": "deploy_status", "body": message_text}),
                              update_deployments_list(product.id))
     elif method == "create_new_product":
-        await create_blank_product_for(user_name)
+        await create_blank_product_for(product_id, user_name, PRODUCT_NAME_PLACEHOLDER, True)
         await cl.send_window_message({"method": "reload_product"})
     elif method == "product_selected":
         await set_product_active(user_name, message.get("body"))

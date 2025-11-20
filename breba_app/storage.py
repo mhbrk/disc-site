@@ -54,6 +54,8 @@ def _join_prefix(base: str) -> str:
         return ""
     return base if base.endswith("/") else base + "/"
 
+    # TODO: Delete breba-public/deployment
+
 
 def _copy_one_file(source_bucket, target_bucket, source_path, target_path):
     copy_source = {"Bucket": source_bucket.name, "Key": source_path}
@@ -369,3 +371,55 @@ async def has_cloud_storage(user_name: str, session_id: str):
         s3_client=s3_client,
     )
     return filesystem.file_exists("spec.txt")
+
+
+async def delete_product_files(user_name: str, session_id: str) -> int:
+    prefix = f"{user_name}/{session_id}/"
+    deleted_total = 0
+
+    def _bulk_delete_prefix() -> int:
+        nonlocal deleted_total
+        continuation_token = None
+
+        while True:
+            list_kwargs = {
+                "Bucket": USERS_BUCKET_NAME,
+                "Prefix": prefix,
+                "MaxKeys": 1000,
+            }
+            if continuation_token:
+                list_kwargs["ContinuationToken"] = continuation_token
+
+            list_response = s3_client.list_objects_v2(**list_kwargs)
+
+            if not list_response.get("Contents"):
+                break
+
+            keys = [{"Key": obj["Key"]} for obj in list_response["Contents"]]
+
+            delete_response = s3_client.delete_objects(
+                Bucket=USERS_BUCKET_NAME,
+                Delete={"Objects": keys, "Quiet": True}
+            )
+
+            deleted_this_batch = len(keys)
+            deleted_total += deleted_this_batch
+            logger.info("Deleted %d objects (prefix: %s)", deleted_this_batch, prefix)
+
+            # Handle partial failures
+            if delete_response.get("Errors"):
+                for err in delete_response["Errors"]:
+                    logger.warning("Failed to delete %s: %s", err["Key"], err["Code"])
+
+            # Continue paginating
+            if not list_response.get("IsTruncated"):
+                break
+            continuation_token = list_response.get("NextContinuationToken")
+
+        return deleted_total
+
+    try:
+        return await asyncio.to_thread(_bulk_delete_prefix)
+    except Exception as e:
+        logger.error("Failed to delete product %s/%s: %s", user_name, session_id, e)
+        raise
