@@ -1,4 +1,3 @@
-from bson import DBRef
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from breba_app.models.deployment import Deployment
@@ -34,6 +33,7 @@ async def delete_product_and_deployments(user_name: str, product_id: str):
 
             return True
 
+
 async def get_deployments_for(product_id: str):
     product = await Product.find_one(Product.product_id == product_id)
     if not product:
@@ -41,6 +41,7 @@ async def get_deployments_for(product_id: str):
     # This will lookup using DBRef id similar to: {"product.$id": ObjectId("abcdefg")}
     deployments = await Deployment.find(Deployment.product.id == product.id).to_list()
     return deployments
+
 
 async def delete_product(user_name: str, product_id: str):
     # Get the list of deployments before we delete them from DB
@@ -53,6 +54,3 @@ async def delete_product(user_name: str, product_id: str):
     # If mongoDB is cleared, delete the s3 data. This is more error-prone, but less user impact
     await delete_uploaded_sites(site_names)
     await delete_product_files(user_name, product_id)
-
-
-

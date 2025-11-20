@@ -8,10 +8,9 @@ from beanie import init_beanie
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from breba_app.config import init_db
-from breba_app.controllers.product_controller import delete_product
+from breba_app.controllers.product_controller import delete_product_and_deployments
 from breba_app.models.deployment import Deployment
-from breba_app.models.product import Product, delete_product_and_deployments
+from breba_app.models.product import Product
 from breba_app.models.user import User
 
 
