@@ -1,9 +1,10 @@
+from bson import DBRef
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product
 from breba_app.models.user import User
-from breba_app.storage import delete_product_files
+from breba_app.storage import delete_product_files, delete_uploaded_sites
 
 
 async def delete_product_and_deployments(user_name: str, product_id: str):
@@ -33,9 +34,25 @@ async def delete_product_and_deployments(user_name: str, product_id: str):
 
             return True
 
-async def delete_product(user_name: str, product_id: str):
-    # Frist delete the mongodb data
-   await delete_product_and_deployments(user_name, product_id)
+async def get_deployments_for(product_id: str):
+    product = await Product.find_one(Product.product_id == product_id)
+    if not product:
+        raise ValueError(f"Product not found: {product_id}")
+    # This will lookup using DBRef id similar to: {"product.$id": ObjectId("abcdefg")}
+    deployments = await Deployment.find(Deployment.product.id == product.id).to_list()
+    return deployments
 
-   # If mongoDB is cleared, delete the s3 data
-   await delete_product_files(user_name, product_id)
+async def delete_product(user_name: str, product_id: str):
+    # Get the list of deployments before we delete them from DB
+    deployments = await get_deployments_for(product_id)
+    site_names = [deployment.deployment_id for deployment in deployments]
+
+    # Frist delete the mongodb data, because that will make the UI look like it was deleted
+    await delete_product_and_deployments(user_name, product_id)
+
+    # If mongoDB is cleared, delete the s3 data. This is more error-prone, but less user impact
+    await delete_uploaded_sites(site_names)
+    await delete_product_files(user_name, product_id)
+
+
+

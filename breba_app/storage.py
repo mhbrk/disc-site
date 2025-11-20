@@ -24,6 +24,8 @@ USERS_BUCKET_NAME: str = os.getenv("USERS_BUCKET")
 CLOUDFLARE_ENDPOINT: str = os.getenv("CLOUDFLARE_ENDPOINT")
 CDN_BASE_URL: str = os.getenv("CDN_BASE_URL") or "https://cdn.breba.app"
 
+PUBLIC_BUCKET_NAME: str = os.getenv("PUBLIC_BUCKET")
+
 session = boto3.session.Session()
 # Uses AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from the environment
 s3_client = session.client(
@@ -33,7 +35,7 @@ s3_client = session.client(
 )
 s3 = session.resource("s3", endpoint_url=CLOUDFLARE_ENDPOINT)
 s3_bucket = s3.Bucket(USERS_BUCKET_NAME)
-public_s3_bucket = s3.Bucket(os.getenv("PUBLIC_BUCKET"))
+public_s3_bucket = s3.Bucket(PUBLIC_BUCKET_NAME)
 
 
 class FileMetadata(TypedDict):
@@ -338,7 +340,6 @@ def get_public_url(site_name: str) -> str:
     return f"https://{site_name}.breba.site"
 
 
-# TODO: user_name/session_id are state for the entire request, should probably create a user_cloud_storage class
 async def upload_site(user_name: str, session_id: str, site_name: str):
     """
     Uploads site to google cloud
@@ -362,6 +363,32 @@ async def upload_site(user_name: str, session_id: str, site_name: str):
     await _copy_files(s3_bucket, public_s3_bucket, files, site_name + "/")
 
     return get_public_url(site_name)
+
+async def delete_uploaded_sites(site_names: list[str]):
+    keys = []
+    # Collect all the files for all the sites
+    for site_name in site_names:
+        prefix = f"{site_name}/"
+        # We are not planning to have more than 100 files for a while
+        list_kwargs = {
+            "Bucket": PUBLIC_BUCKET_NAME,
+            "Prefix": prefix,
+            "MaxKeys": 100,
+        }
+
+        list_response = s3_client.list_objects_v2(**list_kwargs)
+
+        if not list_response.get("Contents"):
+            break
+
+        keys += [{"Key": obj["Key"]} for obj in list_response["Contents"]]
+
+
+    delete_response = s3_client.delete_objects(
+        Bucket=PUBLIC_BUCKET_NAME,
+        Delete={"Objects": keys, "Quiet": True}
+    )
+    return delete_response
 
 
 async def has_cloud_storage(user_name: str, session_id: str):

@@ -71,4 +71,4 @@ async def test_delete_product(mock_user, test_product):
 @pytest.mark.asyncio
 async def test_delete_product():
     await init_db()
-    await delete_product("yason", "f692593119414016a7b8ec34bac1f99c")
+    await delete_product("yason", "2ce1e6db2e7142efb39e329fdb7acf1a")

@@ -16,7 +16,7 @@ from breba_app.template_agent.product_types.landing_page import landing_page_ins
     landing_page_follow_up_questions
 from breba_app.ui_bus import send_index_html_to_ui, send_specification_to_ui, send_index_html_chunk_to_ui, \
     update_products_list, update_versions_list, update_follow_up_questions_list
-from deployment_controller import run_deployment
+from controllers.deployment_controller import run_deployment
 from llm_utils import get_product_name
 from orchestrator import to_builder, to_generator
 from storage import save_image_file_to_private, read_spec_text, \
