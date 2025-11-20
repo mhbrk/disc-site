@@ -65,10 +65,11 @@ async def test_product(init_test_db, mock_user):
 
 @pytest.mark.asyncio
 async def test_delete_product(mock_user, test_product):
+    # TODO: need to test actual delete_product function
     await delete_product_and_deployments(mock_user.username, test_product.product_id)
 
-
-@pytest.mark.asyncio
-async def test_delete_product():
-    await init_db()
-    await delete_product("yason", "2ce1e6db2e7142efb39e329fdb7acf1a")
+# This will delete a product that is not in the test db
+# @pytest.mark.asyncio
+# async def test_delete_product():
+#     await init_db()
+#     await delete_product("yason", "2ce1e6db2e7142efb39e329fdb7acf1a")
