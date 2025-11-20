@@ -12,6 +12,7 @@ from langchain_openai import ChatOpenAI
 from langchain_tavily import TavilySearch
 from langgraph.checkpoint.memory import MemorySaver
 from langchain.agents import AgentState, create_agent
+from langgraph.runtime import Runtime
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
@@ -38,7 +39,7 @@ def extract_html_content(content: str):
         return ""
 
 @before_model
-def pre_model_hook(state):
+def pre_model_hook(state, runtime: Runtime):
     trimmed_messages = trim_messages(
         state["messages"],
         strategy="last",
@@ -135,7 +136,7 @@ class HTMLAgent:
         async for mode, data in self.graph.astream(inputs, config, stream_mode=["messages", "values"]):
             if mode == "messages":
                 chunk, metadata = data
-                if metadata["langgraph_node"] == "agent" and chunk.content:
+                if metadata["langgraph_node"] == "model" and chunk.content:
                     yield {
                         "is_task_complete": False,
                         "require_user_input": False,
@@ -253,9 +254,13 @@ class HTMLAgent:
     def get_last_html(self, session_id):
         config = {"configurable": {"thread_id": session_id}}
         current_state = self.graph.get_state(config)
-        last_message = current_state.values.get('messages')[-1]
-        extracted_text = extract_html_content(last_message.content)
-        return extracted_text
+        messages = current_state.values.get('messages')
+        if messages:
+            last_message = messages[-1]
+            extracted_text = extract_html_content(last_message.content)
+            return extracted_text
+        else:
+            return None
 
     def set_last_html(self, session_id, html_output):
         config = {"configurable": {"thread_id": session_id}}
