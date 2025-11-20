@@ -254,9 +254,13 @@ class HTMLAgent:
     def get_last_html(self, session_id):
         config = {"configurable": {"thread_id": session_id}}
         current_state = self.graph.get_state(config)
-        last_message = current_state.values.get('messages')[-1]
-        extracted_text = extract_html_content(last_message.content)
-        return extracted_text
+        messages = current_state.values.get('messages')
+        if messages:
+            last_message = messages[-1]
+            extracted_text = extract_html_content(last_message.content)
+            return extracted_text
+        else:
+            return None
 
     def set_last_html(self, session_id, html_output):
         config = {"configurable": {"thread_id": session_id}}
