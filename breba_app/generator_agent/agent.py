@@ -136,7 +136,7 @@ class HTMLAgent:
         async for mode, data in self.graph.astream(inputs, config, stream_mode=["messages", "values"]):
             if mode == "messages":
                 chunk, metadata = data
-                if metadata["langgraph_node"] == "agent" and chunk.content:
+                if metadata["langgraph_node"] == "model" and chunk.content:
                     yield {
                         "is_task_complete": False,
                         "require_user_input": False,
