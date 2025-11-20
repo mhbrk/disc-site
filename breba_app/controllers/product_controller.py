@@ -52,5 +52,6 @@ async def delete_product(user_name: str, product_id: str):
     await delete_product_and_deployments(user_name, product_id)
 
     # If mongoDB is cleared, delete the s3 data. This is more error-prone, but less user impact
-    await delete_uploaded_sites(site_names)
+    if site_names:
+        await delete_uploaded_sites(site_names)
     await delete_product_files(user_name, product_id)

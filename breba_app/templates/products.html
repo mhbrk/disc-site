@@ -1,15 +1,12 @@
 <style>
-    /* --- Products panel (local styles) --- */
-
-    /* Card is clickable and used as positioning context */
+    /* Product cards */
     #products-list .product-card {
         position: relative;
         cursor: pointer;
     }
 
-    /* Reserve space on the right for the actions strip */
     #products-list .product-card .card-body {
-        padding-right: 3.5rem; /* a bit more than the strip width */
+        padding-right: 3.5rem; /* space for action strip */
     }
 
     /* Full-height right strip */
@@ -25,7 +22,6 @@
         cursor: pointer;
     }
 
-    /* Make the button fill the strip */
     #products-list .product-card .action-btn {
         width: 100%;
         height: 100%;
@@ -38,21 +34,18 @@
         cursor: pointer;
     }
 
-    #products-list .product-card .product-menu {
+    /* Floating menu created from template (attached to <body>) */
+    .product-context-menu {
         position: absolute;
-        left: 100%; /* anchor menu to the right side of the strip */
-        margin-left: 0.1rem; /* little gap */
         min-width: 140px;
         background: #ffffff;
         border-radius: 0.75rem;
         box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
         padding: 0.25rem 0;
-        z-index: 10;
+        z-index: 2000;
     }
 
-
-    /* Menu item */
-    #products-list .product-card .menu-item {
+    .product-context-menu .menu-item {
         display: block;
         width: 100%;
         padding: 0.5rem 0.875rem;
@@ -64,7 +57,7 @@
         border-radius: 0.5rem;
     }
 
-    #products-list .product-card .menu-item:hover {
+    .product-context-menu .menu-item:hover {
         background-color: #f3f4f6;
     }
 </style>
@@ -77,6 +70,14 @@
         <span>Create</span>
     </button>
 </div>
+
+<template id="product-menu-template">
+    <div class="product-context-menu">
+        <button class="menu-item text-danger" data-action="delete" type="button">
+            Delete
+        </button>
+    </div>
+</template>
 
 <template id="product-template">
     <div class="col">
@@ -99,13 +100,6 @@
                      1.5 1.5 0 0 1 3 0"/>
                     </svg>
                 </button>
-
-                <!-- Popout menu -->
-                <div class="product-menu d-none">
-                    <button class="menu-item text-danger delete-btn" type="button">
-                        Delete
-                    </button>
-                </div>
             </div>
         </div>
     </div>
@@ -117,6 +111,10 @@
 <script>
     const create_product_button = document.getElementById("create-btn");
     const spinner = create_product_button.querySelector(".spinner-border");
+    const productsList = document.getElementById("products-list");
+    const menuTemplate = document.getElementById("product-menu-template");
+
+    let openMenu = null; // currently open menu element
 
     create_product_button.addEventListener("click", () => {
         const chat = document.getElementById('chainlit');
@@ -137,12 +135,10 @@
         const col = node.querySelector(".col");
         const card = node.querySelector(".product-card");
         const nameEl = node.querySelector(".product-name");
-        const deleteBtn = node.querySelector(".delete-btn");
 
         nameEl.textContent = product.name;
         card.dataset.productId = product.product_id;
         card.dataset.productName = product.name;
-        deleteBtn.dataset.productId = product.product_id;
 
         if (product.active) {
             card.classList.add("border-primary", "border-2", "bg-primary-subtle");
@@ -151,15 +147,20 @@
         return col;
     }
 
+    function closeMenu() {
+        if (openMenu) {
+            openMenu.remove();
+            openMenu = null;
+        }
+    }
 
-    // Handle update_products_list
+    // Handle products list updates
     window.addEventListener("message", (event) => {
         if (event.data.method === "update_products_list") {
             let products = event.data.body || [];
-            const list = document.getElementById("products-list");
+            const list = productsList;
             list.innerHTML = "";
 
-            // Active products first
             products.sort((a, b) => (b.active === true) - (a.active === true));
 
             products.forEach(product => {
@@ -170,64 +171,106 @@
         }
     });
 
-    // Close all menus
-    function closeAllMenus() {
-        document.querySelectorAll(".product-menu").forEach(m => m.classList.add("d-none"));
-    }
-
-    // Toggle on click
-    document.getElementById("products-list").addEventListener("click", (e) => {
+    // Click handling
+    productsList.addEventListener("click", (e) => {
         const chat = document.getElementById("chainlit");
         if (!chat) return;
 
-        // 1) Clicked delete
-        const deleteBtn = e.target.closest(".delete-btn");
-        if (deleteBtn) {
-            const card = deleteBtn.closest(".product-card");
-            const productId = card.dataset.productId;
-            const productName = card.dataset.productName;
+        // 1) Click on menu item (Delete etc.) – note: menu lives on <body>, so
+        // this will be handled in a separate listener below.
+        // (Nothing to do here.)
 
-            if (confirm(`Delete product "${productName}"? This cannot be undone.`)) {
-                const chat = document.getElementById('chainlit');
-                if (chat) {
-                    chat.contentWindow.postMessage({
-                        method: "delete_product",
-                        body: productId
-                    }, '*');
-                }
+        // 2) Click on action strip → toggle menu
+        const actionContainer = e.target.closest(".action-container");
+        if (actionContainer) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const card = actionContainer.closest(".product-card");
+            const productId = card?.dataset.productId;
+            const productName = card?.dataset.productName;
+            if (!productId) return;
+
+            // If same menu is open, close it (toggle)
+            if (openMenu && openMenu.dataset.productId === productId) {
+                closeMenu();
+                return;
             }
 
-            closeAllMenus();
+            // Close any existing menu
+            closeMenu();
+
+            // Create menu from template
+            const menuNode = menuTemplate.content.firstElementChild.cloneNode(true);
+            menuNode.dataset.productId = productId;
+            menuNode.dataset.productName = productName;
+            document.body.appendChild(menuNode);
+            openMenu = menuNode;
+
+            // Position menu next to the action strip
+            const rect = actionContainer.getBoundingClientRect();
+            const top = rect.top + window.scrollY + 4;
+            const left = rect.right + window.scrollX + 8;
+            menuNode.style.top = `${top}px`;
+            menuNode.style.left = `${left}px`;
+
+            // Stop here so we don't treat this as card click
             return;
         }
 
-        // 2) Clicked in action container?
-        const actionContainer = e.target.closest(".action-container");
-        if (actionContainer) {
-            const menu = actionContainer.querySelector(".product-menu");
-            const wasOpen = !menu.classList.contains("d-none");
+        // 3) Click elsewhere inside products list → close menu + select card
+        closeMenu();
 
-            closeAllMenus();
-
-            if (!wasOpen) {
-                menu.classList.remove("d-none");
-            }
-
-            return; // prevent card-select
-        }
-
-        closeAllMenus();
-
-        // 4) Finally card-select
         const card = e.target.closest(".product-card");
         if (card) {
+            const productId = card.dataset.productId;
+            if (!productId) return;
+
             chat.contentWindow.postMessage({
                 method: "product_selected",
-                body: card.dataset.productId
+                body: productId
             }, "*");
         }
     });
 
+    // Global click: handle menu item clicks + outside clicks
+    document.addEventListener("click", (e) => {
+        // If no menu, nothing to do
+        if (!openMenu) return;
 
+        // Click inside the menu?
+        if (openMenu.contains(e.target)) {
+            const menuItem = e.target.closest(".menu-item");
+            if (menuItem) {
+                const chat = document.getElementById("chainlit");
+                const action = menuItem.dataset.action; // "delete"
+                const productId = openMenu.dataset.productId;
+                const productName = openMenu.dataset.productName;
+
+                if (confirm(`Delete product "${productName}"? This cannot be undone.`)) {
+                    const chat = document.getElementById('chainlit');
+                    if (chat) {
+                        chat.contentWindow.postMessage({
+                            method: "delete_product",
+                            body: productId
+                        }, '*');
+                    }
+                }
+
+                if (chat && productId) {
+                    chat.contentWindow.postMessage({
+                        method: `product_${action}_requested`, // product_delete_requested
+                        body: productId
+                    }, "*");
+                }
+                closeMenu();
+            }
+            return;
+        }
+
+        // Clicked outside menu → close it
+        closeMenu();
+    });
 </script>
+
 

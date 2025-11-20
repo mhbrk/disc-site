@@ -7,6 +7,7 @@ from bson import DBRef
 from chainlit import Message
 
 from auth import verify_password
+from breba_app.controllers.product_controller import delete_product
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product, create_or_update_product_for, create_blank_product_for, set_product_active
 from breba_app.models.user import User
@@ -195,6 +196,9 @@ async def window_message(message: str | dict):
         await cl.send_window_message({"method": "reload_product"})
     elif method == "product_selected":
         await set_product_active(user_name, message.get("body"))
+        await cl.send_window_message({"method": "reload_product"})
+    elif method == "delete_product":
+        await delete_product(user_name, message.get("body"))
         await cl.send_window_message({"method": "reload_product"})
     elif method == "select_version":
         await set_version_active(user_name, product_id, message.get("body"))

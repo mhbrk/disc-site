@@ -364,6 +364,7 @@ async def upload_site(user_name: str, session_id: str, site_name: str):
 
     return get_public_url(site_name)
 
+
 async def delete_uploaded_sites(site_names: list[str]):
     keys = []
     # Collect all the files for all the sites
@@ -383,12 +384,11 @@ async def delete_uploaded_sites(site_names: list[str]):
 
         keys += [{"Key": obj["Key"]} for obj in list_response["Contents"]]
 
-
-    delete_response = s3_client.delete_objects(
-        Bucket=PUBLIC_BUCKET_NAME,
-        Delete={"Objects": keys, "Quiet": True}
-    )
-    return delete_response
+    if keys:
+        s3_client.delete_objects(
+            Bucket=PUBLIC_BUCKET_NAME,
+            Delete={"Objects": keys, "Quiet": True}
+        )
 
 
 async def has_cloud_storage(user_name: str, session_id: str):
