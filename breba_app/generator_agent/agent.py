@@ -12,6 +12,7 @@ from langchain_openai import ChatOpenAI
 from langchain_tavily import TavilySearch
 from langgraph.checkpoint.memory import MemorySaver
 from langchain.agents import AgentState, create_agent
+from langgraph.runtime import Runtime
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
@@ -38,7 +39,7 @@ def extract_html_content(content: str):
         return ""
 
 @before_model
-def pre_model_hook(state):
+def pre_model_hook(state, runtime: Runtime):
     trimmed_messages = trim_messages(
         state["messages"],
         strategy="last",
