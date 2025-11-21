@@ -192,7 +192,7 @@ async def window_message(message: str | dict):
                              cl.send_window_message({"method": "deploy_status", "body": message_text}),
                              update_deployments_list(product.id))
     elif method == "create_new_product":
-        await create_blank_product_for(product_id, user_name, PRODUCT_NAME_PLACEHOLDER, True)
+        await create_blank_product_for(user_name, PRODUCT_NAME_PLACEHOLDER, True)
         await cl.send_window_message({"method": "reload_product"})
     elif method == "product_selected":
         await set_product_active(user_name, message.get("body"))
