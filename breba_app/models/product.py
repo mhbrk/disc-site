@@ -31,7 +31,7 @@ class Product(Document):
         await self.inc({Product.cost: amount})
 
 
-async def create_blank_product_for(product_id: str, user_name: str, product_name: str, active: bool):
+async def create_blank_product_for(user_name: str, product_name: str, active: bool):
     user_obj = await User.find_one(User.username == user_name)
 
     # Clear all active products
@@ -39,7 +39,7 @@ async def create_blank_product_for(product_id: str, user_name: str, product_name
         Set({Product.active: False})
     )
 
-    product = Product(product_id=product_id, user=user_obj, name=product_name, active=active)
+    product = Product(user=user_obj, name=product_name, active=active)
     await product.insert()
     return product
 
