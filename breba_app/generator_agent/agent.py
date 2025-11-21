@@ -142,8 +142,6 @@ class HTMLAgent:
                         "require_user_input": False,
                         "content": chunk.content,
                     }
-            # if mode == "values":
-            #     logger.info(data["messages"][-1].pretty_repr())
 
         # TODO: This should be an Agent Bus event
         asyncio.create_task(report_usage(user_name, session_id, usage_callback.usage_metadata))
@@ -235,8 +233,6 @@ class HTMLAgent:
                         "require_user_input": False,
                         "content": chunk.content,
                     }
-            # if mode == "values":
-            #     logger.info(data["messages"][-1].pretty_repr())
 
         # TODO: This should be an Agent Bus event
         asyncio.create_task(report_usage(user_name, session_id, usage_callback.usage_metadata))
