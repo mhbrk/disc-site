@@ -49,3 +49,6 @@ $RECYCLE.BIN/
 *.db
 .cache/
 *.pid
+
+# === Monogo ===
+mongo-data/
