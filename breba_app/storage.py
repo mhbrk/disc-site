@@ -6,11 +6,13 @@ import mimetypes
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import Tuple, TypedDict, Union
+from typing import TypedDict, Union
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
+
+from breba_app.filesystem.versioned_r2 import VersionedR2FileSystem, NotFound, FileWrite
 
 load_dotenv()
 
@@ -22,6 +24,8 @@ USERS_BUCKET_NAME: str = os.getenv("USERS_BUCKET")
 CLOUDFLARE_ENDPOINT: str = os.getenv("CLOUDFLARE_ENDPOINT")
 CDN_BASE_URL: str = os.getenv("CDN_BASE_URL") or "https://cdn.breba.app"
 
+PUBLIC_BUCKET_NAME: str = os.getenv("PUBLIC_BUCKET")
+
 session = boto3.session.Session()
 # Uses AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from the environment
 s3_client = session.client(
@@ -31,7 +35,7 @@ s3_client = session.client(
 )
 s3 = session.resource("s3", endpoint_url=CLOUDFLARE_ENDPOINT)
 s3_bucket = s3.Bucket(USERS_BUCKET_NAME)
-public_s3_bucket = s3.Bucket(os.getenv("PUBLIC_BUCKET"))
+public_s3_bucket = s3.Bucket(PUBLIC_BUCKET_NAME)
 
 
 class FileMetadata(TypedDict):
@@ -52,54 +56,34 @@ def _join_prefix(base: str) -> str:
         return ""
     return base if base.endswith("/") else base + "/"
 
+    # TODO: Delete breba-public/deployment
 
-async def _copy_directory_s3(source_bucket, target_bucket, prefix: str, target_prefix: str = None,
-                             max_concurrency: int = 16):
-    """
-        Asynchronously copy all objects under `prefix` from source_bucket to target_bucket.
-        Each copy runs in a separate thread via asyncio.to_thread.
 
-        Returns (copied_count, failed_count).
-        """
+def _copy_one_file(source_bucket, target_bucket, source_path, target_path):
+    copy_source = {"Bucket": source_bucket.name, "Key": source_path}
+    target_bucket.copy(copy_source, target_path)  # blocking boto3 call
+    logger.info(f"Copied {source_path} -> {target_path}")
 
-    # Normalize prefixes
-    src_prefix = _join_prefix(prefix)
-    dst_base = _join_prefix(target_prefix if target_prefix is not None else prefix)
 
-    logger.info(f"Listing objects with Prefix='{src_prefix}' in bucket '{source_bucket.name}'...")
-    try:
-        objs = await asyncio.to_thread(lambda: list(source_bucket.objects.filter(Prefix=src_prefix)))
-    except Exception as e:
-        logger.error(f"Failed to list objects for prefix '{src_prefix}': {e}")
-        raise
-
-    if not objs:
-        logger.info("No objects to copy.")
-        raise Exception("No objects to copy.")
-
+async def _copy_files(source_bucket, target_bucket, files: list[str], target_prefix: str = None,
+                      max_concurrency: int = 16):
     sem = asyncio.Semaphore(max_concurrency)
 
-    async def copy_one(obj_summary):
-        relative_path = obj_summary.key[len(src_prefix):]  # keep folder structure under prefix
-        new_key = f"{dst_base}{relative_path}"
-
-        def _do_copy():
-            copy_source = {"Bucket": source_bucket.name, "Key": obj_summary.key}
-            target_bucket.copy(copy_source, new_key)  # blocking boto3 call
-            logger.info(f"Copied {obj_summary.key} -> {new_key}")
-
+    async def _concurrency_copy(source_path: str):
+        filename = source_path.split("/")[-1]
+        target_path = target_prefix + filename
         async with sem:
-            await asyncio.to_thread(_do_copy)
+            await asyncio.to_thread(_copy_one_file, source_bucket, target_bucket, source_path, target_path)
 
-    tasks = [asyncio.create_task(copy_one(o)) for o in objs]
+    tasks = [asyncio.create_task(_concurrency_copy(file_path)) for file_path in files]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     copied = 0
     failed = 0
-    for o, r in zip(objs, results):
+    for file_path, r in zip(files, results):
         if isinstance(r, Exception):
             failed += 1
-            logger.error(f"Failed to copy {o.key}: {r}")
+            logger.error(f"Failed to copy {file_path}: {r}")
         else:
             copied += 1
 
@@ -184,55 +168,121 @@ def save_image_file_to_private(user_name: str, session_id: str, file_name: str, 
         raise
 
 
-def save_spec(user_name: str, session_id: str, spec: str):
-    save_file_to_private(user_name, session_id, "spec.txt", spec.encode("utf8"), "text/plain")
-
-
-def read_spec_text(user_name: str, session_id: str) -> str | None:
-    key = f"{user_name}/{session_id}/spec.txt"
-    try:
-        obj = s3.Object(USERS_BUCKET_NAME, key)
-        return obj.get()["Body"].read().decode("utf-8")
-    except s3_client.exceptions.NoSuchKey:
-        return None
-
-
-def read_index_html(user_name: str, session_id: str) -> str:
-    key = f"{user_name}/{session_id}/index.html"
-    obj = s3.Object(USERS_BUCKET_NAME, key)
-    return obj.get()["Body"].read().decode("utf-8")
-
-
-def read_image_from_private(user_name: str, session_id: str, image_name: str) -> Tuple[bytes, dict[str, str]] | None:
-    key = f"{user_name}/{session_id}/images/{image_name}"
-    obj = s3.Object(USERS_BUCKET_NAME, key)
-
-    try:
-        response = obj.get()
-    except s3_client.exceptions.NoSuchKey:
-        return None
-
-    metadata = obj.metadata or {}
-    return response["Body"].read(), metadata
-
-
-def save_file_to_private(user_name: str, session_id: str, file_name: str, content: bytes, content_type: str):
-    key = f"{user_name}/{session_id}/{file_name}"
-    s3_client.put_object(
-        Bucket=USERS_BUCKET_NAME,
-        Key=key,
-        Body=content,
-        ContentType=content_type
+async def list_versions(user_name: str, session_id: str) -> list[int]:
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
     )
+    return await asyncio.to_thread(filesystem.list_versions)
 
 
-def load_template(user_name: str, session_id: str, template_name: str):
-    _copy_directory_s3(
-        source_bucket=s3_bucket,
-        target_bucket=s3_bucket,
-        prefix=f"templates/{template_name}/",
-        target_prefix=f"{user_name}/{session_id}/"
+async def get_active_version(user_name: str, session_id: str) -> int:
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
     )
+    return await asyncio.to_thread(filesystem.get_version)
+
+
+async def set_version_active(user_name: str, session_id: str, version: int) -> None:
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+    await asyncio.to_thread(filesystem.set_version, version)
+
+
+async def save_spec(user_name: str, session_id: str, spec: str) -> None:
+    data = spec.encode("utf-8")
+    await save_file_versioned(user_name, session_id, "spec.txt", data, "text/plain")
+
+
+async def save_index_html(user_name: str, session_id: str, html: str) -> None:
+    data = html.encode("utf-8")
+    await save_file_versioned(user_name, session_id, "index.html", data, "text/html")
+
+
+async def save_files(user_name: str, session_id: str, files: list[tuple[str, bytes, str]]):
+    """
+    Save files to user's namespace
+    :param user_name: Used to find user namespace
+    :param session_id: Used to find product namespace
+    :param files: files to write to system
+    :return: The new version number
+    """
+    files_writes = [FileWrite(name, content, type) for name, content, type in files]
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+    return await asyncio.to_thread(filesystem.batch_write, files_writes)
+
+
+async def read_spec_text(user_name: str, session_id: str) -> str | None:
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+    return await filesystem.read_text("spec.txt")
+
+
+async def read_index_html(user_name: str, session_id: str) -> str:
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+    return await filesystem.read_text("index.html")
+
+
+async def save_file_versioned(user_name: str, session_id: str, file_name: str, content: bytes, content_type: str):
+    root_prefix = f"{user_name}/{session_id}"
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=root_prefix,
+        s3_client=s3_client,
+    )
+    await asyncio.to_thread(filesystem.write_file, file_name, content, content_type=content_type)
+
+
+async def load_template(user_name: str, session_id: str, template_name: str):
+    source_prefix = f"templates/{template_name}"
+
+    def get_file_write(obj):
+        resp = s3_client.get_object(Bucket=USERS_BUCKET_NAME, Key=obj["Key"])
+        data = resp["Body"].read()
+        ctype = resp.get("ContentType")
+        # This helps maintain path relative to the source prefix
+        relative_path = obj["Key"][len(source_prefix):]
+        return FileWrite(path=relative_path, content=data, content_type=ctype)
+
+    paginator = s3_client.get_paginator('list_objects_v2')
+    pages = paginator.paginate(Bucket=USERS_BUCKET_NAME, Prefix=source_prefix)
+    tasks = []
+    # Pagination avoids listing and iterating over all objects. Instead, we just iterate
+    for page in pages:
+        if "Contents" in page:
+            for obj in page['Contents']:
+                tasks.append(asyncio.to_thread(get_file_write, obj))
+
+    # Need to read file contents concurrently to save time
+    # cannot use copy_object because need to calculate sha for the manifest
+    if len(tasks) == 0:
+        raise Exception("No files found for prefix: " + source_prefix)
+    files = await asyncio.gather(*tasks)
+
+    root_prefix = f"{user_name}/{session_id}"
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=root_prefix,
+        s3_client=s3_client,
+    )
+    return await asyncio.to_thread(filesystem.batch_write, files)
 
 
 def make_dir_tree() -> DirTree:
@@ -290,7 +340,6 @@ def get_public_url(site_name: str) -> str:
     return f"https://{site_name}.breba.site"
 
 
-# TODO: user_name/session_id are state for the entire request, should probably create a user_cloud_storage class
 async def upload_site(user_name: str, session_id: str, site_name: str):
     """
     Uploads site to google cloud
@@ -302,11 +351,102 @@ async def upload_site(user_name: str, session_id: str, site_name: str):
     """
     # TODO: convert to async because GCP is a blocking call, we don't want to have to wait
     # TODO: when empty dir is being uploaded, should pass back an error message
-    await _copy_directory_s3(
-        source_bucket=s3_bucket,
-        target_bucket=public_s3_bucket,
-        prefix=f"{user_name}/{session_id}/",
-        target_prefix=site_name + "/"
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
     )
 
+    # Need to get full path to files, because we are copying across buckets
+    files = filesystem.list_files(absolute=True)
+
+    await _copy_files(s3_bucket, public_s3_bucket, files, site_name + "/")
+
     return get_public_url(site_name)
+
+
+async def delete_uploaded_sites(site_names: list[str]):
+    keys = []
+    # Collect all the files for all the sites
+    for site_name in site_names:
+        prefix = f"{site_name}/"
+        # We are not planning to have more than 100 files for a while
+        list_kwargs = {
+            "Bucket": PUBLIC_BUCKET_NAME,
+            "Prefix": prefix,
+            "MaxKeys": 100,
+        }
+
+        list_response = s3_client.list_objects_v2(**list_kwargs)
+
+        if not list_response.get("Contents"):
+            break
+
+        keys += [{"Key": obj["Key"]} for obj in list_response["Contents"]]
+
+    if keys:
+        s3_client.delete_objects(
+            Bucket=PUBLIC_BUCKET_NAME,
+            Delete={"Objects": keys, "Quiet": True}
+        )
+
+
+async def has_cloud_storage(user_name: str, session_id: str):
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+    return filesystem.file_exists("spec.txt")
+
+
+async def delete_product_files(user_name: str, session_id: str) -> int:
+    prefix = f"{user_name}/{session_id}/"
+    deleted_total = 0
+
+    def _bulk_delete_prefix() -> int:
+        nonlocal deleted_total
+        continuation_token = None
+
+        while True:
+            list_kwargs = {
+                "Bucket": USERS_BUCKET_NAME,
+                "Prefix": prefix,
+                "MaxKeys": 1000,
+            }
+            if continuation_token:
+                list_kwargs["ContinuationToken"] = continuation_token
+
+            list_response = s3_client.list_objects_v2(**list_kwargs)
+
+            if not list_response.get("Contents"):
+                break
+
+            keys = [{"Key": obj["Key"]} for obj in list_response["Contents"]]
+
+            delete_response = s3_client.delete_objects(
+                Bucket=USERS_BUCKET_NAME,
+                Delete={"Objects": keys, "Quiet": True}
+            )
+
+            deleted_this_batch = len(keys)
+            deleted_total += deleted_this_batch
+            logger.info("Deleted %d objects (prefix: %s)", deleted_this_batch, prefix)
+
+            # Handle partial failures
+            if delete_response.get("Errors"):
+                for err in delete_response["Errors"]:
+                    logger.warning("Failed to delete %s: %s", err["Key"], err["Code"])
+
+            # Continue paginating
+            if not list_response.get("IsTruncated"):
+                break
+            continuation_token = list_response.get("NextContinuationToken")
+
+        return deleted_total
+
+    try:
+        return await asyncio.to_thread(_bulk_delete_prefix)
+    except Exception as e:
+        logger.error("Failed to delete product %s/%s: %s", user_name, session_id, e)
+        raise

@@ -1,8 +1,11 @@
+import asyncio
 import logging
 
 from dotenv import load_dotenv
+from langchain_core.messages import UsageMetadata
 from openai import AsyncOpenAI
 
+from breba_app.controllers.usage_controller import report_usage
 from breba_app.generator_agent.instruction_reader import get_instructions
 from breba_app.generator_agent.search_replace_example_messages import example_messages, system_reminder
 from breba_app.generator_agent.static_html_example_messages import html_best_practices
@@ -16,7 +19,8 @@ client = AsyncOpenAI()
 
 SYSTEM_PROMPT = get_instructions("search_replace", system_reminder=system_reminder, best_practices=html_best_practices)
 
-async def diff_stream(html: str, prompt: str):
+
+async def diff_stream(user_name: str, product_id: str, html: str, prompt: str):
     logger.info(f"Generating diff for prompt: {prompt}")
     input_messages = example_messages.copy()
     input_messages.extend([
@@ -60,13 +64,19 @@ async def diff_stream(html: str, prompt: str):
         async for event in stream:
             if event.type == "response.output_text.delta":
                 yield event.delta
+            elif event.type == 'response.completed':
+                input_tokens = event.response.usage.input_tokens
+                output_tokens = event.response.usage.output_tokens
+                total_tokens = event.response.usage.total_tokens
+                usage = UsageMetadata(input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=total_tokens)
+                asyncio.create_task(report_usage(user_name, product_id, {"gpt-4.1": usage}))
     finally:
         await stream.close()  # ensure connection closes
 
 
-async def diff_text(html: str, prompt: str):
+async def diff_text(user_name: str, product_id: str, html: str, prompt: str):
     message = ""
-    agen = diff_stream(html, prompt)
+    agen = diff_stream(user_name, product_id, html, prompt)
     try:
         async for chunk in agen:
             message += chunk

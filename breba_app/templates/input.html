@@ -1,1 +1,16 @@
 <iframe id="chainlit" src="/chainlit/"></iframe>
+
+<script>
+
+    window.addEventListener("message", (event) => {
+        if (event.data.action === "sendToChat") {
+            const chat = document.getElementById('chainlit');
+            if (chat) {
+                chat.contentWindow.postMessage({
+                    method: "to_builder",
+                    body: event.data.message
+                }, '*');
+            }
+        }
+    });
+</script>

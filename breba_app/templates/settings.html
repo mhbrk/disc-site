@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Account Settings · Breba{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* --- Page layout --- */
+    body {
+        background-color: #fff;
+    }
+
+    .settings-wrapper {
+        display: flex;
+        min-height: 100vh;
+        color: #111827;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* --- Sidebar --- */
+    .settings-sidebar {
+        width: 240px;
+        background-color: #f9fafb;
+        border-right: 1px solid #e5e7eb;
+        padding: 2rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .settings-back-link {
+        font-size: 0.875rem;
+        color: #6b7280;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .settings-back-link:hover {
+        color: #374151;
+    }
+
+    .settings-back-link span:first-child {
+        font-size: 1rem;
+        margin-right: 0.25rem;
+    }
+
+    .settings-sidebar h6 {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #9ca3af;
+        margin-bottom: 0.5rem;
+    }
+
+    .settings-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .settings-nav .nav-link {
+        display: block;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+        color: #111827;
+        text-decoration: none;
+        font-size: 0.95rem;
+    }
+
+    .settings-nav .nav-link:hover {
+        background-color: #f3f4f6;
+    }
+
+    .settings-nav .nav-link.active {
+        background-color: #e5e7eb;
+        font-weight: 500;
+    }
+
+    /* --- Main content --- */
+    .settings-main {
+        flex: 1;
+        background-color: #fff;
+        padding: 3rem 4rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .settings-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .settings-header h1 {
+        font-size: 1.375rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+
+    /* --- Form section --- */
+    .settings-section {
+        padding: 0;
+        max-width: 480px;
+    }
+
+    .settings-section h2 {
+        font-size: 1rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+    }
+
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+    }
+
+    .form-control {
+        border-radius: 0.5rem;
+    }
+
+    .btn-primary {
+        background-color: #5f31eb;
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+
+    .btn-primary:hover {
+        background-color: #4b28c4;
+    }
+
+    @media (max-width: 768px) {
+        .settings-wrapper {
+            flex-direction: column;
+        }
+
+        .settings-sidebar {
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .settings-main {
+            padding: 2rem 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-wrapper">
+    <!-- Sidebar -->
+    <aside class="settings-sidebar">
+        <a href="/" class="settings-back-link">
+            <span>←</span>
+            <span>Back to the App</span>
+        </a>
+
+        <h6>Settings</h6>
+
+        <nav class="settings-nav">
+            <a href="/settings" class="nav-link active">Account</a>
+        </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="settings-main">
+        {% if error %}
+        <div class="alert alert-danger mb-3">
+            {{ error }}
+        </div>
+        {% elif request.query_params.get('success') %}
+        <div class="alert alert-success mb-3">
+            Password updated successfully.
+        </div>
+        {% endif %}
+
+        <header class="settings-header">
+            <h1>Account Settings</h1>
+        </header>
+
+        <section class="settings-section">
+            <h2>Change password</h2>
+
+            <form method="post" action="/settings/account/password">
+                <div class="mb-3">
+                    <label for="current_password" class="form-label">Current password</label>
+                    <input type="password"
+                           class="form-control"
+                           id="current_password"
+                           name="current_password"
+                           required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="new_password" class="form-label">New password</label>
+                    <input type="password"
+                           class="form-control"
+                           id="new_password"
+                           name="new_password"
+                           required>
+                </div>
+
+                <div class="mb-4">
+                    <label for="confirm_password" class="form-label">Confirm new password</label>
+                    <input type="password"
+                           class="form-control"
+                           id="confirm_password"
+                           name="confirm_password"
+                           required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Save changes
+                </button>
+            </form>
+        </section>
+    </main>
+</div>
+{% endblock %}

@@ -1,10 +1,16 @@
+import asyncio
 import difflib
 import logging
 
+import breba_app.storage
 from agent_model import TextPart, Message
-from builder_agent.agent import agent as builder_agent
 from breba_app.generator_agent.accumulator import TagAccumulator
 from breba_app.generator_agent.agent import agent as generator_agent
+from breba_app.storage import save_files
+from breba_app.template_agent.agent import TemplateAgent
+from breba_app.template_agent.baml_client.types import WebsiteSpecification
+from breba_app.ui_bus import update_versions_list
+from builder_agent.agent import agent as builder_agent
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +19,8 @@ def get_generator_response(session_id: str):
     return generator_agent.get_last_html(session_id)
 
 
-def set_generator_response(session_id: str, spec: str, html_output: str):
+async def init_state(session_id: str, spec: str, html_output: str):
+    await builder_agent.set_agent_prompt(session_id, spec)
     generator_agent.set_last_html(session_id, html_output)
     generator_agent.set_spec(session_id, spec)
 
@@ -37,7 +44,7 @@ async def process_chunk(accumulator: TagAccumulator, chunk: dict, generator_call
 
     is_task_completed = chunk.get("is_task_complete")
 
-    # TODO: handle the case when input is required
+    # This does not handle the case when input is required
     if is_task_completed:
         await generator_callback("__completed__")
     else:
@@ -47,6 +54,7 @@ async def process_chunk(accumulator: TagAccumulator, chunk: dict, generator_call
             return
         logger.info(f"HTML tag exists: {tag_html}")
         await generator_callback(tag_html)
+
 
 async def generate_full_website(user_name: str, session_id: str, spec: str, generator_callback):
     logger.info("Generating full website")
@@ -75,8 +83,8 @@ async def generator_task(user_name: str, session_id: str, spec: str, generator_c
 
 async def start_editing_task(user_name: str, session_id: str, query: str, generator_callback):
     try:
-        update = await generator_agent.diffing_update(query, session_id)
-        # TODO: this is funky. Using generator_callback like this needs to be codified. Maybe use a class instead of a function
+        update = await generator_agent.diffing_update(user_name, session_id, query)
+        # TODO: this is funky. Using generator_callback like this. Need to use a specialized declarative generator_completed event
         await generator_callback(update)
         await generator_callback("__completed__")
     except Exception as e:
@@ -98,15 +106,13 @@ async def builder_editing_task(user_name: str, session_id: str, message: str):
     return agent_response
 
 
-async def to_generator(user_name: str, session_id: str, message: str,
-                       builder_completed_callback,
-                       process_generator_message_callback,
-                       message_to_user_callback) -> bool:
+async def to_generator(user_name: str, session_id: str, message: str, builder_completed_callback, generator_callback,
+                       message_to_user_callback):
     old_html = generator_agent.get_last_html(session_id)
     await message_to_user_callback("Generator is processing your request...")
-    await process_generator_message_callback("__start__")
-    await start_editing_task(user_name, session_id, message, process_generator_message_callback)
+    await start_editing_task(user_name, session_id, message, generator_callback)
     new_html = generator_agent.get_last_html(session_id)
+    # TODO: use diff module
     diff = get_html_diff(old_html, new_html)
 
     message_with_instructions = (f"{message} \n"
@@ -120,51 +126,76 @@ async def to_generator(user_name: str, session_id: str, message: str,
     agent_response = await builder_editing_task(user_name, session_id, message_with_instructions)
     await message_to_user_callback("Rebuild specification task is now complete.")
 
-    content = agent_response.get("content")
+    new_spec = agent_response.get("content")
     is_task_completed = agent_response.get("is_task_complete")
 
     if is_task_completed:
-        await builder_completed_callback(content)
-        await process_generator_message_callback("__completed__")
-        return True
+        # TODO: This shouldn't be needed. Future calls to generator need to include the actual spec
+        generator_agent.set_spec(session_id, new_spec)
+        await builder_completed_callback(new_spec)
     else:
-        logger.info(f"Waiting for user input: {content}")
-        await message_to_user_callback(content)
-        await process_generator_message_callback("__completed__")
-        return False
+        logger.info(f"Waiting for user input: {new_spec}")
+        await message_to_user_callback(new_spec)
+
+    new_version = await save_files(user_name, session_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
+                                                           ("index.html", new_html.encode("utf-8"), "text/html")])
+
+    versions = await breba_app.storage.list_versions(user_name, session_id)
+    await update_versions_list(versions, new_version)
 
 
-async def to_builder(user_name: str, session_id: str, message: str,
-                     builder_completed_callback,
-                     process_generator_message_callback,
-                     message_to_user_callback) -> bool:
-    await message_to_user_callback("Builder is working on the specification...")
-    await process_generator_message_callback("__start__")
-    spec = await builder_agent.get_last_spec(session_id)
-    if spec:
+async def to_builder(user_name: str, session_id: str, message: str, builder_completed_callback,
+                     message_to_user_callback,
+                     generator_callback):
+    existing_spec = await builder_agent.get_last_spec(session_id)
+    if existing_spec:
+        await message_to_user_callback("Builder is working on the specification...")
         agent_response = await builder_editing_task(user_name, session_id, message)
+
+        is_task_completed = agent_response.get("is_task_complete")
+
+        if is_task_completed:
+            new_spec = agent_response.get("content")
+            await builder_completed_callback(new_spec)
+            await message_to_user_callback(
+                "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec")
+            await generator_task(user_name, session_id, new_spec, generator_callback)
+            new_html = generator_agent.get_last_html(session_id)
+
+            new_version = await save_files(user_name, session_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
+                                                                   ("index.html", new_html.encode("utf-8"),
+                                                                    "text/html")])
+            versions = await breba_app.storage.list_versions(user_name, session_id)
+            await update_versions_list(versions, new_version)
+        else:
+            message = agent_response.get("content")
+            logger.info(f"Waiting for user input: {message}")
+            await message_to_user_callback(message)
     else:
-        agent_message = Message(role="user", parts=[TextPart(text=message)])
-        agent_response = await builder_agent.invoke(user_name, session_id, agent_message)
-
-    is_task_completed = agent_response.get("is_task_complete")
-
-    if is_task_completed:
-        spec = agent_response.get("content")
-        await builder_completed_callback(spec)
-        await message_to_user_callback(
-            "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec")
-        await generator_task(user_name, session_id, spec, process_generator_message_callback)
-        await process_generator_message_callback("__completed__")
-        return True
-    else:
-        message = agent_response.get("content")
-        logger.info(f"Waiting for user input: {message}")
-        await message_to_user_callback(message)
-        await process_generator_message_callback("__completed__")
-        return False
+        await start_product(user_name, session_id, message, builder_completed_callback, message_to_user_callback,
+                            generator_callback)
 
 
-async def update_builder_spec(session_id: str, message: str):
-    agent_response = await builder_agent.set_agent_prompt(session_id, message)
-    return agent_response
+async def start_product(user_name: str, product_id: str, message: str,
+                        builder_completed_callback, message_to_user_callback, generator_callback):
+    t_agent = TemplateAgent(user_name, product_id)
+    response = await t_agent.build_specification(message, message_to_user_callback)
+
+    # We will only proceed to next step, if we have a website specification. Otherwise, wait for additional user input
+    if isinstance(response, WebsiteSpecification):
+        new_spec = response.spec
+
+        await asyncio.gather(
+            builder_agent.set_agent_prompt(product_id, new_spec),
+            builder_completed_callback(new_spec),
+            message_to_user_callback(
+                "Generating preview for the new spec... Use the 📄 from the sidebar to check the new spec"),
+            # This is kind of spaghetti code. The coder instructions should probably be on the orchestrator agent state
+            generator_task(user_name, product_id, new_spec, generator_callback))
+
+        new_html = generator_agent.get_last_html(product_id)
+
+        new_version = await save_files(user_name, product_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
+                                                               ("index.html", new_html.encode("utf-8"), "text/html")])
+        versions = await breba_app.storage.list_versions(user_name, product_id)
+        await update_versions_list(versions, new_version)

@@ -1,0 +1,36 @@
+.follow-up-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background-color: #5b9bd5;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  cursor: pointer;
+  position: absolute;
+  top: 2px; /* slightly lower in a 40px bar */
+  transition: transform 0.15s ease,
+              background-color 0.2s ease,
+              box-shadow 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.follow-up-btn .material-icons {
+  font-size: 20px;
+}
+
+.follow-up-btn:hover {
+  background-color: #4a8bc2;
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+}
+
+.follow-up-btn:active {
+  transform: scale(1.05);
+}
+
+.follow-up-btn-container {
+  height: 40px;
+}

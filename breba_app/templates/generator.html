@@ -1,23 +1,23 @@
 <style>
-#generator-wrapper {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-}
+    #generator-wrapper {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
 
-#generator-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 220ms ease-in-out;
-    overflow: hidden;
-}
+    #generator-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 220ms ease-in-out;
+        overflow: hidden;
+    }
 
     #generator-overlay.active {
         opacity: 1;
@@ -33,11 +33,11 @@
     }
 
     #generator-overlay::before {
-        background: rgba(15,23,42,0.85);
+        background: rgba(15, 23, 42, 0.85);
     }
 
     #generator-overlay::after {
-        background: linear-gradient(100deg, rgba(148,163,184,0) 0%, rgba(148,163,184,0.55) 50%, rgba(148,163,184,0) 100%);
+        background: linear-gradient(100deg, rgba(148, 163, 184, 0) 0%, rgba(148, 163, 184, 0.55) 50%, rgba(148, 163, 184, 0) 100%);
         opacity: 0.35;
         transform: translateX(-60%);
         filter: blur(60px);
@@ -59,31 +59,68 @@
     }
 
     @keyframes generator-shimmer {
-        0% { transform: translateX(-60%); }
-        100% { transform: translateX(60%); }
+        0% {
+            transform: translateX(-60%);
+        }
+        100% {
+            transform: translateX(60%);
+        }
     }
 </style>
+<!-- Action Bar -->
+<div id="action-bar" class="d-flex align-items-center gap-2 p-2 border-bottom bg-light">
+    <div class="dropdown">
+        <button id="versionDropdown"
+                class="btn btn-version dropdown-toggle"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+            <span id="versionLabel">v? • Latest</span>
+        </button>
+        <ul id="versionMenu" class="dropdown-menu shadow-sm"></ul>
+    </div>
+
+    <!-- Follow-up buttons container -->
+    <div id="followup-buttons" class="position-relative ms-3 follow-up-btn-container"></div>
+</div>
 
 <div id="generator-wrapper" class="position-relative w-100 h-100">
-<iframe id="generator-frame" class="w-100 h-100 d-block position-relative"></iframe>
+    <iframe id="generator-frame" class="w-100 h-100 d-block position-relative"></iframe>
 
-<div id="generator-overlay">
-    <div class="shimmer"></div>
-    <div class="message">Generating your preview…</div>
-    <span class="visually-hidden">Generating preview…</span>
-</div>
+
+    <div id="generator-overlay">
+        <div class="shimmer"></div>
+        <div class="message">Generating your preview…</div>
+        <span class="visually-hidden">Generating preview…</span>
+    </div>
 </div>
 
 <script>
+    let reloadTimeoutId = null;
+
     function reload() {
-        const currentContent = doc.documentElement.outerHTML;
-        const pNode = iframe.parentNode
-        pNode.removeChild(iframe);
-        pNode.appendChild(iframe);
-        doc = iframe.contentWindow.document;
-        doc.open();
-        doc.write(currentContent);
-        doc.close();
+        // reload only at certain internvals. This allows for contents to load before reading currentContent. (Chrome bug)
+        if (reloadTimeoutId === null) {
+            reloadTimeoutId = setTimeout(() => {
+                try {
+                    const currentContent = doc.documentElement.outerHTML;
+                    console.log("currentContent: " + currentContent)
+                    const pNode = iframe.parentNode
+                    pNode.removeChild(iframe);
+                    pNode.appendChild(iframe);
+                    doc = iframe.contentWindow.document;
+                    doc.open();
+                    doc.write(currentContent);
+                    doc.close();
+                } catch (err) {
+                    console.error("Reload failed:", err);
+                } finally {
+                    reloadTimeoutId = null
+                }
+            }, 500);
+        } else {
+            console.info("Reload is already scheduled")
+        }
     }
 
     const overlay = document.getElementById('generator-overlay');
@@ -99,11 +136,6 @@
     function processChunk(chunk) {
         console.log("chunk:" + chunk);
 
-        if (chunk === "__start__") {
-            showOverlay();
-            return;
-        }
-
         showOverlay();
 
         // Check for image references
@@ -112,30 +144,40 @@
         ].map(match => match[1]);
 
         for (const imageUrl of imageUrls) {
-            // Start polling every 5 seconds
-            const intervalId = setInterval(async () => {
-                try {
-                    const res = await fetch(imageUrl + "?v=" + Date.now(), {method: 'HEAD'});
-                    if (res.ok) {
-                        clearInterval(intervalId);
-                        console.log(`Image ${imageUrl} loaded — triggering reload`);
-                        if (!docOpened) {
-                            reload();
+            setTimeout(async () => {
+                const res = await fetch(imageUrl + "?v=" + Date.now(), {method: 'HEAD'});
+                // Only reload if image is not ready
+                if (!res.ok) {
+                    // Start polling every 5 seconds
+                    const intervalId = setInterval(async () => {
+                        try {
+                            const res = await fetch(imageUrl + "?v=" + Date.now(), {method: 'HEAD'});
+                            if (res.ok) {
+                                clearInterval(intervalId);
+                                console.log(`Image ${imageUrl} loaded — triggering reload`);
+                                if (!docOpened) {
+                                    reload();
+                                }
+                            } else {
+                                console.log(`Image ${imageUrl} not ready yet (status: ${res.status})`);
+                            }
+                        } catch (e) {
+                            console.log(`Error checking image ${imageUrl}:`, e);
                         }
-                    } else {
-                        console.log(`Image ${imageUrl} not ready yet (status: ${res.status})`);
-                    }
-                } catch (e) {
-                    console.log(`Error checking image ${imageUrl}:`, e);
+                    }, 5000);
+                } else {
+                    console.log(`Image ${imageUrl} already loaded`);
                 }
-            }, 5000);
+            }, 1);
         }
 
         if (chunk === "__completed__") {
             if (docOpened) {
+                console.log("chunk completed");
                 doc.close();
                 docOpened = false;
-                reload();
+                // Need to wait for page tha loads slowly
+                setTimeout(reload, 100)
             }
             hideOverlay();
             return;
@@ -143,11 +185,12 @@
 
         if (!docOpened) {
             // Initialize iframe content when first chunk arrives
+            console.log("chunk opened");
             doc.open();
             docOpened = true;
         }
 
-        doc.write(chunk);
+        doc.write(chunk.trim());
     }
 
     const iframe = document.getElementById('generator-frame');
@@ -257,17 +300,26 @@
     });
 
 
+    // Promise-based mutex for processChunk
+    let chunkLock = Promise.resolve();
+
+    function processChunkLocked(chunk) {
+        // Chain onto the previous promise
+        chunkLock = chunkLock
+            .then(() => {
+                // If processChunk ever becomes async, this still works
+                return Promise.resolve(processChunk(chunk));
+            })
+            .catch(err => {
+                console.error('Error in processChunk:', err);
+            });
+    }
+
     // Updates to builder panel
     window.addEventListener('message', (event) => {
         if (event.data.method === "to_generator") {
             console.log('Generator panel message:', event.data);
-            processChunk(event.data.body);
-        } else if (event.data.method === "generator_overlay") {
-            if (event.data.body === "show") {
-                showOverlay();
-            } else {
-                hideOverlay();
-            }
+            processChunkLocked(event.data.body);
         }
     });
 
@@ -278,4 +330,98 @@
             popup.style.display = 'none';
         }
     });
+
+
+    // ===== Versions dropdown state & rendering =====
+    const versionsState = {
+        active: null,
+        list: []
+    };
+
+    function updateVersionLabel() {
+        const label = document.getElementById('versionLabel');
+        const v = versionsState.active;
+        if (v !== undefined && v !== null) {
+            const isLatest = v === Math.max(...versionsState.list);
+            label.textContent = `v${v}${isLatest ? " • Latest" : ""}`;
+        } else {
+            label.textContent = "Select version";
+        }
+    }
+
+    function renderVersionsMenu() {
+        const menu = document.getElementById('versionMenu');
+        menu.innerHTML = '';
+
+        versionsState.list.sort((a, b) => b - a).forEach(v => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.className = 'dropdown-item';
+            if (v === versionsState.active) a.classList.add('active');
+            a.href = '#';
+            a.textContent = `Version ${v}${v === Math.max(...versionsState.list) ? " - Latest" : ""}`;
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                if (v === versionsState.active) return;
+                versionsState.active = v;
+                updateVersionLabel();
+                renderVersionsMenu();
+
+                const chat = document.getElementById('chainlit');
+                if (chat && chat.contentWindow) {
+                    chat.contentWindow.postMessage({method: 'select_version', body: v}, '*');
+                }
+            });
+            li.appendChild(a);
+            menu.appendChild(li);
+        });
+
+        updateVersionLabel();
+    }
+
+    window.addEventListener('message', (event) => {
+        if (event.data.method === 'update_versions_list') {
+            const {versions, active} = event.data.body;
+            versionsState.list = Array.isArray(versions) ? versions : [];
+            versionsState.active = active;
+            renderVersionsMenu();
+        }
+    });
+
+
+    function renderFollowUpButtons(questions) {
+        const container = document.getElementById('followup-buttons');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        questions.forEach((question, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'follow-up-btn';
+            btn.style.left = `${10 + idx * 50}px`;
+            btn.title = question.title || '';
+            btn.dataset.followUpQuestion = question.question || '';
+            btn.innerHTML = '<span class="material-icons">lightbulb_outline</span>';
+            // Attach click handler directly to this button
+            btn.addEventListener('click', () => {
+                const chat = document.getElementById('chainlit');
+                if (chat) {
+                    chat.contentWindow.postMessage({
+                        method: "to_builder",
+                        body: question.question
+                    }, '*');
+                }
+            });
+            container.appendChild(btn);
+        });
+    }
+
+
+    window.addEventListener('message', (event) => {
+        if (event.data.method === 'update_follow_up_questions_list') {
+            const questions_list = event.data.body || [];
+            renderFollowUpButtons(questions_list);
+        }
+    });
+
 </script>
