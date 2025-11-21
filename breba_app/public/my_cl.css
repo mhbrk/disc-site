@@ -1,3 +1,11 @@
 #new-chat-button {
   display: none !important;
 }
+
+#chainlit .watermark {
+  visibility: hidden !important;
+  display: none !important;
+  position: absolute;
+  left: -9999px;
+  font-size: -9999px;
+}
