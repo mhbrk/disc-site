@@ -80,8 +80,6 @@ async def builder_completed(payload: str):
 async def process_generator_message(message: str):
     if message == "__completed__":
         await send_index_html_to_ui(message)
-        await cl.Message(
-            content="The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website").send()
     else:
         await send_index_html_chunk_to_ui(message)
 
@@ -231,6 +229,7 @@ async def respond(message: Message):
             await cl.Message(
                 content="Something went wrong while uploading the file. Try again later, or contact support.").send()
     else:
+        # TODO: need some error handling here similar to the above or better
         await to_builder(user_name, product_id, message.content, builder_completed, ask_user_streaming,
                          process_generator_message)
 
