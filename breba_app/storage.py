@@ -12,7 +12,7 @@ import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
 
-from breba_app.filesystem.versioned_r2 import VersionedR2FileSystem, NotFound, FileWrite
+from breba_app.filesystem.versioned_r2 import VersionedR2FileSystem, FileWrite
 
 load_dotenv()
 
@@ -329,8 +329,8 @@ def format_tree(tree: DirTree, indent=0):
     return lines
 
 
-def list_files_in_private(user_name: str, session_id: str):
-    structured = list_s3_structured(user_name, session_id)
+async def list_file_assets(user_name: str, session_id: str):
+    structured = await asyncio.to_thread(list_s3_structured, user_name, session_id)
     files_prefix = public_file_url(user_name, session_id, "")
     file_list = "\n".join(format_tree(structured))
     return f"{files_prefix} contains the following files:\n{file_list}"
