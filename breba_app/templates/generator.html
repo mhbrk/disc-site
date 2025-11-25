@@ -49,21 +49,29 @@
         position: relative;
         color: #E2E8F0;
         font-weight: 500;
-        font-size: 2rem;
+        font-size: 1.5rem;
         letter-spacing: 0.04em;
         padding: 1rem 2rem;
         border-radius: 12px;
-        background: rgba(61, 80, 126, 0.2);
         box-shadow: 0 16px 36px rgba(15, 23, 42, 0.6);
         backdrop-filter: blur(8px);
+        background: linear-gradient(
+                90deg,
+                rgba(61, 80, 126, 0.2) 0%,
+                rgba(96, 165, 250, 0.3) 50%,
+                rgba(61, 80, 126, 0.2) 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer-wave 2.5s ease-in-out infinite;
     }
 
-    @keyframes generator-shimmer {
+
+    @keyframes shimmer-wave {
         0% {
-            transform: translateX(-60%);
+            background-position: 200% 0;
         }
         100% {
-            transform: translateX(60%);
+            background-position: -200% 0;
         }
     }
 </style>
@@ -90,7 +98,7 @@
 
     <div id="generator-overlay">
         <div class="shimmer"></div>
-        <div class="message">Generating your preview…</div>
+        <div class="message">Please wait for the task to complete before doing anything else.</div>
         <span class="visually-hidden">Generating preview…</span>
     </div>
 </div>
