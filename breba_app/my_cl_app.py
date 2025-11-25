@@ -11,7 +11,7 @@ from breba_app.controllers.product_controller import delete_product
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product, create_or_update_product_for, create_blank_product_for, set_product_active
 from breba_app.models.user import User
-from breba_app.orchestrator import init_state, start_product
+from breba_app.orchestrator import init_state, start_product_task
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active
 from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
     landing_page_follow_up_questions
@@ -34,6 +34,8 @@ async def ask_user_streaming(token_stream: AsyncIterator[str] | str):
 
         # Stream each token into it as they arrive
         async for chunk in token_stream:
+            if not chunk:
+                continue
             await msg.stream_token(str(chunk), is_sequence=True)
 
     # Send the fully streamed message once complete
@@ -171,7 +173,7 @@ async def window_message(message: str | dict):
         await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
                            builder_completed, process_generator_message, ask_user_streaming)
     elif method == "load_template":
-        await start_product(
+        await start_product_task(
             user_name, product_id,
             landing_page_instructions,
             builder_completed,

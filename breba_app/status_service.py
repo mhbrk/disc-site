@@ -4,13 +4,12 @@ from contextvars import ContextVar
 
 import chainlit as cl
 
-THINKING = "Thinking..."
 DONE = "Done"
 
 
 class Task:
     def __init__(self):
-        self.msg = cl.Message(content=THINKING)
+        self.msg = cl.Message(content="")
         self.action_queue = asyncio.Queue()
         self._drain_lock = asyncio.Lock()
 
@@ -83,7 +82,9 @@ async def task_completed():
     if task is None:
         raise Exception("Not in task context")
 
-    _execute(task.msg.send())
+    # Only finalize message if status updates actually happened
+    if task.msg.content:
+        _execute(task.msg.send())
     # Wait for action_queue to drain
     await task.action_queue.join()
 
