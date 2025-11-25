@@ -135,9 +135,6 @@
 
     function processChunk(chunk) {
         console.log("chunk:" + chunk);
-
-        showOverlay();
-
         // Check for image references
         const imageUrls = [
             ...chunk.matchAll(/["'](https?:\/\/cdn\.breba\.app\/[^"']+\.(?:jpg|jpeg|png|webp|gif))["']/gi),
@@ -179,7 +176,6 @@
                 // Need to wait for page tha loads slowly
                 setTimeout(reload, 100)
             }
-            hideOverlay();
             return;
         }
 
@@ -315,15 +311,6 @@
             });
     }
 
-    // Updates to builder panel
-    window.addEventListener('message', (event) => {
-        if (event.data.method === "to_generator") {
-            console.log('Generator panel message:', event.data);
-            processChunkLocked(event.data.body);
-        }
-    });
-
-
     // 4) Click outside to cancel
     document.addEventListener('mousedown', e => {
         if (!popup.contains(e.target)) {
@@ -421,6 +408,13 @@
         if (event.data.method === 'update_follow_up_questions_list') {
             const questions_list = event.data.body || [];
             renderFollowUpButtons(questions_list);
+        } else if (event.data.method === "to_generator") {
+            console.log('Generator panel message:', event.data);
+            processChunkLocked(event.data.body);
+        } else if (event.data.method === "task_started") {
+            showOverlay();
+        } else if (event.data.method === "task_completed") {
+            hideOverlay();
         }
     });
 

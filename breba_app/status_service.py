@@ -4,6 +4,8 @@ from contextvars import ContextVar
 
 import chainlit as cl
 
+from breba_app.ui_bus import signal_task_started, signal_task_completed
+
 DONE = "Done"
 
 
@@ -72,16 +74,17 @@ async def on_cancel(action):
     await cl.Message(content="Task cancelled.").send()
 
 
-async def task_started():
+def task_started():
     """Start a new isolated task status"""
     _current_task.set(Task())
-
+    asyncio.create_task(signal_task_started())
 
 async def task_completed():
     task = _current_task.get()
     if task is None:
         raise Exception("Not in task context")
 
+    asyncio.create_task(signal_task_completed())
     # Only finalize message if status updates actually happened
     if task.msg.content:
         _execute(task.msg.send())
@@ -97,7 +100,7 @@ async def agent_task():
     """
     parent_task = _current_task.set(None)
     try:
-        await task_started()
+        task_started()
         yield
     except Exception as e:
         update_status("Error occurred")
