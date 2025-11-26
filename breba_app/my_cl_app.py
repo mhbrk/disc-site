@@ -36,7 +36,7 @@ async def ask_user_streaming(token_stream: AsyncIterator[str] | str):
         async for chunk in token_stream:
             if not chunk:
                 continue
-            await msg.stream_token(str(chunk), is_sequence=True)
+            await msg.stream_token(chunk, is_sequence=True)
 
     # Send the fully streamed message once complete
     if msg.content:

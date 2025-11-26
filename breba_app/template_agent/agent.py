@@ -16,6 +16,7 @@ TOKEN_LIMIT = 100_000
 async def to_user_stream(streamer: AsyncIterable[StreamQuestion | StreamWebSpecification]):
     async for msg in streamer:
         if type(msg) is StreamQuestion:
+            # For some reason when streaming WebSpecification, the first message is empty question.
             if not msg.question:
                 continue
             yield msg.question
