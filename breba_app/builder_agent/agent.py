@@ -18,7 +18,7 @@ from breba_app.agent_model import Message
 from breba_app.builder_agent.search_replace_example_messages import example_messages, system_reminder
 from breba_app.controllers.usage_controller import report_usage
 from breba_app.search_replace_editing import has_search_replace_edits, apply_search_replace_to_html
-from breba_app.storage import list_files_in_private
+from breba_app.storage import list_file_assets
 from .instruction_reader import get_instructions
 
 
@@ -176,10 +176,11 @@ class BuilderAgent:
         )
 
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # thread_id corresponds to product_id
+        available_assets_list = await list_file_assets(state["user_name"], config['configurable']["thread_id"])
+
         system_message = SystemMessage(content=get_instructions("builder_agent_system_prompt",
-                                                                files=list_files_in_private(state["user_name"],
-                                                                                            config['configurable'][
-                                                                                                "thread_id"]),
+                                                                files=available_assets_list,
                                                                 current_time=current_time))
         response = await self.model.ainvoke([system_message] + trimmed_messages)
         return {"messages": [response], "current_agent": "new_spec_agent"}
@@ -219,10 +220,11 @@ class BuilderAgent:
         )
 
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # thread_id corresponds to product_id
+        available_assets_list = await list_file_assets(state["user_name"], config['configurable']["thread_id"])
+
         system_message = SystemMessage(content=get_instructions("search_replace",
-                                                                files=list_files_in_private(state["user_name"],
-                                                                                            config['configurable'][
-                                                                                                "thread_id"]),
+                                                                files=available_assets_list,
                                                                 current_time=current_time))
         system_messages = [system_message] + example_messages
         reminder = SystemMessage(content=system_reminder)

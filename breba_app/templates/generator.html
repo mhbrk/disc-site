@@ -1,3 +1,80 @@
+<style>
+    #generator-wrapper {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    #generator-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 220ms ease-in-out;
+        overflow: hidden;
+    }
+
+    #generator-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    #generator-overlay::before,
+    #generator-overlay::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+    }
+
+    #generator-overlay::before {
+        background: rgba(15, 23, 42, 0.85);
+    }
+
+    #generator-overlay::after {
+        background: linear-gradient(100deg, rgba(148, 163, 184, 0) 0%, rgba(148, 163, 184, 0.55) 50%, rgba(148, 163, 184, 0) 100%);
+        opacity: 0.35;
+        transform: translateX(-60%);
+        filter: blur(60px);
+        animation: generator-shimmer 3.6s linear infinite;
+        will-change: transform;
+    }
+
+    #generator-overlay .message {
+        position: relative;
+        color: #E2E8F0;
+        font-weight: 500;
+        font-size: 1.5rem;
+        letter-spacing: 0.04em;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(8px);
+        background: linear-gradient(
+                90deg,
+                rgba(61, 80, 126, 0.2) 0%,
+                rgba(96, 165, 250, 0.3) 50%,
+                rgba(61, 80, 126, 0.2) 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer-wave 2.5s ease-in-out infinite;
+    }
+
+
+    @keyframes shimmer-wave {
+        0% {
+            background-position: 200% 0;
+        }
+        100% {
+            background-position: -200% 0;
+        }
+    }
+</style>
 <!-- Action Bar -->
 <div id="action-bar" class="d-flex align-items-center gap-2 p-2 border-bottom bg-light">
     <div class="dropdown">
@@ -15,13 +92,14 @@
     <div id="followup-buttons" class="position-relative ms-3 follow-up-btn-container"></div>
 </div>
 
-<iframe id="generator-frame" class="w-100 h-100 d-block"></iframe>
+<div id="generator-wrapper" class="position-relative w-100 h-100">
+    <iframe id="generator-frame" class="w-100 h-100 d-block position-relative"></iframe>
 
-<div id="spinner"
-     class="position-absolute top-50 start-50 d-none"
-     style="z-index: 200;">
-    <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
+
+    <div id="generator-overlay">
+        <div class="shimmer"></div>
+        <div class="message">Please wait for the task to complete before doing anything else.</div>
+        <span class="visually-hidden">Generating preview…</span>
     </div>
 </div>
 
@@ -53,12 +131,18 @@
         }
     }
 
+    const overlay = document.getElementById('generator-overlay');
+
+    function showOverlay() {
+        overlay.classList.add('active');
+    }
+
+    function hideOverlay() {
+        overlay.classList.remove('active');
+    }
+
     function processChunk(chunk) {
         console.log("chunk:" + chunk);
-
-        const spinner = document.getElementById('spinner');
-        spinner.classList.remove('d-none');
-
         // Check for image references
         const imageUrls = [
             ...chunk.matchAll(/["'](https?:\/\/cdn\.breba\.app\/[^"']+\.(?:jpg|jpeg|png|webp|gif))["']/gi),
@@ -100,7 +184,6 @@
                 // Need to wait for page tha loads slowly
                 setTimeout(reload, 100)
             }
-            spinner.classList.add('d-none');
             return;
         }
 
@@ -236,15 +319,6 @@
             });
     }
 
-    // Updates to builder panel
-    window.addEventListener('message', (event) => {
-        if (event.data.method === "to_generator") {
-            console.log('Generator panel message:', event.data);
-            processChunkLocked(event.data.body);
-        }
-    });
-
-
     // 4) Click outside to cancel
     document.addEventListener('mousedown', e => {
         if (!popup.contains(e.target)) {
@@ -342,6 +416,13 @@
         if (event.data.method === 'update_follow_up_questions_list') {
             const questions_list = event.data.body || [];
             renderFollowUpButtons(questions_list);
+        } else if (event.data.method === "to_generator") {
+            console.log('Generator panel message:', event.data);
+            processChunkLocked(event.data.body);
+        } else if (event.data.method === "task_started") {
+            showOverlay();
+        } else if (event.data.method === "task_completed") {
+            hideOverlay();
         }
     });
 

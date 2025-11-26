@@ -1,7 +1,10 @@
 from collections import defaultdict
 from unittest.mock import Mock, patch
 
-from breba_app.storage import list_s3_structured, register_file, make_dir_tree, format_tree, list_files_in_private
+import pytest
+
+from breba_app.storage import list_s3_structured, register_file, make_dir_tree, format_tree, list_file_assets
+
 
 
 class MockBlob:
@@ -147,7 +150,8 @@ def test_format_tree_simple():
     assert lines == expected_lines
 
 
-def test_list_files_in_private():
+@pytest.mark.asyncio
+async def test_list_files_in_private():
     """Test final human-readable output with formatting"""
     mock_bucket = Mock()
     mock_blobs = [
@@ -157,7 +161,7 @@ def test_list_files_in_private():
     mock_bucket.list_blobs.return_value = mock_blobs
 
     with patch('breba_app.storage.private_bucket', mock_bucket):
-        result = list_files_in_private("test_session")
+        result = await list_file_assets("test_user", "test_session")
 
     expected = (
         "docs/\n"
@@ -169,7 +173,8 @@ def test_list_files_in_private():
     assert result == expected
 
 
-def test_list_files_in_private_no_metadata():
+@pytest.mark.asyncio
+async def test_list_files_in_private_no_metadata():
     """Test final human-readable output with formatting"""
     mock_bucket = Mock()
     mock_blobs = [
@@ -177,8 +182,8 @@ def test_list_files_in_private_no_metadata():
     ]
     mock_bucket.list_blobs.return_value = mock_blobs
 
-    with patch('breba_app.storage.private_bucket', mock_bucket):
-        result = list_files_in_private("test_session")
+    with patch('breba_app.storage.s3_bucket', mock_bucket):
+        result = await list_file_assets("test_user", "test_session")
 
     expected = (
         "images/\n"

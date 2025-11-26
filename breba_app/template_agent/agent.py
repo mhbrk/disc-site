@@ -3,6 +3,7 @@ from typing import AsyncIterable
 from langchain_core.messages import trim_messages
 from langchain_core.messages.utils import count_tokens_approximately, convert_to_openai_messages
 
+from breba_app.status_service import update_status
 from breba_app.template_agent.baml_client.async_client import b
 from breba_app.template_agent.baml_client.stream_types import Question as StreamQuestion, LLMMessage, \
     WebsiteSpecification as StreamWebSpecification
@@ -13,14 +14,15 @@ TOKEN_LIMIT = 100_000
 
 
 async def to_user_stream(streamer: AsyncIterable[StreamQuestion | StreamWebSpecification]):
-    spec_started = False
     async for msg in streamer:
         if type(msg) is StreamQuestion:
+            # For some reason when streaming WebSpecification, the first message is empty question.
+            if not msg.question:
+                continue
             yield msg.question
         if type(msg) is StreamWebSpecification:
-            if not spec_started:
-                spec_started = True
-                yield "Builder is working on the specification..."
+            update_status("Builder is working on the specification...")
+            break
 
 
 class TemplateAgent:
@@ -56,7 +58,7 @@ class TemplateAgent:
             # We do not want to add it to the state because it will hide all older messages. So we will not save state
             self.state.messages.pop()
             message = f"You have exceeded the token limit({TOKEN_LIMIT} tokens). Please provide a shorter description."
-            await ask_user_streaming_callback(message)
+            update_status(message)
             agent_response = Question(question=message)
 
         return agent_response

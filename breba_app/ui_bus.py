@@ -1,3 +1,5 @@
+import asyncio
+
 import chainlit as cl
 
 from breba_app.models.product import Product
@@ -28,3 +30,13 @@ async def update_versions_list(versions: list[int], active: int):
 
 async def update_follow_up_questions_list(questions: list[str]):
     await cl.send_window_message({"method": "update_follow_up_questions_list", "body": questions})
+
+async def signal_task_started():
+    await cl.context.emitter.task_start()
+    await asyncio.sleep(0.01)
+    await cl.send_window_message({"method": "task_started"})
+
+async def signal_task_completed():
+    await cl.context.emitter.task_end()
+    await asyncio.sleep(0.01)
+    await cl.send_window_message({"method": "task_completed"})

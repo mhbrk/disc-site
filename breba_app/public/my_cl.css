@@ -2,10 +2,9 @@
   display: none !important;
 }
 
-#chainlit .watermark {
+.watermark {
   visibility: hidden !important;
   display: none !important;
   position: absolute;
   left: -9999px;
-  font-size: -9999px;
 }

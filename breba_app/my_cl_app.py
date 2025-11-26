@@ -11,7 +11,7 @@ from breba_app.controllers.product_controller import delete_product
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product, create_or_update_product_for, create_blank_product_for, set_product_active
 from breba_app.models.user import User
-from breba_app.orchestrator import init_state, start_product
+from breba_app.orchestrator import init_state, start_product_task
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active
 from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
     landing_page_follow_up_questions
@@ -34,7 +34,9 @@ async def ask_user_streaming(token_stream: AsyncIterator[str] | str):
 
         # Stream each token into it as they arrive
         async for chunk in token_stream:
-            await msg.stream_token(str(chunk), is_sequence=True)
+            if not chunk:
+                continue
+            await msg.stream_token(chunk, is_sequence=True)
 
     # Send the fully streamed message once complete
     if msg.content:
@@ -80,8 +82,6 @@ async def builder_completed(payload: str):
 async def process_generator_message(message: str):
     if message == "__completed__":
         await send_index_html_to_ui(message)
-        await cl.Message(
-            content="The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website").send()
     else:
         await send_index_html_chunk_to_ui(message)
 
@@ -173,7 +173,7 @@ async def window_message(message: str | dict):
         await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
                            builder_completed, process_generator_message, ask_user_streaming)
     elif method == "load_template":
-        await start_product(
+        await start_product_task(
             user_name, product_id,
             landing_page_instructions,
             builder_completed,
@@ -231,6 +231,7 @@ async def respond(message: Message):
             await cl.Message(
                 content="Something went wrong while uploading the file. Try again later, or contact support.").send()
     else:
+        # TODO: need some error handling here similar to the above or better
         await to_builder(user_name, product_id, message.content, builder_completed, ask_user_streaming,
                          process_generator_message)
 
