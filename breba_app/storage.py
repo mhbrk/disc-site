@@ -326,6 +326,7 @@ def list_s3_structured(user_name: str, session_id: str, path: str = None) -> Dir
 
     return files
 
+
 def format_tree(tree: DirTree, indent=0) -> list[str]:
     lines = []
     for key, value in sorted(tree.items()):
