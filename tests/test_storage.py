@@ -33,7 +33,7 @@ def test_list_s3_structured_empty():
         mock_client.return_value.bucket.return_value = mock_bucket
         mock_bucket.list_blobs.return_value = []
 
-        result = list_s3_structured("test_session")
+        result = list_s3_structured("test_user", "test_session")
         assert result == {}
 
 
@@ -43,14 +43,14 @@ def test_list_s3_structured_single_file():
         # Setup mock bucket
         mock_bucket = Mock()
         mock_blob = MockBlob(
-            "test_session/images/test.png",
+            "test_user/test_session/images/test.png",
             {"description": "A test image"}
         )
-        mock_bucket.list_blobs.return_value = [mock_blob]
+        mock_bucket.objects.filter.return_value = [mock_blob]
 
         # Patch the private_bucket in the storage module
-        with patch('breba_app.storage.private_bucket', mock_bucket):
-            result = list_s3_structured("test_session")
+        with patch('breba_app.storage.s3_bucket', mock_bucket):
+            result = list_s3_structured("test_user", "test_session")
 
         expected = defaultdict(dict, {
             "images": defaultdict(dict, {
@@ -66,14 +66,14 @@ def test_list_s3_structured_nested():
         # Setup mock bucket with multiple blobs
         mock_bucket = Mock()
         mock_blobs = [
-            MockBlob("test_session/images/folder1/test1.png", {"description": "Image 1"}),
-            MockBlob("test_session/images/folder1/test2.png", {"description": "Image 2"}),
-            MockBlob("test_session/images/folder2/test3.png", {"description": "Image 3"}),
+            MockBlob("test_user/test_session/images/folder1/test1.png", {"description": "Image 1"}),
+            MockBlob("test_user/test_session/images/folder1/test2.png", {"description": "Image 2"}),
+            MockBlob("test_user/test_session/images/folder2/test3.png", {"description": "Image 3"}),
         ]
         mock_bucket.list_blobs.return_value = mock_blobs
 
         with patch('breba_app.storage.private_bucket', mock_bucket):
-            result = list_s3_structured("test_session")
+            result = list_s3_structured("test_user", "test_session")
 
         expected = defaultdict(dict, {
             "images": defaultdict(dict, {
@@ -93,11 +93,11 @@ def test_list_s3_structured_no_metadata():
     """Test files without metadata"""
     with patch('google.cloud.storage.Client'):
         mock_bucket = Mock()
-        mock_blob = MockBlob("test_session/images/no_meta.png")
+        mock_blob = MockBlob("test_user/test_session/images/no_meta.png")
         mock_bucket.list_blobs.return_value = [mock_blob]
 
         with patch('breba_app.storage.private_bucket', mock_bucket):
-            result = list_s3_structured("test_session")
+            result = list_s3_structured("test_user", "test_session")
 
         expected = defaultdict(dict, {
             "images": defaultdict(dict, {
@@ -117,8 +117,8 @@ def test_list_s3_structured_multiple_sessions():
         ]
         mock_bucket.list_blobs.return_value = mock_blobs
 
-        with patch('breba_app.storage.private_bucket', mock_bucket):
-            result = list_s3_structured("session1")
+        with patch('breba_app.storage.s3_bucket', mock_bucket):
+            result = list_s3_structured("test_user", "session1")
 
         # Assert list_blobs was called with the correct prefix
         mock_bucket.list_blobs.assert_called_once_with(prefix="session1")
@@ -155,12 +155,12 @@ async def test_list_files_in_private():
     """Test final human-readable output with formatting"""
     mock_bucket = Mock()
     mock_blobs = [
-        MockBlob("test_session/images/photo.png", {"description": "A photo"}),
-        MockBlob("test_session/docs/readme.txt", {"description": "Readme"}),
+        MockBlob("test_user/test_session/images/photo.png", {"description": "A photo"}),
+        MockBlob("test_user/test_session/docs/readme.txt", {"description": "Readme"}),
     ]
     mock_bucket.list_blobs.return_value = mock_blobs
 
-    with patch('breba_app.storage.private_bucket', mock_bucket):
+    with patch('breba_app.storage.s3_bucket', mock_bucket):
         result = await list_file_assets("test_user", "test_session")
 
     expected = (
@@ -178,7 +178,7 @@ async def test_list_files_in_private_no_metadata():
     """Test final human-readable output with formatting"""
     mock_bucket = Mock()
     mock_blobs = [
-        MockBlob("test_session/images/photo.png", None),
+        MockBlob("test_user/test_session/images/photo.png", None),
     ]
     mock_bucket.list_blobs.return_value = mock_blobs
 

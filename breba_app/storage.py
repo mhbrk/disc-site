@@ -25,6 +25,7 @@ CLOUDFLARE_ENDPOINT: str = os.getenv("CLOUDFLARE_ENDPOINT")
 CDN_BASE_URL: str = os.getenv("CDN_BASE_URL") or "https://cdn.breba.app"
 
 PUBLIC_BUCKET_NAME: str = os.getenv("PUBLIC_BUCKET")
+ASSETS_PATH = "assets"
 
 session = boto3.session.Session()
 # Uses AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from the environment
@@ -109,7 +110,7 @@ def save_image_to_private(user_name: str, session_id: str, image_name: str, cont
     :param content: image content
     :param description: image description, stored as metadata
     """
-    key = f"{user_name}/{session_id}/{image_name}"
+    key = f"{user_name}/{session_id}/{ASSETS_PATH}/{image_name}"
 
     try:
         s3_client.put_object(
@@ -136,7 +137,7 @@ def save_image_file_to_private(user_name: str, session_id: str, file_name: str, 
     :param description:
     :return:
     """
-    key = f"{user_name}/{session_id}/{file_name}"
+    key = f"{user_name}/{session_id}/{ASSETS_PATH}/{file_name}"
 
     file_size = Path(file_path).stat().st_size
     if file_size > MAX_FILE_SIZE:
@@ -162,7 +163,7 @@ def save_image_file_to_private(user_name: str, session_id: str, file_name: str, 
             ExtraArgs=extra_args
         )
         logger.info(f"Uploaded file to {USERS_BUCKET_NAME}/{key}")
-        return public_file_url(user_name, session_id, file_name)
+        return f"{CDN_BASE_URL}/{key}"
     except (BotoCoreError, ClientError) as e:
         logger.info(f"Error uploading file: {e}")
         raise
@@ -290,34 +291,43 @@ def make_dir_tree() -> DirTree:
 
 
 def register_file(parts: list[str], tree: DirTree):
+    """
+    Walk the tree, which generates the tree structure for all the parts. The last part is the file name so it is skipped.
+    :param parts: List of path parts for a given file e.g. ["user", "session", "assets", "image.png"]
+    :param tree: defaultdict generating directory tree where missing keys generate a subtree
+    :return: The last node in the tree where the file needs to go
+    """
     current = tree
-    for part in parts[:-1]:
+    file_name = parts.pop()
+    for part in parts:
         current = current[part]
-    return current
+    current[file_name] = {}
+    return current[file_name]
 
 
-def list_s3_structured(user_name: str, session_id: str) -> DirTree:
-    prefix = f"{user_name}/{session_id}/"
+def list_s3_structured(user_name: str, session_id: str, path: str = None) -> DirTree:
+    full_prefix = f"{user_name}/{session_id}/"
+    if path:
+        full_prefix += f"{path}/"
+
     files = make_dir_tree()
 
-    for obj_summary in s3_bucket.objects.filter(Prefix=prefix):
+    for obj_summary in s3_bucket.objects.filter(Prefix=full_prefix):
         full_key = obj_summary.key
-        relative_path = full_key[len(prefix):]
-        parts = relative_path.split("/")
-        file_name = parts[-1]
-
         # You need to explicitly fetch the object to get metadata
         obj = s3_bucket.Object(full_key)
         obj_metadata = obj.metadata
         description = obj_metadata.get("description", "No description")
 
+        relative_path = full_key[len(full_prefix):]
+        parts = relative_path.split("/")
         file = register_file(parts, files)
-        file[file_name] = {"__description__": description}
+        file["__description__"] = description
 
     return files
 
 
-def format_tree(tree: DirTree, indent=0):
+def format_tree(tree: DirTree, indent=0) -> list[str]:
     lines = []
     for key, value in sorted(tree.items()):
         if isinstance(value, dict) and "__description__" in value:
@@ -329,11 +339,11 @@ def format_tree(tree: DirTree, indent=0):
     return lines
 
 
-async def list_file_assets(user_name: str, session_id: str):
-    structured = await asyncio.to_thread(list_s3_structured, user_name, session_id)
-    files_prefix = public_file_url(user_name, session_id, "")
-    file_list = "\n".join(format_tree(structured))
-    return f"{files_prefix} contains the following files:\n{file_list}"
+async def list_file_assets(user_name: str, session_id: str) -> str:
+    dir_tree = await asyncio.to_thread(list_s3_structured, user_name, session_id, ASSETS_PATH)
+    dir_url = public_file_url(user_name, session_id, ASSETS_PATH)
+    file_list = "\n".join(format_tree(dir_tree))
+    return f"{dir_url} contains the following files:\n{file_list}"
 
 
 def get_public_url(site_name: str) -> str:
