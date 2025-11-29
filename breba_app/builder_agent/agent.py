@@ -43,7 +43,7 @@ class BuilderAgent:
 
     def __init__(self):
         self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
-        self.editing_model = ChatOpenAI(model="gpt-5", reasoning_effort="minimal", use_responses_api=True)
+        self.editing_model = ChatOpenAI(model="gpt-5.1", reasoning={"effort": "none"}, verbosity="low", use_responses_api=True)
 
         # Create a checkpointer, could use MongoDB checkpointer in the future
         checkpointer = MemorySaver()
@@ -228,6 +228,7 @@ class BuilderAgent:
                                                                 current_time=current_time))
         system_messages = [system_message] + example_messages
         reminder = SystemMessage(content=system_reminder)
+
         trimmed_messages.insert(-1, reminder)
         response = await self.editing_model.ainvoke(system_messages + trimmed_messages)
         return {"messages": [response], "current_agent": "editing_spec_agent"}
