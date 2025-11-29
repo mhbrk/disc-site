@@ -66,7 +66,10 @@ hello.md
     ),
 ]
 
-system_reminder = """# *SEARCH/REPLACE block* Rules:
+system_reminder = """
+<system_reminder>
+This is just a reminder and not part of the conversation. Ignore these instructions if you need to ask questions:
+# *SEARCH/REPLACE block* Rules:
 
 Every *SEARCH/REPLACE block* must use this format:
 1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
@@ -105,4 +108,6 @@ If you want to put code in a new file or an empty file, use a *SEARCH/REPLACE bl
 Reply only in English. ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
 
 IMPORTANT: When asking questions do not use SEARCH/REPLACE blocks.
+
+</system_reminder>
 """
