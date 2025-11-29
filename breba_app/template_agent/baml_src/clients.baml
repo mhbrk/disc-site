@@ -30,6 +30,9 @@ client<llm> Gpt5Low {
     reasoning {
       effort "low"
     }
+    text {
+      verbosity: "low"
+    }
   }
 }
 

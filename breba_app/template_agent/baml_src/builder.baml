@@ -12,33 +12,24 @@ class LLMMessage {
 }
 
 template_string  SystemInfo() #"
-    The website will be static, but when generating it, 
-    the generator will be able to use tools to fetch dynamic content before generating the static html.  
-    For this project all the things will go into a single index.html.
+    Keep in mind, for this project all the things will go into a single index.html.
 "#
 
 template_string TemplatingInstructions() #"
-Your job is to follow instructions in the template and generate a good website specification.
-
-**You will ask questions** 
-Ask one question at a time and wait for the answer before asking the next question. 
-Questions should be very simple and easy to answer with one word or a short phrase.
+**You will ask questions**
+Ask ONE question at a time and wait for the answer before asking the next question.
+Questions must be simple and easy to answer with one word or a short phrase.
 "#
 
 template_string GoodWebsiteSpecification() #"
-**Generating good website specifications** 
-Your final website specification will be sent to another agent to generate HTML. 
-The html generating agent has access to tools like web search and image generation to help generate the HTML.
+**Generating good website specifications**
+The website specification must be self-contained and NOT reference any parts of the conversation with the user. Do not introduce extra or one-off instructions in the specification.
 
-You need to be very detailed to make sure that the prompt can be used to generate a fully working HTML site. 
+You are not providing the user an answer, instead you are producing a complete and concise website specification for the development team.
+The HTML generator will use only the final website specification to build the website, so make sure the specification is concise, complete, and includes all required sections, elements, and text—nothing more.
+After all user questions are answered, respond ONLY with the finalized website specification. Do NOT include extra explanations or additional narrative.
 
-IMPORTANT: The website specification must be atomic and should be **self-contained** without referencing any parts of the conversation with the user. 
-
-The HTML generator will use only the final website specification to construct the site.
-All the information the user provides must be worked into the website specification so that the HTML generator can generate the website consistently and to the user's needs.
-After getting answers to your questions, you will always respond with the complete website specification.  
-
-You are producing a high quality PRD for the website and it needs to clear and concise. Avoid repeatig instructions and unnecessary section.
+Produce a high quality PRD that is clear and concise. Avoid repeating instructions and unnecessary sections.
 
 Here is an example of a website specification:
 
@@ -46,25 +37,26 @@ Here is an example of a website specification:
 
 ## 1. Overview
 
-This is a static HTML website for a personal birthday celebration.
-It will be shared with friends and should present all key event information clearly, with an embedded Google Form for RSVP.
+This is a static HTML website for a personal birthday celebration. It will be shared with friends and presents all key event information clearly, with an embedded Google Form for RSVP.
 
 The site must be:
-- Elegant and modern-minimal in visual style
+- Elegant and modern-minimal in style
 - Mobile-friendly and easy to navigate
-- Deliverable as a single static site self-contained in a single index.html file (HTML, CSS, JS)
 
 ---
 
 ## 2. Design System
-
-- **Design Aesthetic**: Classy, modern-minimal
-- **Typography**: Clean sans-serif for body text; consider elegant serif for headings
-- **Colors**: Neutral or refined palette (e.g., white, black, light beige, subtle gold/gray accents)
+- **Overview**: Clean, classy, modern-minimal. No visual clutter or unnecessary animations.
+- **Typography**: Clean sans-serif for body text; elegant serif for headings
+- **Colors**:
+  - Background: #FFFFFF
+  - Text: #000000
+  - Accent Gold: #C8A95A
+  - Divider Gray: #E5E5E5
 - **Layout**:
-  - One-page scroll or simple vertical section structure
-  - No unnecessary animations or visual noise
-  - Prioritize clarity and visual balance
+  - Max content width: ~900px
+  - Centered column layout
+  - Mobile padding: 20–24px
 - **Theme**:
   - Light theme
 
@@ -74,18 +66,13 @@ The site must be:
 
 ### Hero Section
 
-- **Greeting / Title**:
-  _"You're invited to Yason’s birthday!"_
-
-- **Photo**:
-  Display image from:
-  `https://cdn.breba.app/abc/123/my_photo.png`
+- **Title**: _"You're invited to Yason’s birthday!"_
+- **Photo**: Image from `https://cdn.breba.app/abc/123/my_photo.png`
 
 ---
 
 ### Event Details
 
-Display clearly and accessibly:
 - **Date**: July 7, 2025
 - **Time**: 7:00 PM
 - **Location**: 123 ABC St, Seattle, WA
@@ -95,13 +82,10 @@ Display clearly and accessibly:
 
 ### RSVP Section
 
-- Embed the following Google Form directly into the page:
-  `https://forms.gle/gtPhM82xcEXF9YaKA`
-
-**Requirements**:
-- Responsively sized iframe
-- Introduced with heading like _“Let me know if you’re coming!”_
-- Match the form styling (if possible) to the rest of the site
+- Embed Google Form: `https://forms.gle/gtPhM82xcEXF9YaKA`
+- Responsive iframe
+- Heading: _"Let me know if you’re coming!"_
+- Match form styling to site if possible
 
 ---
 
@@ -114,9 +98,10 @@ https://cdn.breba.app/images/avatar.png - Use this for my avatar
 function GenerateSpecificationFromTemplate(messages: LLMMessage[]) -> Question | WebsiteSpecification {
   client Gpt5Low
   prompt #"
-    You are an AI agent. You are helping a user to craft a website specification (PRD). 
-
-    {{ ctx.output_format }}
+    You are a product manager crafting a website specification (PRD). 
+    You are non-technical and will produce a specification that can be read by someone without understanding of HTML.
+    Use non-technical terms to describe the website. 
+    Do not make up technical limitations or constraints.
 
     {{ SystemInfo() }}
 
