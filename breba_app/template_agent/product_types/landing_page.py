@@ -64,10 +64,13 @@ Ask one question at a time and wait for response before asking the next question
     },
     {
         "title": "Call to action",
-        "question": """I want to finalize the call to action form. Ask me questions to make sure form api key and subject keys are correct. 
-End result must have a fully functional form that works with the outside 
-provider and no remaining questions to ask. Ask one question at a time and wait for response before asking 
-the next question. If I don't know something, just use default values. I'm not a developer.
+        "question": """I want to finalize the call to action form. 
+        Ask me questions to make sure form apiKey and subject fields are correct.
+Ask one question at a time and wait for response before asking the next question.
+End result must have a fully functional form that works with the outside provider and no remaining questions to ask. 
+If I cannot answer your questions for some reason, just use default values. I'm not a developer.
+
+Fist ask questions about apiKey and subject, then you will update the specification.
 
 Don't ask questions about:
 1) Email recipient because this is setup on the backend.
@@ -85,5 +88,9 @@ This means asking the user for the script from Google Analytics and then make su
 End result must have Google Analytics properly setup. 
 Ask one question at a time and wait for response before asking the next question.
 Remember I'm not a developer. In can follow instructions and copy and paste code from google analytics, but I don't know anything about HTML"""
-    }
+    },
+    {
+        "title": "Favicon",
+        "question": "I want to upload a favicon are you ready?"
+    },
 ]
