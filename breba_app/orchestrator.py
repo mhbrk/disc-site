@@ -9,8 +9,9 @@ from breba_app.generator_agent.agent import agent as generator_agent
 from breba_app.status_service import agent_task, update_status
 from breba_app.storage import save_files
 from breba_app.template_agent.agent import TemplateAgent
-from breba_app.template_agent.baml_client.types import WebsiteSpecification, Question
+from breba_app.template_agent.baml_client.types import WebsiteSpecification
 from breba_app.ui_bus import update_versions_list
+from breba_app.website import get_canonical_url, generate_sitemap_xml, generate_robots_txt
 from builder_agent.agent import agent as builder_agent
 
 logger = logging.getLogger(__name__)
@@ -108,6 +109,27 @@ async def builder_editing_task(user_name: str, session_id: str, message: str):
     return agent_response
 
 
+async def write_new_version(user_name: str, product_id: str, spec: str, html: str):
+    new_version = await save_files(user_name, product_id, [("spec.txt", spec.encode("utf-8"), "text/plain"),
+                                                           ("index.html", html.encode("utf-8"), "text/html")])
+
+    canonical_url = get_canonical_url(html)
+    if canonical_url:
+        sitemap = generate_sitemap_xml([{"loc": canonical_url}])
+        robots_txt = generate_robots_txt(canonical_url)
+
+        asyncio.create_task(
+            save_files(
+                user_name, product_id,
+                [
+                    ("sitemap.xml", sitemap.encode("utf-8"), "text/xml"),
+                    ("robots.txt", robots_txt.encode("utf-8"), "text/plain")],
+                version=new_version
+            )
+        )
+    return new_version
+
+
 async def to_generator(user_name: str, session_id: str, message: str, builder_completed_callback, generator_callback,
                        message_to_user_callback):
     async with agent_task():
@@ -140,8 +162,7 @@ async def to_generator(user_name: str, session_id: str, message: str, builder_co
             update_status("Waiting for user input...")
             await message_to_user_callback(new_spec)
 
-        new_version = await save_files(user_name, session_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
-                                                               ("index.html", new_html.encode("utf-8"), "text/html")])
+        new_version = await write_new_version(user_name, session_id, new_spec, new_html)
 
         versions = await breba_app.storage.list_versions(user_name, session_id)
         await update_versions_list(versions, new_version)
@@ -162,9 +183,7 @@ async def update_product(user_name: str, session_id: str, message: str,
         await generator_task(user_name, session_id, new_spec, generator_callback)
         new_html = generator_agent.get_last_html(session_id)
 
-        new_version = await save_files(user_name, session_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
-                                                               ("index.html", new_html.encode("utf-8"),
-                                                                "text/html")])
+        new_version = await write_new_version(user_name, session_id, new_spec, new_html)
         # Update status only after we save the files
         update_status("The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website")
         versions = await breba_app.storage.list_versions(user_name, session_id)
@@ -205,8 +224,7 @@ async def start_product(user_name: str, product_id: str, message: str,
 
         new_html = generator_agent.get_last_html(product_id)
 
-        new_version = await save_files(user_name, product_id, [("spec.txt", new_spec.encode("utf-8"), "text/plain"),
-                                                               ("index.html", new_html.encode("utf-8"), "text/html")])
+        new_version = await write_new_version(user_name, product_id, new_spec, new_html)
 
         # Update status only after we save the files
         update_status("The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website")

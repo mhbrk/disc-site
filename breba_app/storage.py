@@ -206,12 +206,13 @@ async def save_index_html(user_name: str, session_id: str, html: str) -> None:
     await save_file_versioned(user_name, session_id, "index.html", data, "text/html")
 
 
-async def save_files(user_name: str, session_id: str, files: list[tuple[str, bytes, str]]):
+async def save_files(user_name: str, session_id: str, files: list[tuple[str, bytes, str]], version: int | None = None):
     """
     Save files to user's namespace
     :param user_name: Used to find user namespace
     :param session_id: Used to find product namespace
     :param files: files to write to system
+    :param version: version to save files to, if not specified, a new version will be created
     :return: The new version number
     """
     files_writes = [FileWrite(name, content, type) for name, content, type in files]
@@ -220,7 +221,7 @@ async def save_files(user_name: str, session_id: str, files: list[tuple[str, byt
         root_prefix=f"{user_name}/{session_id}",
         s3_client=s3_client,
     )
-    return await asyncio.to_thread(filesystem.batch_write, files_writes)
+    return await asyncio.to_thread(filesystem.batch_write, files_writes, version)
 
 
 async def read_spec_text(user_name: str, session_id: str) -> str | None:
