@@ -12,12 +12,12 @@ from fastapi import Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
 
 from breba_app.auth import change_password
 from breba_app.config import init_db
 from breba_app.generator_agent.agent import agent
+from breba_app.paths import app_path, templates
 
 logging.basicConfig(level=logging.INFO, )
 logger = logging.getLogger(__name__)
@@ -44,8 +44,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app_path = Path(__file__).parent
-
 # Compute static asset version based on max mtime of public files on startup
 public_dir = app_path / "public"
 if public_dir.exists():
@@ -60,7 +58,6 @@ def asset_url(filename):
     return f"{base}?v={ASSET_VERSION}"
 
 
-templates = Jinja2Templates(directory=app_path / "templates")
 templates.env.globals['asset'] = asset_url
 
 app.mount("/public",
@@ -113,13 +110,13 @@ async def settings_page(request: Request):
 
 @app.post("/settings/account/password")
 async def change_password_route(
-    request: Request,
-    current_user: Annotated[
-        cl.User, Depends(get_current_user)
-    ],
-    current_password: str = Form(...),
-    new_password: str = Form(...),
-    confirm_password: str = Form(...),
+        request: Request,
+        current_user: Annotated[
+            cl.User, Depends(get_current_user)
+        ],
+        current_password: str = Form(...),
+        new_password: str = Form(...),
+        confirm_password: str = Form(...),
 ):
     user_id = current_user.identifier
 
@@ -146,6 +143,7 @@ async def change_password_route(
         )
 
     return RedirectResponse(url="/settings?success=1", status_code=303)
+
 
 current_file_dir = Path(__file__).parent
 mount_chainlit(app=app, target=str(current_file_dir / "my_cl_app.py"), path="/chainlit")
