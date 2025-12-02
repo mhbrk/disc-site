@@ -12,16 +12,19 @@ async def run_deployment(username: str, product: Product, deployment_id: str) ->
     # TODO: optimize this. User should be fully stored in session at login
     # TODO: optimize this. Product_id should come with the request from the forntend
     #  (in fact this is a bug that product is stored in session). The internal id should be mapped on the backend
-    user = await User.find_one(User.username == username)
     try:
+        user = await User.find_one(User.username == username)
         deployment = await Deployment.get_or_create(deployment_id, product.id, user.id)
         url = await upload_site(username, product.product_id, deployment.deployment_id)
         logger.info(f"User: {username}, Product: {product.product_id}, uploaded site to url: {url}")
 
         await deployment.update_deployment_timestamp()
         return f"Deployed your website to: {url}"
+    except ValueError as e:
+        message = str(e)
+        logging.exception(message)
+        return message
     except Exception as e:
-        import traceback
-        logger.error(f"Could not deploy to {deployment_id}. Error: {e}")
-        logger.error(traceback.format_exc())
-        return f"Could not deploy to {deployment_id}. It is probably already taken by another user"
+        message = f"Could not deploy to {deployment_id}. Please try again later."
+        logging.exception(message)
+        return message
