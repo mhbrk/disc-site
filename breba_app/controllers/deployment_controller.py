@@ -21,5 +21,7 @@ async def run_deployment(username: str, product: Product, deployment_id: str) ->
         await deployment.update_deployment_timestamp()
         return f"Deployed your website to: {url}"
     except Exception as e:
+        import traceback
         logger.error(f"Could not deploy to {deployment_id}. Error: {e}")
+        logger.error(traceback.format_exc())
         return f"Could not deploy to {deployment_id}. It is probably already taken by another user"
