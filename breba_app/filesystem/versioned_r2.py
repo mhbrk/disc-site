@@ -171,22 +171,27 @@ class VersionedR2FileSystem:
 
         return self.batch_write(files)
 
-    def batch_write(self, files: Iterable[FileWrite]) -> int:
+    def _get_or_create_manifest(self, version: int | None = None) -> dict:
+        new_version = version or self._get_next_version()
+        base_version = version or self.get_version()
+
+        manifest = self._get_manifest(base_version)
+
+        if new_version > base_version:
+            manifest["parent"] = base_version
+            manifest["version"] = new_version
+            manifest["created_at"] = datetime.now(timezone.utc).isoformat()
+
+        return manifest
+
+
+    def batch_write(self, files: Iterable[FileWrite], version: int | None = None) -> int:
         """Atomically write a batch of files and create one new version."""
         files = list(files)
         if not files:
             raise ValueError("batch_write requires at least one FileWrite")
 
-        base_version = self.get_version()
-        # Always create a new version
-        new_version = self._get_next_version()
-        base_manifest = self._get_manifest(base_version)
-        new_manifest = {
-            "version": new_version,
-            "parent": base_version,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "files": dict(base_manifest["files"]),
-        }
+        manifest = self._get_or_create_manifest(version)
 
         for fw in files:
             path = _sanitize_path(fw.path)
@@ -194,9 +199,10 @@ class VersionedR2FileSystem:
             ctype = fw.content_type or _guess_content_type(path)
             sha = hashlib.sha256(data).hexdigest()
 
-            old_meta = base_manifest["files"].get(path)
+            old_meta = manifest["files"].get(path)
+            # Write file only if content is different
             if old_meta and old_meta["sha256"] == sha:
-                new_manifest["files"][path] = old_meta
+                manifest["files"][path] = old_meta
                 continue
 
             if self._use_cas:
@@ -204,19 +210,19 @@ class VersionedR2FileSystem:
                 if not self._object_exists(key):
                     self._s3.put_object(Bucket=self._bucket, Key=key, Body=data, ContentType=ctype)
             else:
-                key = self._versioned_file_key(new_version, path)
+                key = self._versioned_file_key(manifest["version"], path)
                 self._s3.put_object(Bucket=self._bucket, Key=key, Body=data, ContentType=ctype)
 
-            new_manifest["files"][path] = {
+            manifest["files"][path] = {
                 "key": key,
                 "sha256": sha,
                 "size": len(data),
                 "content_type": ctype,
             }
 
-        self._put_json(self._manifest_key(new_version), new_manifest)
-        self._put_text(self._latest_key(), str(new_version))
-        return new_version
+        self._put_json(self._manifest_key(manifest["version"]), manifest)
+        self._put_text(self._latest_key(), str(manifest["version"]))
+        return manifest["version"]
 
     # ------------------------- Private helpers ---------------------------- #
 
