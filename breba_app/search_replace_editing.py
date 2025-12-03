@@ -430,6 +430,10 @@ def find_similar_lines(search_lines, content_lines, threshold=0.6):
 
 
 def apply_edits(content, edits, fence=DEFAULT_FENCE):
+    if not edits:
+        raise ValueError("No edits found")
+    if not content:
+        raise ValueError("No content to apply edits to")
     failed = []
     passed = []
     updated_edits = []
