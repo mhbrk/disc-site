@@ -98,15 +98,23 @@ async def start_editing_task(user_name: str, session_id: str, query: str, genera
 
 
 async def builder_editing_task(user_name: str, session_id: str, message: str):
-    agent_message = Message(role="user", parts=[TextPart(text=message)])
-    try:
-        agent_response = await builder_agent.edit_invoke(user_name, session_id, agent_message)
-    except Exception as e:
-        logger.error(f"Error editing spec: {e}")
-        logger.info("Falling back to rebuilding the spec")
-        agent_response = await builder_agent.invoke(user_name, session_id, agent_message)
+    attempt_message = message  # base message
 
-    return agent_response
+    for attempt in range(3):
+        agent_message = Message(role="user", parts=[TextPart(text=attempt_message)])
+
+        try:
+            return await builder_agent.edit_invoke(user_name, session_id, agent_message)
+        except Exception as e:
+            logging.exception(f"edit_invoke failed (attempt {attempt + 1}/3)")
+
+            # Prepare next attempt message
+            attempt_message = f"I tried to use your search and replace blocks and ran into the following errors, please fix them: {str(e)}\n"
+
+            # If this was the last attempt, re-raise or handle the failure
+            if attempt == 2:
+                logger.error("All edit_invoke attempts failed.")
+                raise ValueError("All edit attempts failed. Try making a more specific request.")
 
 
 async def write_new_version(user_name: str, product_id: str, spec: str, html: str):
