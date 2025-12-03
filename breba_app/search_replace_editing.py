@@ -24,6 +24,14 @@ missing_filename_err = (
 )
 
 
+class ApplyEditsError(Exception):
+    def __init__(self, message, partial_content, failed, passed, updated_edits):
+        super().__init__(message)
+        self.partial_content = partial_content
+        self.failed = failed
+        self.passed = passed
+        self.updated_edits = updated_edits
+
 def strip_filename(filename, fence):
     filename = filename.strip()
 
@@ -482,7 +490,13 @@ The REPLACE lines are already in {path}!
 Don't re-send them.
 Just reply with fixed versions of the {blocks} above that failed to match.
 """
-    raise ValueError(res)
+    raise ApplyEditsError(
+        message=res,
+        partial_content=new_content or content,
+        failed=failed,
+        passed=passed,
+        updated_edits=updated_edits,
+    )
 
 
 def apply_search_replace_to_html(html: str, search_replace_text: str) -> str:

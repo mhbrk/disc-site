@@ -261,7 +261,7 @@ class BuilderAgent:
         asyncio.create_task(report_usage(user_name, session_id, usage_callback.usage_metadata))
         return await self.get_agent_response(config)
 
-    async def edit_invoke(self, user_name: str, session_id: str, user_input: Message):
+    async def edit_invoke(self, user_name: str, session_id: str, user_input: Message, spec: str | None = None):
         usage_callback = UsageMetadataCallbackHandler()
         config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id}, callbacks=[usage_callback])
         if self.is_waiting_for_user_input(config):
@@ -271,7 +271,7 @@ class BuilderAgent:
             logger.info(f"Invoking builder editing agent with user input: {user_input}")
             await self.app.ainvoke(
                 {"messages": [{"role": user_input.role, "content": user_input.parts[0].text}], "user_name": user_name,
-                 "current_agent": "editing_spec_agent"},
+                 "current_agent": "editing_spec_agent", "prompt": spec},
                 config)
         # Report usage as a parallel task
         asyncio.create_task(report_usage(user_name, session_id, usage_callback.usage_metadata))
