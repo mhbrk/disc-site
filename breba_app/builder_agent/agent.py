@@ -108,11 +108,6 @@ class BuilderAgent:
         """
         if len(state["messages"]) > 1:
             message = state["messages"][-1].text
-            # builder is a special case when LLM decides that it needs to rebuild the spec
-            if message == "builder":
-                # TODO: hand off should be explicit not through raising an exception
-                logger.info(f"builder message found. Need to rebuild the spec.")
-                raise Exception("Not an editing task, need to rebuild the spec")
 
             if has_search_replace_edits(message):
                 logger.info(f"diff message found")
