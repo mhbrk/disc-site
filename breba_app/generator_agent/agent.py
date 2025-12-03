@@ -38,6 +38,7 @@ def extract_html_content(content: str):
     else:
         return ""
 
+
 @before_model
 def pre_model_hook(state, runtime: Runtime):
     trimmed_messages = trim_messages(
@@ -91,7 +92,7 @@ class HTMLAgent:
         await session.initialize()
         mcp_tools = await load_mcp_tools(session)
 
-        self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
+        self.model = ChatOpenAI(model="gpt-5.1", reasoning={"effort": "low"}, verbosity="low", use_responses_api=True)
         # self.tools = base_tools + mcp_tools
         self.tools = base_tools
         self.graph = create_agent(
