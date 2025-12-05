@@ -43,7 +43,8 @@ class BuilderAgent:
 
     def __init__(self):
         self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
-        self.editing_model = ChatOpenAI(model="gpt-5.1", reasoning={"effort": "none"}, verbosity="low", use_responses_api=True)
+        self.editing_model = ChatOpenAI(model="gpt-5.1", reasoning={"effort": "none"}, verbosity="low",
+                                        use_responses_api=True)
 
         # Create a checkpointer, could use MongoDB checkpointer in the future
         checkpointer = MemorySaver()
@@ -105,17 +106,13 @@ class BuilderAgent:
         :param state: graph state that contains messages
         :return: True if diff is present
         """
-
         if len(state["messages"]) > 1:
             message = state["messages"][-1].text
-            logger.info(f"Verifying if diff message: {message}")
-            # builder is a special case when LLM decides that it needs to rebuild the spec
-            if message == "builder":
-                # TODO: hand off should be explicit not through raising an exception
-                raise Exception("Not an editing task, need to rebuild the spec")
 
             if has_search_replace_edits(message):
+                logger.info(f"diff message found")
                 return True
+        logger.info(f"message does not contain a diff")
         return False
 
     def is_final_prompt(self, state: State) -> bool:
@@ -261,18 +258,25 @@ class BuilderAgent:
         asyncio.create_task(report_usage(user_name, session_id, usage_callback.usage_metadata))
         return await self.get_agent_response(config)
 
-    async def edit_invoke(self, user_name: str, session_id: str, user_input: Message):
+    async def edit_invoke(self, user_name: str, session_id: str, user_input: Message, spec: str | None = None):
         usage_callback = UsageMetadataCallbackHandler()
         config = RunnableConfig(recursion_limit=100, configurable={"thread_id": session_id}, callbacks=[usage_callback])
         if self.is_waiting_for_user_input(config):
             await self.app.ainvoke(Command(update={"current_agent": "editing_spec_agent"}, resume=user_input), config)
         else:
-            # This happens in only with the first task request, if task is being continued this will not work
+            payload = {
+                "messages": [
+                    {"role": user_input.role, "content": user_input.parts[0].text}
+                ],
+                "user_name": user_name,
+                "current_agent": "editing_spec_agent"
+            }
+
+            if spec:
+                payload["prompt"] = spec
+
             logger.info(f"Invoking builder editing agent with user input: {user_input}")
-            await self.app.ainvoke(
-                {"messages": [{"role": user_input.role, "content": user_input.parts[0].text}], "user_name": user_name,
-                 "current_agent": "editing_spec_agent"},
-                config)
+            await self.app.ainvoke(payload, config)
         # Report usage as a parallel task
         asyncio.create_task(report_usage(user_name, session_id, usage_callback.usage_metadata))
         return await self.get_agent_response(config)

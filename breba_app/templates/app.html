@@ -83,6 +83,11 @@
             height: 100%;
         }
 
+        .col-md-3-5 {
+            flex: 0 0 auto;
+            width: 30%;
+        }
+
         #left-panels,
         #right-panel {
             height: 100%;
@@ -374,7 +379,7 @@
             document.location.reload();
         } else if (event.data.method === "logged_in") {
             // Reveal generator + sidebar buttons
-            document.getElementById("left-panels").classList.add("col-md-4");
+            document.getElementById("left-panels").classList.add("col-md-3-5");
             document.getElementById("right-panel").classList.remove("d-none");
             document.getElementById("sidebar-buttons").classList.remove("d-none");
         }

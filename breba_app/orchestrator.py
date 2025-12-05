@@ -6,6 +6,7 @@ import breba_app.storage
 from agent_model import TextPart, Message
 from breba_app.generator_agent.accumulator import TagAccumulator
 from breba_app.generator_agent.agent import agent as generator_agent
+from breba_app.search_replace_editing import ApplyEditsError
 from breba_app.status_service import agent_task, update_status
 from breba_app.storage import save_files
 from breba_app.template_agent.agent import TemplateAgent
@@ -85,28 +86,64 @@ async def generator_task(user_name: str, session_id: str, spec: str, generator_c
 
 
 async def start_editing_task(user_name: str, session_id: str, query: str, generator_callback):
-    try:
-        update = await generator_agent.diffing_update(user_name, session_id, query)
-        # TODO: this is funky. Using generator_callback like this. Need to use a specialized declarative generator_completed event
-        await generator_callback(update)
-        await generator_callback("__completed__")
-    except Exception as e:
-        logger.error(f"Error performing a diffing update: {e}")
-        accumulator = TagAccumulator()
-        async for chunk in generator_agent.editing_stream(query, user_name, session_id):
-            await process_chunk(accumulator, chunk, generator_callback)
+    attempt_message = query  # base message
+
+    for attempt in range(3):
+        try:
+            update = await generator_agent.diffing_update(user_name, session_id, attempt_message)
+            # TODO: this is funky. Using generator_callback like this. Need to use a specialized declarative generator_completed event
+            await generator_callback(update)
+            await generator_callback("__completed__")
+            return
+        except Exception as e:
+            logging.exception(f"edit_invoke failed (attempt {attempt + 1}/3)")
+
+            # Prepare next attempt message
+            attempt_message = f"I tried to use your search and replace blocks and ran into the following errors, please fix them: {str(e)}\n"
+
+            # If this was the last attempt, re-raise or handle the failure
+            if attempt == 2:
+                # rollback to the last known good spec in case partially_updated_spec was used at any of the retries
+                logger.error("All diffing_update attempts failed.")
+                raise ValueError("All edit attempts failed. Try making a more specific request.")
 
 
 async def builder_editing_task(user_name: str, session_id: str, message: str):
-    agent_message = Message(role="user", parts=[TextPart(text=message)])
-    try:
-        agent_response = await builder_agent.edit_invoke(user_name, session_id, agent_message)
-    except Exception as e:
-        logger.error(f"Error editing spec: {e}")
-        logger.info("Falling back to rebuilding the spec")
-        agent_response = await builder_agent.invoke(user_name, session_id, agent_message)
+    attempt_message = message  # base message
+    partially_updated_spec = None
+    last_spec = await builder_agent.get_last_spec(session_id)
+    for attempt in range(3):
+        agent_message = Message(role="user", parts=[TextPart(text=attempt_message)])
 
-    return agent_response
+        try:
+            return await builder_agent.edit_invoke(user_name, session_id, agent_message, spec=partially_updated_spec)
+        except ApplyEditsError as e:
+            logging.exception(f"edit_invoke failed (attempt {attempt + 1}/3)")
+
+            # If this was the last attempt, re-raise or handle the failure
+            if attempt == 2:
+                # rollback to the last known good spec in case partially_updated_spec was used at any of the retries
+                if partially_updated_spec:
+                    await builder_agent.set_agent_prompt(last_spec)
+                logger.error("All edit_invoke attempts failed.")
+                raise ValueError("All edit attempts failed. Try making a more specific request.")
+
+            # Prepare next attempt message
+            attempt_message = f"I tried to use your search and replace blocks and ran into the following errors, please fix them:\n {str(e)}\n"
+            partially_updated_spec = e.partial_content
+        except Exception as e:
+            logging.exception(f"edit_invoke failed (attempt {attempt + 1}/3)")
+
+            # Prepare next attempt message
+            attempt_message = f"I tried to use your search and replace blocks and ran into the following errors, please fix them: {str(e)}\n"
+
+            # If this was the last attempt, re-raise or handle the failure
+            if attempt == 2:
+                # rollback to the last known good spec in case partially_updated_spec was used at any of the retries
+                if partially_updated_spec:
+                    await builder_agent.set_agent_prompt(last_spec)
+                logger.error("All edit_invoke attempts failed.")
+                raise ValueError("All edit attempts failed. Try making a more specific request.")
 
 
 async def write_new_version(user_name: str, product_id: str, spec: str, html: str):

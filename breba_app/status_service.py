@@ -103,7 +103,7 @@ async def agent_task():
         task_started()
         yield
     except Exception as e:
-        update_status("Error occurred")
+        update_status(f"Error occurred: {str(e)}")
         raise
     finally:
         await task_completed()

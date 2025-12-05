@@ -51,8 +51,10 @@ landing_page_follow_up_questions = [
         "question": """I want to finalize SEO. Let's work on SEO. I'm not a developer and don't know anything about html tags.
 Ask me questions to make sure SEO is correct. 
 Do not make assumptions and do not make anything up. Ask as many questions as necessary.
-End result must have production ready SEO tags including images and text that will show up when sharing the website on social media.
-Ask one question at a time and wait for response before asking the next question. When asking questions about text, such as title and description, make a suggestion."""
+Ask one question at a time and wait for response before asking the next question. When asking questions about text, such as title and description, make a suggestion.
+End result must have production ready SEO tags including, but not limited to:
+title, description, canonical url, viewport for mobile-first indexing, og graph, twitter card, schema.org structured data, robots index and follow.
+"""
     },
     {
         "title": "Social Media",
@@ -70,13 +72,14 @@ Ask one question at a time and wait for response before asking the next question
 End result must have a fully functional form that works with the outside provider and no remaining questions to ask. 
 If I cannot answer your questions for some reason, just use default values. I'm not a developer.
 
-Fist ask questions about apiKey and subject, then you will update the specification.
 
 Don't ask questions about:
 1) Email recipient because this is setup on the backend.
 2) replyTo field should be set to "@" which means the email field from the form will be used.
 3) Endpoint URL is always https://api.staticforms.xyz/submit
 4) Always use honeypot field for security
+
+Always ask questions about apiKey and subject, then you will update the specification.
 
 **Notice that apiKey is the name of the field for staticforms.xyz.**"""
     },

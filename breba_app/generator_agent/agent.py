@@ -34,9 +34,10 @@ HTML_OUTPUT_MARKER = "::final html output::"
 def extract_html_content(content: str):
     split_message = content.split(HTML_OUTPUT_MARKER)
     if len(split_message) > 1:
-        return split_message[1]
+        return split_message[1].strip()
     else:
         return ""
+
 
 @before_model
 def pre_model_hook(state, runtime: Runtime):
@@ -91,7 +92,7 @@ class HTMLAgent:
         await session.initialize()
         mcp_tools = await load_mcp_tools(session)
 
-        self.model = ChatOpenAI(model="gpt-4.1", temperature=0)
+        self.model = ChatOpenAI(model="gpt-5.1", reasoning={"effort": "low"}, verbosity="low", use_responses_api=True)
         # self.tools = base_tools + mcp_tools
         self.tools = base_tools
         self.graph = create_agent(
@@ -133,15 +134,21 @@ class HTMLAgent:
         usage_callback = UsageMetadataCallbackHandler()
         config = {"configurable": {"thread_id": session_id}, "callbacks": [usage_callback]}
 
-        async for mode, data in self.graph.astream(inputs, config, stream_mode=["messages", "values"]):
-            if mode == "messages":
-                chunk, metadata = data
-                if metadata["langgraph_node"] == "model" and chunk.content:
+        async for chunk, metadata in self.graph.astream(inputs, config, stream_mode="messages"):
+            text = None
+            if metadata["langgraph_node"] == "model" and chunk.content:
+                if isinstance(chunk.content, str):
+                    text = chunk.content
+                elif isinstance(chunk.content, list):
+                    # filter out everything except type == text
+                    text_list = [item.get("text", "") for item in chunk.content if item["type"] == "text"]
+                    text = "".join(text_list)
+                if text:
                     yield {
                         "is_task_complete": False,
                         "require_user_input": False,
-                        "content": chunk.content,
-                    }
+                        "content": text,
+                }
 
         # TODO: This should be an Agent Bus event
         asyncio.create_task(report_usage(user_name, session_id, usage_callback.usage_metadata))
@@ -253,7 +260,7 @@ class HTMLAgent:
         messages = current_state.values.get('messages')
         if messages:
             last_message = messages[-1]
-            extracted_text = extract_html_content(last_message.content)
+            extracted_text = extract_html_content(last_message.text)
             return extracted_text
         else:
             return None
@@ -266,7 +273,7 @@ class HTMLAgent:
     def get_agent_response(self, config):
         current_state = self.graph.get_state(config)
         last_message = current_state.values.get('messages')[-1]
-        html_output = extract_html_content(last_message.content)
+        html_output = extract_html_content(last_message.text)
         if html_output:
             return {
                 "is_task_complete": True,
