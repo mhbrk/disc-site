@@ -124,7 +124,7 @@ async def builder_editing_task(user_name: str, session_id: str, message: str):
             if attempt == 2:
                 # rollback to the last known good spec in case partially_updated_spec was used at any of the retries
                 if partially_updated_spec:
-                    builder_agent.set_agent_prompt(last_spec)
+                    await builder_agent.set_agent_prompt(last_spec)
                 logger.error("All edit_invoke attempts failed.")
                 raise ValueError("All edit attempts failed. Try making a more specific request.")
 
@@ -141,7 +141,7 @@ async def builder_editing_task(user_name: str, session_id: str, message: str):
             if attempt == 2:
                 # rollback to the last known good spec in case partially_updated_spec was used at any of the retries
                 if partially_updated_spec:
-                    builder_agent.set_agent_prompt(last_spec)
+                    await builder_agent.set_agent_prompt(last_spec)
                 logger.error("All edit_invoke attempts failed.")
                 raise ValueError("All edit attempts failed. Try making a more specific request.")
 
