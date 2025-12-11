@@ -27,7 +27,7 @@ const labelFor = (el) =>
 // If you didn't keep it global, we’ll reconstruct a minimal version.
 let lastWaitlistTrigger = window.lastWaitlistTrigger || null;
 
-// 1) track clicks on any "Try Beta" opener
+// 1) track clicks on any "Request Access" opener
 document.querySelectorAll(".join-waitlist-btn").forEach((btn) => {
     if (btn.dataset.gaBound) return; // avoid double binding
     btn.dataset.gaBound = "1";
@@ -156,7 +156,7 @@ if (demoBtn) {
             button_area: 'hero',
             button_url: demoBtn.href
         });
-        // Mark session with a flag so we know this user watched demo before Try Beta
+        // Mark session with a flag so we know this user watched demo before Request Access
         sessionStorage.setItem('watched_demo', '1');
     }, {capture: true});
 }
