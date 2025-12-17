@@ -159,7 +159,12 @@ Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each ch
 Include just the changing lines, and a few surrounding lines if needed for uniqueness.
 Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
 
+<moving_code_instructions>
 To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+Make sure that the *SEARCH/REPLACE* block that deletes the code goes first. 
+When applying edits, we want to avoid situations where the first inserts the code in the new location, and then remove the code we just added instead of removing the original code. 
+</moving_code_instructions>
+
 
 Pay attention to which filenames the user wants you to edit.
 
