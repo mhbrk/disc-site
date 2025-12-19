@@ -503,7 +503,7 @@ Just reply with fixed versions of the {blocks} above that failed to match.
     )
 
 
-def apply_search_replace_to_html(html: str, search_replace_text: str) -> str:
+def apply_search_replace(html: str, search_replace_text: str) -> str:
     """
     This method is used to apply the diff to the html.
     :param html: html to apply the diff to
