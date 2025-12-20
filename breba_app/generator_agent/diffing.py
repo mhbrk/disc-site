@@ -9,7 +9,7 @@ from breba_app.controllers.usage_controller import report_usage
 from breba_app.generator_agent.instruction_reader import get_instructions
 from breba_app.generator_agent.search_replace_example_messages import example_messages, system_reminder
 from breba_app.generator_agent.static_html_example_messages import html_best_practices
-from breba_app.search_replace_editing import apply_search_replace_to_html
+from breba_app.search_replace_editing import apply_search_replace
 
 load_dotenv()
 
@@ -87,7 +87,7 @@ async def diff_text(user_name: str, product_id: str, html: str, prompt: str):
     logger.info(f"Generated SEARCH/REPLACE strings:\n{message}")
 
     try:
-        return apply_search_replace_to_html(html, message)
+        return apply_search_replace(html, message)
     except Exception as e:
         logger.error(f"Failed to apply edits {e}")
         raise

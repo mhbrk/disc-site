@@ -96,7 +96,7 @@ async def start_editing_task(user_name: str, session_id: str, query: str, genera
             await generator_callback("__completed__")
             return
         except Exception as e:
-            logging.exception(f"edit_invoke failed (attempt {attempt + 1}/3)")
+            logging.exception(f"diffing_update failed (attempt {attempt + 1}/3)")
 
             # Prepare next attempt message
             attempt_message = f"I tried to use your search and replace blocks and ran into the following errors, please fix them: {str(e)}\n"

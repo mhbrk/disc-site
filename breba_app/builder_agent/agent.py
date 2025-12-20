@@ -17,7 +17,7 @@ from langgraph.types import interrupt, Command
 from breba_app.agent_model import Message
 from breba_app.builder_agent.search_replace_example_messages import example_messages, system_reminder
 from breba_app.controllers.usage_controller import report_usage
-from breba_app.search_replace_editing import has_search_replace_edits, apply_search_replace_to_html
+from breba_app.search_replace_editing import has_search_replace_edits, apply_search_replace
 from breba_app.storage import list_file_assets
 from .instruction_reader import get_instructions
 
@@ -191,7 +191,7 @@ class BuilderAgent:
         logger.info(f"Attempting to apply diff: {message}")
 
         try:
-            new_spec = apply_search_replace_to_html(state["prompt"], message)
+            new_spec = apply_search_replace(state["prompt"], message)
             if not new_spec:
                 raise ValueError(f"Something went wrong, modified spec could not be generated.")
             logger.info(f"Diff was successfully applied: {message}")
