@@ -323,8 +323,11 @@ class BuilderAgent:
         config = RunnableConfig(configurable={"thread_id": session_id})
         # Must add to messages in order to be able to continue conversation
         await self.app.aupdate_state(config, {"prompt": prompt, "messages": [
-            ("user", f"Load the following spec: {prompt}"),
-            ("ai", f"::final website specification::\n{prompt}\n::final website specification::")]},
+            ("user", f"Load the following spec.md:\n "
+                     f"```\n"
+                     f"{prompt}\n"
+                     f"```"),
+            ("ai", f"Ok, I will use this file to make edits.")]},
                                      as_node="extract_prompt")
 
 
