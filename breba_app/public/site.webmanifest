@@ -1,0 +1,25 @@
+{
+  "name": "Breba",
+  "short_name": "Breba",
+  "description": "Build websites and apps using collaborative AI agents.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#a18ae7",
+  "theme_color": "#a18ae7",
+  "icons": [
+    {
+      "src": "/public/favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/public/favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
