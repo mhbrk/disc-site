@@ -73,6 +73,9 @@
 
 <template id="product-menu-template">
     <div class="product-context-menu">
+        <button class="menu-item" data-action="rename" type="button">
+            Rename
+        </button>
         <button class="menu-item text-danger" data-action="delete" type="button">
             Delete
         </button>
@@ -243,26 +246,31 @@
             const menuItem = e.target.closest(".menu-item");
             if (menuItem) {
                 const chat = document.getElementById("chainlit");
-                const action = menuItem.dataset.action; // "delete"
+                const action = menuItem.dataset.action;
                 const productId = openMenu.dataset.productId;
                 const productName = openMenu.dataset.productName;
 
-                if (confirm(`Delete product "${productName}"? This cannot be undone.`)) {
-                    const chat = document.getElementById('chainlit');
-                    if (chat) {
-                        chat.contentWindow.postMessage({
-                            method: "delete_product",
-                            body: productId
-                        }, '*');
+                if (action === "delete") {
+                    if (confirm(`Delete product "${productName}"? This cannot be undone.`)) {
+                        if (chat) {
+                            chat.contentWindow.postMessage({
+                                method: "delete_product",
+                                body: productId
+                            }, '*');
+                        }
+                    }
+                } else if (action === "rename") {
+                    const newName = prompt(`Rename product "${productName}" to:`, productName);
+                    if (newName && newName.trim() && newName !== productName) {
+                        if (chat) {
+                            chat.contentWindow.postMessage({
+                                method: "rename_product",
+                                body: { productId, newName: newName.trim() }
+                            }, '*');
+                        }
                     }
                 }
 
-                if (chat && productId) {
-                    chat.contentWindow.postMessage({
-                        method: `product_${action}_requested`, // product_delete_requested
-                        body: productId
-                    }, "*");
-                }
                 closeMenu();
             }
             return;
