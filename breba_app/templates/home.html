@@ -17,8 +17,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Breba — Build apps with collaborative AI agents</title>
-    <meta name="title" content="Breba — Build apps with collaborative AI agents">
+    <title>Build websites with collaborative AI agents</title>
+    <meta name="title" content="Build websites with collaborative AI agents">
 
     <!-- Search basics -->
     <meta name="description"
@@ -29,7 +29,7 @@
     <!-- Open Graph (Facebook, LinkedIn, etc.) -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://breba.app/">
-    <meta property="og:title" content="Breba — Build apps with collaborative AI agents">
+    <meta property="og:title" content="Build websites with collaborative AI agents">
     <meta property="og:description"
           content="Describe what you need — Breba’s multi-agent system designs the UI, wires data, and deploys to a shareable URL. Start free, scale when you're ready.">
     <meta property="og:image" content="https://breba.app/public/social_media.png">
@@ -50,7 +50,7 @@
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://breba.app/">
-    <meta property="twitter:title" content="Breba — Build apps with collaborative AI agents">
+    <meta property="twitter:title" content="Build websites with collaborative AI agents">
     <meta property="twitter:description"
           content="Describe what you need — Breba’s multi-agent system designs the UI, wires data, and deploys to a shareable URL. Start free, scale when you're ready.">
     <meta property="twitter:image" content="https://breba.app/public/social_media.png">
@@ -70,58 +70,16 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="https://breba.app/">
 
-    <!-- Favicons - Optimized for All Screen Sizes -->
-    <!-- Primary ICO favicon - most compatible -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}"/>
 
-    <!-- Essential PNG favicons for PWA compatibility -->
-    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('favicon-192x192.png') }}"/>
-    <link rel="icon" type="image/png" sizes="512x512" href="{{ asset('favicon-512x512.png') }}"/>
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" sizes="any"/>
+    <link rel="icon shortcut" sizes="32x32" href="{{ asset('favicon-32x32.png') }}"/>
+    <link rel="icon shortcut" sizes="48x48" href="{{ asset('favicon-48x48.png') }}"/>
+    <link rel="icon shortcut" sizes="96x96" href="{{ asset('favicon-96x96.png') }}"/>
+    <link rel="icon shortcut" sizes="192x192" href="{{ asset('favicon-192x192.png') }}"/>
 
-    <!-- Essential WebP favicons for modern browsers -->
-    <!-- Using consistent favicon- prefix for all sizes -->
-    <!-- Standard DPI icons -->
-    <link rel="icon" type="image/webp" sizes="16x16" href="{{ asset('favicon-16x16.webp') }}"/>
-    <link rel="icon" type="image/webp" sizes="32x32" href="{{ asset('favicon-32x32.webp') }}"/>
-    <link rel="icon" type="image/webp" sizes="48x48" href="{{ asset('favicon-48x48.webp') }}"/>
-
-    <!-- High-DPI icons for better display on retina/high-DPI monitors -->
-    <link rel="icon" type="image/webp" sizes="72x72" href="{{ asset('favicon-72x72.webp') }}"/>
-    <link rel="icon" type="image/webp" sizes="96x96" href="{{ asset('favicon-96x96.webp') }}"/>
-    <link rel="icon" type="image/webp" sizes="144x144" href="{{ asset('favicon-144x144.webp') }}"/>
-    <link rel="icon" type="image/webp" sizes="192x192" href="{{ asset('favicon-192x192.webp') }}"/>
-    <link rel="icon" type="image/webp" sizes="256x256" href="{{ asset('favicon-256x256.webp') }}"/>
-
-    <!-- Ultra-high DPI support for 4K+ displays -->
-    <link rel="icon" type="image/webp" sizes="512x512" href="{{ asset('favicon-512x512.webp') }}"/>
-
-    <!-- Apple touch icon - using PNG for better compatibility -->
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}"/>
 
-    <!-- Safari pinned tab -->
-    <link rel="mask-icon" href="{{ asset('favicon-512x512.png') }}" color="#8B5CF6"/>
-
-    <!-- Prevent favicon scaling on high-DPI displays -->
-    <meta name="msapplication-square70x70logo" content="{{ asset('favicon-72x72.png') }}"/>
-    <meta name="msapplication-square150x150logo" content="{{ asset('favicon-144x144.png') }}"/>
-    <meta name="msapplication-square310x310logo" content="{{ asset('favicon-256x256.png') }}"/>
-
-    <!-- Additional high-DPI favicon support -->
-    <meta name="msapplication-wide310x150logo" content="{{ asset('favicon-512x512.png') }}"/>
-    <meta name="msapplication-TileImage" content="{{ asset('favicon-144x144.png') }}"/>
-
-    <!-- Force pixel-perfect display on varying DPI monitors -->
-    <style>
-        /* Prevent browsers from scaling favicons improperly */
-        link[rel="icon"],
-        link[rel="shortcut icon"] {
-            image-rendering: -webkit-crisp-edges;
-            image-rendering: crisp-edges;
-            image-rendering: pixelated;
-        }
-    </style>
-<!--    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">-->
-<!--    <link rel="apple-touch-icon" href="{{ asset('logo_light.png') }}">-->
+    <link rel="manifest" href="{{ asset('site.webmanifest') }}">
 
     <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
