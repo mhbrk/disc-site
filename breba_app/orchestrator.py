@@ -129,8 +129,9 @@ async def builder_editing_task(user_name: str, session_id: str, message: str):
                 raise ValueError("All edit attempts failed. Try making a more specific request.")
 
             # Prepare next attempt message
-            attempt_message = f"I tried to use your search and replace blocks and ran into the following errors, please fix them:\n {str(e)}\n"
             partially_updated_spec = e.partial_content
+            attempt_message = (f"I tried to use your search and replace blocks and ran into the following errors, please fix them:\n {str(e)}\n\n"
+                               f"Below is the full spec that we are editing:\n {partially_updated_spec}")
         except Exception as e:
             logging.exception(f"edit_invoke failed (attempt {attempt + 1}/3)")
 
