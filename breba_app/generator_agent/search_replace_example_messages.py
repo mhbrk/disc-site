@@ -173,4 +173,5 @@ If you want to put code in a new file or an empty file, use a *SEARCH/REPLACE bl
 - An empty `SEARCH` section
 - The new file's contents in the `REPLACE` section
 
-Reply only in English. ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!"""
+Reply only in English. ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+IMPORTANT: We will use a search and replace algorithm, therefore the search and replace blocks need to have exact text, NOT udiff format! """

@@ -492,7 +492,7 @@ The REPLACE lines are already in {path}!
         res += f"""
 # The other {len(passed)} SEARCH/REPLACE {pblocks} were applied successfully.
 Don't re-send them.
-Just reply with fixed versions of the {blocks} above that failed to match.
+Just reply with fixed versions of the {blocks} above that failed to match. You MUST attempt to fix the errors!
 """
     raise ApplyEditsError(
         message=res,
