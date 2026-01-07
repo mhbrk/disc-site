@@ -32,9 +32,6 @@ async def run_coder_agent(*, messages: list[Any], filestore: FileStore) -> str:
     Success: returns a string listing updated files.
     Failure: returns an error string.
     """
-    if b is None:
-        return "ERROR: BAML client 'b' import failed (cannot call GenerateSearchReplaceBlocks)."
-
     try:
         search_replace_text = await b.GenerateSearchReplaceBlocks(messages)  # type: ignore[attr-defined]
     except Exception as e:

@@ -151,3 +151,30 @@ New content
     assert isinstance(result_msg, str)
     assert "File not found: nonexistent.md" in result_msg, result_msg
     assert store.snapshot() == before, "FileStore should remain unchanged when file is missing"
+
+
+@pytest.mark.asyncio
+async def test_agent_partial_success(monkeypatch) -> None:
+    case_dir = Path(__file__).parent / "coder_agent_test_cases" / "partial_success"
+    initial, llm_output, _ = load_case(case_dir)
+    store = InMemoryFileStore(initial)
+    before = store.snapshot()
+
+    async def fake_generate_search_replace_blocks(messages):
+        return llm_output
+
+    if getattr(agent_mod, "b", None) is None:
+        class DummyB: ...
+        agent_mod.b = DummyB()
+
+    monkeypatch.setattr(agent_mod.b, "GenerateSearchReplaceBlocks", fake_generate_search_replace_blocks)
+
+    result_msg = await agent_mod.run_coder_agent(
+        messages=[{"role": "user", "content": "case=partial_success"}],
+        filestore=store,
+    )
+
+    assert isinstance(result_msg, str)
+    assert result_msg.startswith("ERROR: # 1 SEARCH/REPLACE"), result_msg
+    assert "# The other 1 SEARCH/REPLACE block were applied successfully." in result_msg
+    assert store.snapshot() == before, "FileStore should remain unchanged despite partial success"
