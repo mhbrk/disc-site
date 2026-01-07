@@ -77,3 +77,77 @@ async def test_agent_case_snapshots(monkeypatch, case_name: str, expected_modifi
     # Sanity: returned message should mention modified files
     for p in expected_modified:
         assert p in result_msg
+
+
+@pytest.mark.asyncio
+async def test_agent_search_block_mismatch(monkeypatch) -> None:
+    case_dir = Path(__file__).parent / "coder_agent_test_cases" / "modify_text"
+    initial, _, _ = load_case(case_dir)
+    mismatching_llm_output = """index.html
+```
+<<<<<<< SEARCH
+    <main>
+        <h1>Totally Different Heading</h1>
+        <p>This block does not exist.</p>
+=======
+    <main>
+        <h1>Updated Heading</h1>
+        <p>Still will not match.</p>
+>>>>>>> REPLACE
+```
+"""
+    store = InMemoryFileStore(initial)
+    before = store.snapshot()
+
+    async def fake_generate_search_replace_blocks(messages):
+        return mismatching_llm_output
+
+    if getattr(agent_mod, "b", None) is None:
+        class DummyB: ...
+        agent_mod.b = DummyB()
+
+    monkeypatch.setattr(agent_mod.b, "GenerateSearchReplaceBlocks", fake_generate_search_replace_blocks)
+
+    result_msg = await agent_mod.run_coder_agent(
+        messages=[{"role": "user", "content": "case=search_mismatch"}],
+        filestore=store,
+    )
+
+    assert isinstance(result_msg, str)
+    assert result_msg.startswith("ERROR: # 1 SEARCH/REPLACE"), result_msg
+    assert store.snapshot() == before, "FileStore should remain unchanged on mismatch"
+
+
+@pytest.mark.asyncio
+async def test_agent_missing_file(monkeypatch) -> None:
+    case_dir = Path(__file__).parent / "coder_agent_test_cases" / "modify_text"
+    initial, _, _ = load_case(case_dir)
+    missing_file_output = """nonexistent.md
+```
+<<<<<<< SEARCH
+Old content
+=======
+New content
+>>>>>>> REPLACE
+```
+"""
+    store = InMemoryFileStore(initial)
+    before = store.snapshot()
+
+    async def fake_generate_search_replace_blocks(messages):
+        return missing_file_output
+
+    if getattr(agent_mod, "b", None) is None:
+        class DummyB: ...
+        agent_mod.b = DummyB()
+
+    monkeypatch.setattr(agent_mod.b, "GenerateSearchReplaceBlocks", fake_generate_search_replace_blocks)
+
+    result_msg = await agent_mod.run_coder_agent(
+        messages=[{"role": "user", "content": "case=missing_file"}],
+        filestore=store,
+    )
+
+    assert isinstance(result_msg, str)
+    assert "File not found: nonexistent.md" in result_msg, result_msg
+    assert store.snapshot() == before, "FileStore should remain unchanged when file is missing"

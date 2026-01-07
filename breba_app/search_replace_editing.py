@@ -32,7 +32,7 @@ class EditRequest:
 
 
 class ApplyEditsError(Exception):
-    def __init__(self, message, partial_content, failed, passed, updated_edits):
+    def __init__(self, message, failed, passed, updated_edits, partial_content: str | None = None):
         super().__init__(message)
         self.partial_content = partial_content
         self.failed = failed
@@ -571,6 +571,29 @@ Just reply with fixed versions of the {blocks} above that failed to match. You M
         updated_edits=updated_edits,
     )
 
+def default_failed_match_message(edit: EditRequest, content: str, fence=DEFAULT_FENCE) -> str:
+    error_message = f"""
+## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in
+{edit.path}
+<<<<<<< SEARCH
+{edit.search}=======
+{edit.replace}>>>>>>> REPLACE
+"""
+    did_you_mean = find_similar_lines(edit.search, content)
+    if did_you_mean:
+        error_message+=  f"""Did you mean to match some of these actual lines from {edit.path}?
+{fence[0]}
+{did_you_mean}
+{fence[1]}
+"""
+
+    if edit.replace in content and edit.replace:
+        error_message += f"Are you sure you need this SEARCH/REPLACE block? \n The REPLACE lines are already in {edit.path}!"
+
+    return error_message
+
+
+
 def apply_edits_many(files: dict[str,str], edits: list[EditRequest], fence=DEFAULT_FENCE) -> list[EditRequest]:
     if not edits:
         raise ValueError("No edits found")
@@ -581,22 +604,29 @@ def apply_edits_many(files: dict[str,str], edits: list[EditRequest], fence=DEFAU
 
     for edit in edits:
         if edit.search:
-            content = files[edit.path]
-            # make sure to use update file contents to iteratively apply edits
-            new_content = do_replace(content, edit.search, edit.replace)
+            try:
+                content = files[edit.path]
+                # make sure to use update file contents to iteratively apply edits
+                new_content = do_replace(content, edit.search, edit.replace)
+                if new_content:
+                    files[edit.path] = new_content
+                    passed.append(edit)
+                else:
+                    error_message = default_failed_match_message(edit, content)
+                    failed.append(error_message)
+
+            except KeyError as e:
+                failed.append(f"File not found: {edit.path}")
+
         else:
-            content = ""
-            # For new files we just don't have a search block
-            new_content = edit.replace
+            # For new files we simply don't have a search block
+            if edit.replace:
+                files[edit.path] = edit.replace
+            # If there is no replace block, we swallow the error because ignoring it is the best course of action
+            passed.append(edit)
 
         updated_edits.append(edit)
 
-        # If we applied edit successfully file[edit.path] should have a value
-        if new_content:
-            files[edit.path] = new_content
-            passed.append(edit)
-        else:
-            failed.append((edit, content))
 
     if not failed:
         return updated_edits
@@ -604,30 +634,9 @@ def apply_edits_many(files: dict[str,str], edits: list[EditRequest], fence=DEFAU
     blocks = "block" if len(failed) == 1 else "blocks"
 
     res = f"# {len(failed)} SEARCH/REPLACE {blocks} failed to match!\n"
-    for edit, content in failed:
+    for message in failed:
+        res += f"{message}\n\n"
 
-        res += f"""
-## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in {edit.path}
-<<<<<<< SEARCH
-{edit.search}=======
-{edit.replace}>>>>>>> REPLACE
-
-"""
-        did_you_mean = find_similar_lines(edit.search, content)
-        if did_you_mean:
-            res += f"""Did you mean to match some of these actual lines from {edit.path}?
-
-{fence[0]}
-{did_you_mean}
-{fence[1]}
-
-"""
-
-        if edit.replace in content and edit.replace:
-            res += f"""Are you sure you need this SEARCH/REPLACE block?
-The REPLACE lines are already in {edit.path}!
-
-"""
     res += (
         "The SEARCH section must exactly match an existing block of lines including all white"
         " space, comments, indentation, docstrings, etc\n"
