@@ -31,10 +31,14 @@ def assert_expected_files_match(store: InMemoryFileStore, expected: dict[str, st
         assert actual == expected_content, f"Mismatch in {path}"
 
 
-@pytest.mark.parametrize("case_name, expected_modified", [
-    ("hello_world_create", ["index.html", "styles.css", "scripts.js", "sitemap.xml", "robots.txt"]),
-    ("modify_text", ["index.html", "sitemap.xml"]),
-])
+@pytest.mark.parametrize(
+    "case_name, expected_modified",
+    [
+        ("hello_world_create", ["index.html", "styles.css", "scripts.js", "sitemap.xml", "robots.txt"]),
+        ("modify_text", ["index.html", "sitemap.xml"]),
+        ("create_and_modify", ["faq.md", "index.html"]),
+    ],
+)
 @pytest.mark.asyncio
 async def test_agent_case_snapshots(monkeypatch, case_name: str, expected_modified: list[str]) -> None:
     case_dir = Path(__file__).parent / "coder_agent_test_cases" / case_name
