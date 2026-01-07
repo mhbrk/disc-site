@@ -1,0 +1,23 @@
+index.html
+```
+<<<<<<< SEARCH
+    <main>
+        <h1>Hello World</h1>
+        <p>Welcome to this minimalist site.</p>
+        <button id="cta-button">Get Started</button>
+    </main>
+=======
+    <main>
+        <h1>Hello World</h1>
+        <p>Welcome to the internet revolution</p>
+        <button id="cta-button">Get Started</button>
+    </main>
+>>>>>>> REPLACE
+
+sitemap.xml
+```
+<<<<<<< SEARCH
+        <lastmod>2026-01-06</lastmod>
+=======
+        <lastmod>2026-01-12</lastmod>
+>>>>>>> REPLACE
