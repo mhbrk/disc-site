@@ -1,6 +1,7 @@
 import difflib
 import logging
 import re
+from dataclasses import dataclass
 from difflib import SequenceMatcher
 from pathlib import Path
 
@@ -22,6 +23,12 @@ missing_filename_err = (
     "Bad/missing filename. The filename must be alone on the line before the opening fence"
     " {fence[0]}"
 )
+
+@dataclass
+class EditRequest:
+    path: str
+    search: str
+    replace: str
 
 
 class ApplyEditsError(Exception):
@@ -125,6 +132,68 @@ def find_filename(lines, fence, valid_fnames):
 
     if filenames:
         return filenames[0]
+
+def update_blocks_gen(content, fence=DEFAULT_FENCE, valid_fnames=None):
+    lines = content.splitlines(keepends=True)
+    i = 0
+    current_filename = None
+
+    head_pattern = re.compile(HEAD)
+    divider_pattern = re.compile(DIVIDER)
+    updated_pattern = re.compile(UPDATED)
+
+    while i < len(lines):
+        line = lines[i]
+
+        # Check for SEARCH/REPLACE blocks
+        if head_pattern.match(line.strip()):
+            try:
+                # if next line after HEAD exists and is DIVIDER, it's a new file
+                if i + 1 < len(lines) and divider_pattern.match(lines[i + 1].strip()):
+                    filename = find_filename(lines[max(0, i - 3): i], fence, None)
+                else:
+                    filename = find_filename(lines[max(0, i - 3): i], fence, valid_fnames)
+
+                if not filename:
+                    if current_filename:
+                        filename = current_filename
+                    else:
+                        raise ValueError(missing_filename_err.format(fence=fence))
+
+                current_filename = filename
+
+                original_text = []
+                i += 1
+                while i < len(lines) and not divider_pattern.match(lines[i].strip()):
+                    original_text.append(lines[i])
+                    i += 1
+
+                if i >= len(lines) or not divider_pattern.match(lines[i].strip()):
+                    raise ValueError(f"Expected `{DIVIDER_ERR}`")
+
+                updated_text = []
+                i += 1
+                while i < len(lines) and not (
+                        updated_pattern.match(lines[i].strip())
+                        or divider_pattern.match(lines[i].strip())
+                ):
+                    updated_text.append(lines[i])
+                    i += 1
+
+                if i >= len(lines) or not (
+                        updated_pattern.match(lines[i].strip())
+                        or divider_pattern.match(lines[i].strip())
+                ):
+                    raise ValueError(f"Expected `{UPDATED_ERR}` or `{DIVIDER_ERR}`")
+
+                yield EditRequest(filename, "".join(original_text), "".join(updated_text))
+
+            except ValueError as e:
+                processed = "".join(lines[: i + 1])
+                err = e.args[0]
+                raise ValueError(f"{processed}\n^^^ {err}")
+
+        i += 1
 
 
 def find_original_update_blocks(content, fence=DEFAULT_FENCE, valid_fnames=None):
@@ -501,6 +570,99 @@ Just reply with fixed versions of the {blocks} above that failed to match. You M
         passed=passed,
         updated_edits=updated_edits,
     )
+
+def apply_edits_many(files: dict[str,str], edits: list[EditRequest], fence=DEFAULT_FENCE) -> list[EditRequest]:
+    if not edits:
+        raise ValueError("No edits found")
+
+    failed = []
+    passed = []
+    updated_edits = []
+
+    for edit in edits:
+        if edit.search:
+            content = files[edit.path]
+            # make sure to use update file contents to iteratively apply edits
+            new_content = do_replace(content, edit.search, edit.replace)
+        else:
+            content = ""
+            # For new files we just don't have a search block
+            new_content = edit.replace
+
+        updated_edits.append(edit)
+
+        # If we applied edit successfully file[edit.path] should have a value
+        if new_content:
+            files[edit.path] = new_content
+            passed.append(edit)
+        else:
+            failed.append((edit, content))
+
+    if not failed:
+        return updated_edits
+
+    blocks = "block" if len(failed) == 1 else "blocks"
+
+    res = f"# {len(failed)} SEARCH/REPLACE {blocks} failed to match!\n"
+    for edit, content in failed:
+
+        res += f"""
+## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in {edit.path}
+<<<<<<< SEARCH
+{edit.search}=======
+{edit.replace}>>>>>>> REPLACE
+
+"""
+        did_you_mean = find_similar_lines(edit.search, content)
+        if did_you_mean:
+            res += f"""Did you mean to match some of these actual lines from {edit.path}?
+
+{fence[0]}
+{did_you_mean}
+{fence[1]}
+
+"""
+
+        if edit.replace in content and edit.replace:
+            res += f"""Are you sure you need this SEARCH/REPLACE block?
+The REPLACE lines are already in {edit.path}!
+
+"""
+    res += (
+        "The SEARCH section must exactly match an existing block of lines including all white"
+        " space, comments, indentation, docstrings, etc\n"
+    )
+    if passed:
+        pblocks = "block" if len(passed) == 1 else "blocks"
+        res += f"""
+# The other {len(passed)} SEARCH/REPLACE {pblocks} were applied successfully.
+Don't re-send them.
+Just reply with fixed versions of the {blocks} above that failed to match. You MUST attempt to fix the errors!
+"""
+    raise ApplyEditsError(
+        message=res,
+        failed=failed,
+        passed=passed,
+        updated_edits=updated_edits,
+    )
+
+
+
+def apply_search_replace_many(files: dict[str,str], search_replace_text: str) -> list[str]:
+    """
+    This method is used to apply search and replace blocks to many files
+    :param files: list of files that need to change
+    :param search_replace_text: AI generated list of search and replace blocks to apply
+    :return: list of applied edits and modified files
+    """
+    edits = list(update_blocks_gen(search_replace_text))
+    logger.info(f"Found {len(edits)} edits")
+
+    if not edits:
+        raise ValueError(f"No edits found in the following search and replace pattern:\n{search_replace_text}")
+
+    applied_edits = apply_edits_many(files, edits)
+    return [edit.path for edit in applied_edits]
 
 
 def apply_search_replace(html: str, search_replace_text: str) -> str:
