@@ -3,7 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 import pytest
 
-from .conftest import InMemoryFileStore, compute_modified_files
+from breba_app.filesystem import InMemoryFileStore
+from .conftest import compute_modified_files
 import breba_app.coder_agent.agent as agent_mod
 
 

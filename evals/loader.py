@@ -1,0 +1,24 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+
+def load_messages(case_dir: Path) -> list[dict]:
+    return json.loads((case_dir / "messages.json").read_text(encoding="utf-8"))
+
+
+def load_dir_texts(dir_path: Path) -> dict[str, str]:
+    if not dir_path.exists():
+        return {}
+    out: dict[str, str] = {}
+    for p in dir_path.rglob("*"):
+        if p.is_file():
+            rel = p.relative_to(dir_path).as_posix()
+            out[rel] = p.read_text(encoding="utf-8")
+    return out
+
+
+def load_initial_files(case_dir: Path) -> dict[str, str]:
+    # Mirror integration test convention
+    return load_dir_texts(case_dir / "initial")
