@@ -1,0 +1,6 @@
+[
+  {
+    "role": "user",
+    "content": "Change the call-to-action to open a popup modal (no page navigation). Modify scripts.js to show/hide modal. Modify index.html and contact_us.html to include the modal container / hooks required. Update sitemap.xml timestamps deterministically."
+  }
+]

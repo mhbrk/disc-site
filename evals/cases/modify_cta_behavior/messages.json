@@ -1,0 +1,6 @@
+[
+  {
+    "role": "user",
+    "content": "Change the primary text font color on the existing site. Only modify styles.css. Do not modify HTML, JS, robots.txt, or sitemap.xml."
+  }
+]
