@@ -1,26 +1,107 @@
-class Question {
-  question string @description("Question that requires the user to answer")
-}
-
-class WebsiteSpecification {
-  spec string @description("Full website specification")
-}
 
 class LLMMessage {
   role "user" | "assistant"
   content string
 }
 
-template_string  SystemInfo() #"
-    Keep in mind, for this project all the things will go into a single index.html.
+class FileList {
+  reasoning string  @description("Explanation of why these files need to be edited or not. Not more than 3 sentences")
+  files string[]  @description("List of file paths to edit.") 
+}
+
+template_string SystemReminder() #"<system_reminder>
+  # *SEARCH/REPLACE block* Rules:
+
+Every *SEARCH/REPLACE block* must use this format:
+1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
+2. The opening fence and code language, eg: ```python
+3. The start of search block: <<<<<<< SEARCH
+4. A contiguous chunk of lines to search for in the existing source code
+5. The dividing line: =======
+6. The lines to replace into the source code
+7. The end of the replace block: >>>>>>> REPLACE
+8. The closing fence: ```
+
+Use the *FULL* file path, as shown to you by the user.
+
+Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
+
+*SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
+Including multiple unique *SEARCH/REPLACE* blocks if needed.
+Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+
+Keep *SEARCH/REPLACE* blocks concise.
+Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
+Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
+
+<moving_code_instructions>
+To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+Make sure that the *SEARCH/REPLACE* block that deletes the code goes first. 
+When applying edits, we want to avoid situations where the first inserts the code in the new location, and then remove the code we just added instead of removing the original code. 
+</moving_code_instructions>
+
+
+Pay attention to which filenames the user wants you to edit.
+
+If you want to put code in a new file or an empty file, use a *SEARCH/REPLACE block* with:
+- A new file path, including dir name if needed
+- An empty `SEARCH` section
+- The new file's contents in the `REPLACE` section
+
+Reply only in English. ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+IMPORTANT: We will use a search and replace algorithm, therefore the search and replace blocks need to have exact text, NOT udiff format!
+</system_reminder>
 "#
 
-template_string TemplatingInstructions() #"
-**You will ask questions**
-Ask ONE question at a time and wait for the answer before asking the next question.
-Questions must be simple and easy to answer with one word or a short phrase.
+template_string  SystemInfo() #"<system_info>
+    Keep in mind, this project is an html page that follows best practices. index.html is the main file, but you can create other files to keep with the best practices.
+    You are producing a production ready website that geared towards search engine discoverabilty and core web vitals.
+    You must make sure that all changes are clean and complete. 
+</system_info>
 "#
 
+template_string StaticSiteBestPractices() #"
+<static_website_best_practices>
+Always make changes with the best practices in mind:
+1. Use semantic HTML tags
+2. IMPORTANT: You must avoid using inline style attribute. Always try to use CSS classes.
+3. Never generate inline SVG. Instead use google icons or other publicly available icons.
+4. Use utility classes for layout and spacing, and component classes for reusable UI elements.
+5. Try to keep the code clean, dry, and concise
+6. Make sure your changes are taking into account existing code and make good holistic changes.
+7. When using styles, prefer "rem" units. Avoid "em" units, if possible.
+8. Use the html lang attribute. Default to english.
+9. Keep styles clean. Make sure we don't have style bloat and unnecessary duplication of properties.
+10. Make sure images and fonts are loaded in a way that is optimal for performance.
+11. Avoid styles that could cause horizontal scrolling.
+12. Make sure to optimize for SEO and core web vitals.
+
+**Other best practice (this is not a complete list)**
+</static_website_best_practices>
+"#
+
+function DetermineFilesToEdit(messages: LLMMessage[]) -> FileList {
+  client CustomGPT5Mini
+  prompt #"
+Act as an expert software developer.
+You need to determine files to edit based on user requests.
+When making changes to website content (not style only), we need to always update sitemap.xml.
+
+Your output will be a list of filepaths.
+
+ {{ SystemInfo() }}
+
+  {% for message in messages %}
+      {{ _.role(message.role) }} 
+      {{ message.content }}
+    {% endfor %}
+
+  {{ ctx.output_format }}
+  "#
+
+}
 
 function GenerateSearchReplaceBlocks(messages: LLMMessage[]) -> string {
   client Gpt5Low
@@ -45,9 +126,11 @@ When responding to the request you MUST:
 All changes to files must use this *SEARCH/REPLACE block* format.
 ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
 
-    {{ SystemInfo() }}
+{{ SystemInfo() }}
 
-    {{ TemplatingInstructions() }}
+{{ StaticSiteBestPractices() }}
+    
+{{ SystemReminder() }}
 
     {% for message in messages %}
       {{ _.role(message.role) }} 
@@ -60,75 +143,204 @@ ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
   "#
 }
 
-test BuildTheActualSpec {
-  functions [GenerateSpecificationFromTemplate]
+test BuildHelloWorldSite {
+  functions [GenerateSearchReplaceBlocks]
   args {
     messages [
       {
         role "user"
+        content #"List files available in my project."#
+      }
+      {
+        role "assistant"
+        content #"Files available for editing:"#
+      }
+      {
+        role "user"
+        content #"Create a simple hello world site"#
+      }
+    ]
+  }
+}
+
+test ProduceFileList {
+  functions [DetermineFilesToEdit]
+  args {
+    messages [
+      {
+        role "user"
+        content #"List files available in my project."#
+      }
+      {
+        role "assistant"
+        content #"index.html, styles.css, scripts.js, sitemap.xml"#
+      }
+      {
+        role "user"
+        content #"Change text from Hello World to Hello Universe"#
+      }
+    ]
+  }
+}
+
+test TestFileListIncludesStyles {
+  functions [DetermineFilesToEdit]
+  args {
+    messages [
+      {
+        role "user"
+        content #"List files available in my project."#
+      }
+      {
+        role "assistant"
+        content #"index.html, styles.css, scripts.js, sitemap.xml"#
+      }
+      {
+        role "user"
+        content #"Change text from Hello World to Hello Universe. And make the text red"#
+      }
+    ]
+  }
+}
+
+test DoubleCheckFileList {
+  functions [DetermineFilesToEdit]
+  args {
+    messages [
+      {
+        role "user"
+        content #"List files available in my project."#
+      }
+      {
+        role "assistant"
+        content #"index.html, styles.css, scripts.js, sitemap.xml"#
+      }
+      {
+        role "user"
+        content #"Change text from Hello World to Hello Universe"#
+      }
+      {
+        role "assistant"
         content #"
-# Instructions for building a Landing Page
+          {
+  "reasoning": "The visible text change from “Hello World” to “Hello Universe” involves editing the HTML page (index.html). Because this is a visible change to end users, the sitemap must also be updated to reflect the new content.",
+  "files": [
+    "index.html",
+    "sitemap.xml"
+  ]
+}
+        "#
+      }
+      {
+        role "user"
+        content #"index.html
+          ```<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main>
+        <h1>Hello World</h1>
+        <p>Welcome to this minimalist site.</p>
+        <button id="cta-button">Get Started</button>
+    </main>
+    <script src="scripts.js" defer></script>
+</body>
+</html>
+```
 
-## Questions to ask
-- **You will only ask these exact questions, and no other questions**
-1. Ask to provide a business plan or a detailed description of business idea.
-2. Ask about Design system in non-technical terms and may not be familiar website design (ask a couple questions and then come up with the design system)
+sitemap.xml
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://yourdomain.com/</loc>
+        <lastmod>2026-01-06</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>1.0</priority>
+    </url>
+</urlset>
+```
 
-## Design System
-- You will come up with a color palette, typography, spacing, and other design elements.(Do not ask direct questions about this, just make up whatever you think makes sense given answers to your questions)
-
-## Layout
-- You will have a navbar that scrolls to different section of the page.
-  - The navbar will have a logo and a call to action button
-- At the top the hero section with a call to action button and a catchy slogan.
-- Then Benefits section with 3 benefits
-- Then How It Works section with 3 steps
-- Then Testimonials section with 3 testimonials
-- Then Pricing section with 3 pricing plans
-- FAQs section with 5 questions based on the business plan
-- Footer with social media icons
-- Modal form with fields: Name, Email, Company, Message
-  - the form will use staticforms.xyz with ajax for submission.
-  - The form will have hidden fields for: subject, replyTo, apiKey.
-
-## SEO
-- You must fill out all SEO tags.
-
-## Technical requirements
-- The page should be responsive.
-- The page should be mobile-first.
-- The page should be accessible.
-- The page should be optimized for speed.
-- The page should be optimized for security.
-- The page should be optimized for SEO.
-- The page should support Google Analytics.
-- Do not use inline styles.
-
-## Defaults (Use this unless user specifies other preferences)
-- Use Google icons or other publicly available images when appropriate
-- Use https://cdn.breba.app/templates/images/logo.png as the logo in the navbar and anywhere else a logo appears.
-- Use https://cdn.breba.app/templates/images/hero.jpg as the hero image in the Hero section.
-- Use Bootstrap 5.3.8 via CDN for core styling (without integrity check):
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script># Landing Page Template
-
+Are additional files needed to make this change?
+IMPORTANT: Only list new files. Do not repeat files already listed
 "#
       }
+    ]
+  }
+}
+
+
+test DoubleCheckFileListWithFollowupStyles {
+  functions [DetermineFilesToEdit]
+  args {
+    messages [
+      {
+        role "user"
+        content #"List files available in my project."#
+      }
       {
         role "assistant"
-        content "Please provide a brief business plan or a detailed description of your business idea."
+        content #"index.html, styles.css, scripts.js, sitemap.xml"#
       }
       {
         role "user"
-        content "We are changing the way people treat documents. We are proposing that everything is a document or deserves a document. You morning routine is a document, your vacation plan is a document. And we will have AI agents who help you organize documents and present you the relevant info and documents when you need it."
+        content #"Change text from Hello World to Hello Universe. And make the text red"#
       }
       {
         role "assistant"
-        content "What overall vibe should the site convey (e.g., futuristic, friendly, professional, playful) and do you prefer light or dark theme?"
+        content #"
+          {
+  "reasoning": "The visible text change from “Hello World” to “Hello Universe” involves editing the HTML page (index.html). Because this is a visible change to end users, the sitemap must also be updated to reflect the new content.",
+  "files": [
+    "index.html",
+    "sitemap.xml"
+  ]
+}
+        "#
       }
       {
         role "user"
-        content "Brutalist."
+        content #"index.html
+          ```<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main>
+        <h1 class="text-green">Hello World</h1>
+        <p>Welcome to this minimalist site.</p>
+        <button id="cta-button">Get Started</button>
+    </main>
+    <script src="scripts.js" defer></script>
+</body>
+</html>
+```
+
+sitemap.xml
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://yourdomain.com/</loc>
+        <lastmod>2026-01-06</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>1.0</priority>
+    </url>
+</urlset>
+```
+
+Are additional files needed to make this change?
+IMPORTANT: Only list new files. Do not repeat files already listed
+"#
       }
     ]
   }

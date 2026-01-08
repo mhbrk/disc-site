@@ -1,5 +1,16 @@
 // Learn more about clients at https://docs.boundaryml.com/docs/snippets/clients/overview
 
+client<llm> Gpt51CodexLow {
+  provider openai-responses
+  options {
+    model "gpt-5.1-codex"
+    api_key env.OPENAI_API_KEY
+    reasoning {
+      effort "low"
+    }
+  }
+}
+
 client<llm> GptOss {
   provider openai-responses
   options {
@@ -52,7 +63,7 @@ client<llm> CustomGPT5Mini {
   provider openai-responses
   retry_policy Exponential
   options {
-    model "gpt-5-mini"
+    model "gpt-5.1-codex-mini"
     api_key env.OPENAI_API_KEY
   }
 }
