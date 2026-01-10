@@ -22,3 +22,7 @@ def load_dir_texts(dir_path: Path) -> dict[str, str]:
 def load_initial_files(case_dir: Path) -> dict[str, str]:
     # Mirror integration test convention
     return load_dir_texts(case_dir / "initial")
+
+
+def load_evals(case_dir: Path) -> dict:
+    return json.loads((case_dir / "evals.json").read_text(encoding="utf-8"))
