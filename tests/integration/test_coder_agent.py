@@ -35,7 +35,7 @@ def assert_expected_files_match(store: InMemoryFileStore, expected: dict[str, st
 @pytest.mark.parametrize(
     "case_name, expected_modified",
     [
-        ("hello_world_create", ["index.html", "styles.css", "scripts.js", "sitemap.xml", "robots.txt"]),
+        ("hello_world_create", ["index.html", "styles.css", "script.js", "sitemap.xml", "robots.txt"]),
         ("modify_text", ["index.html", "sitemap.xml"]),
         ("create_and_modify", ["faq.md", "index.html"]),
     ],

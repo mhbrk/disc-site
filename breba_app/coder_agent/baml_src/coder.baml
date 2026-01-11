@@ -64,7 +64,12 @@ template_string  SystemInfo() #"<system_info>
 
 template_string StaticSiteBestPractices() #"
 <static_website_best_practices>
-Always make changes with the best practices in mind:
+Always make changes with the best practices in mind
+<website_structure>
+1. Keep HTML, CSS, and JavaScript in separate files.
+2. Use a logical and consistent file and folder structure.
+</website_structure>
+<html_best_practices>
 1. Use semantic HTML tags
 2. IMPORTANT: You must avoid using inline style attribute. Always try to use CSS classes.
 3. Never generate inline SVG. Instead use google icons or other publicly available icons.
@@ -77,8 +82,9 @@ Always make changes with the best practices in mind:
 10. Make sure images and fonts are loaded in a way that is optimal for performance.
 11. Avoid styles that could cause horizontal scrolling.
 12. Make sure to optimize for SEO and core web vitals.
-
-**Other best practice (this is not a complete list)**
+13. Make sure to update sitemap.xml for any visible content changes.
+14. A production ready website must have robots.txt file.
+</html_best_practices>
 </static_website_best_practices>
 "#
 
@@ -106,7 +112,7 @@ Your output will be a list of filepaths.
 function GenerateSearchReplaceBlocks(messages: LLMMessage[]) -> string {
   client Gpt5Low
   prompt #"
-Act as an expert software developer.
+You are an agent working within Breba App. You are helping the user build and maintain their website.
 You will be interacting with a user who is looking at the web page and not the code.
 That means when the user is referencing something on the page, they are referencing contents of the rendered web page.
 
@@ -173,7 +179,7 @@ test ProduceFileList {
       }
       {
         role "assistant"
-        content #"index.html, styles.css, scripts.js, sitemap.xml"#
+        content #"index.html, styles.css, script.js, sitemap.xml"#
       }
       {
         role "user"
@@ -193,7 +199,7 @@ test TestFileListIncludesStyles {
       }
       {
         role "assistant"
-        content #"index.html, styles.css, scripts.js, sitemap.xml"#
+        content #"index.html, styles.css, script.js, sitemap.xml"#
       }
       {
         role "user"
@@ -213,7 +219,7 @@ test DoubleCheckFileList {
       }
       {
         role "assistant"
-        content #"index.html, styles.css, scripts.js, sitemap.xml"#
+        content #"index.html, styles.css, script.js, sitemap.xml"#
       }
       {
         role "user"
@@ -248,7 +254,7 @@ test DoubleCheckFileList {
         <p>Welcome to this minimalist site.</p>
         <button id="cta-button">Get Started</button>
     </main>
-    <script src="scripts.js" defer></script>
+    <script src="script.js" defer></script>
 </body>
 </html>
 ```
@@ -285,7 +291,7 @@ test DoubleCheckFileListWithFollowupStyles {
       }
       {
         role "assistant"
-        content #"index.html, styles.css, scripts.js, sitemap.xml"#
+        content #"index.html, styles.css, script.js, sitemap.xml"#
       }
       {
         role "user"
@@ -320,7 +326,7 @@ test DoubleCheckFileListWithFollowupStyles {
         <p>Welcome to this minimalist site.</p>
         <button id="cta-button">Get Started</button>
     </main>
-    <script src="scripts.js" defer></script>
+    <script src="script.js" defer></script>
 </body>
 </html>
 ```

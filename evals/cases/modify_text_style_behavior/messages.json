@@ -1,6 +1,6 @@
 [
   {
     "role": "user",
-    "content": "Modify the site text, style, and call-to-action behavior in one request. Update index.html, styles.css, scripts.js, and update sitemap.xml timestamps deterministically. Do not modify robots.txt."
+    "content": "Modify the site text, style, and call-to-action behavior in one request. Update index.html, styles.css, script.js, and update sitemap.xml timestamps deterministically. Do not modify robots.txt."
   }
 ]

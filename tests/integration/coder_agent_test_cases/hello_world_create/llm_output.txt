@@ -16,7 +16,7 @@ index.html
         <p>Welcome to this minimalist site.</p>
         <button id="cta-button">Get Started</button>
     </main>
-    <script src="scripts.js" defer></script>
+    <script src="script.js" defer></script>
 </body>
 </html>
 >>>>>>> REPLACE
@@ -79,7 +79,7 @@ p {
 }
 >>>>>>> REPLACE
 
-scripts.js
+script.js
 ```
 <<<<<<< SEARCH
 =======
