@@ -1,6 +1,6 @@
 [
   {
     "role": "user",
-    "content": "Change the call-to-action button behavior. Only modify script.js. Do not modify HTML or CSS."
+    "content": "I want to modify the font color of Hello World to red."
   }
 ]

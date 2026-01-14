@@ -75,7 +75,21 @@ async def test_coder_create_new_website() -> None:
     combined_agent_response = f"{agent_response.content}\n\nThe following are the resulting files form the agent work:\n{files_content}"
     await run_evals(case_dir, combined_agent_response)
 
-    # runs_dir = Path(__file__).parent / "runs"
-    # runs_dir.mkdir(parents=True, exist_ok=True)
-    # out_path = runs_dir / "latest.json"
-    # out_path.write_text(json.dumps(r.__dict__, indent=2), encoding="utf-8")
+
+@pytest.mark.asyncio
+async def test_coder_modify_font_color() -> None:
+    case_dir = Path(__file__).parent / "cases" / "modify_font_color"
+
+    messages, store = load_case(case_dir)
+    files_content = ""
+    agent_response = await run_coder_agent(messages=messages, filestore=store)
+    for file_name in store.list_files():
+        file_content = store.read_text(file_name)
+        files_content += _render_file(file_name, file_content)
+    # Combine side effect changes to the files with the agent message
+    combined_agent_response = (f"Agent responded with the following message:\n{agent_response.content}\n\n"
+                               f"The following files exist in the project:\n{files_content}")
+    await run_evals(case_dir, combined_agent_response)
+
+
+

@@ -1,0 +1,15 @@
+{
+  "system": "Given the provided context, respond with `true` or `false`",
+  "evals": [
+    {
+      "question": "Does the webpage have the font color of Hello World modified to red?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    },
+    {
+      "question": "Only styles.css and index.html were modified?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    }
+  ]
+}
