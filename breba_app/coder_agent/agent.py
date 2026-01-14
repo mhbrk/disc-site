@@ -58,18 +58,24 @@ async def read_files_to_edit(*, original_context: list[LLMMessage], filestore: F
             # There are no new files to read for this task
             break
 
-        for file_name in files_response.files:
-            if file_name not in seen_files and file_name in files_list:
-                seen_files.add(file_name)
+        files_response_set = set(files_response.files)
+
+        new_files_set = files_response_set - seen_files
+
+        if new_files_set:
+            seen_files = seen_files | new_files_set
+            for file_name in new_files_set:
                 file_content = filestore.read_text(file_name)
                 response += _render_file(file_name, file_content)
+        else:
+            # The new files are already in the list, no new files to add to the context
+            break
 
         safe_context.append(LLMMessage(role="assistant", content=response))
 
         follow_up_msg = (f"Here are the file contents of the files:\n"
                          f"{response}\n"
-                         f"Are additional files needed to satisfy?\n"
-                         f"IMPORTANT: Only list new files. Do not repeat files already listed")
+                         f"Are additional files needed to satisfy?\n")
         safe_context.append(LLMMessage(role="assistant", content=follow_up_msg))
 
     # If no files ot modify maybe need a reason?
@@ -90,7 +96,7 @@ async def run_coder_agent(*, messages: list[Any], filestore: FileStore) -> LLMMe
     safe_context[-1] = LLMMessage(role=safe_context[-1].role, content=safe_context[-1].content + files_to_edit_msg)
 
     try:
-        search_replace_text = await b.GenerateSearchReplaceBlocks(messages)  # type: ignore[attr-defined]
+        search_replace_text = await b.GenerateSearchReplaceBlocks(safe_context)  # type: ignore[attr-defined]
     except Exception as e:
         return LLMMessage(role="assistant", content=f"ERROR: BAML call failed: {e}")
 
