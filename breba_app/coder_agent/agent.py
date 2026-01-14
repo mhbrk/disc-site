@@ -39,6 +39,7 @@ def _render_file(file_name: str, file_content: str):
 
 
 async def read_files_to_edit(*, original_context: list[LLMMessage], filestore: FileStore):
+    max_depth = 5
     files_list = filestore.list_files()
     if not files_list:
         # This indicates that we just don't have file.
@@ -52,6 +53,11 @@ async def read_files_to_edit(*, original_context: list[LLMMessage], filestore: F
 
     seen_files = set()
     while True:
+        # Prevent infinite loop
+        max_depth -= 1
+        if max_depth == 0:
+            break
+
         files_response = await b.DetermineFilesToEdit(safe_context)
 
         if not files_response.files:
