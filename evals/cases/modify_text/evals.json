@@ -12,7 +12,7 @@
       "expected_answer": "false"
     },
     {
-      "question": "Was only index.html modified?",
+      "question": "Are index.html and sitemap.xml the ONLY file updated by the agent?",
       "answer_options": "true, false",
       "expected_answer": "true"
     }
