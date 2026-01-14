@@ -91,7 +91,7 @@ Always make changes with the best practices in mind
 function DetermineFilesToEdit(messages: LLMMessage[]) -> FileList {
   client CustomGPT5Mini
   prompt #"
-Act as an expert software developer.
+You are working with the user who is building a website.
 You need to determine files to edit based on user requests.
 When making changes to website content (not style only), we need to always update sitemap.xml.
 
