@@ -7,7 +7,7 @@
       "expected_answer": "true"
     },
     {
-      "question": "Only styles.css and index.html were modified?",
+      "question": "Agent response indicates that ONLY styles.css was modified?",
       "answer_options": "true, false",
       "expected_answer": "true"
     }

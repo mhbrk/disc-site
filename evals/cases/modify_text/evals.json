@@ -1,0 +1,20 @@
+{
+  "system": "Given the provided context, respond with `true` or `false`",
+  "evals": [
+    {
+      "question": "Does the webpage text contain Hello Universe and not Hello World?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    },
+    {
+      "question": "Does the webpage mention Hello World anywhere?",
+      "answer_options": "true, false",
+      "expected_answer": "false"
+    },
+    {
+      "question": "Was only index.html modified?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    }
+  ]
+}
