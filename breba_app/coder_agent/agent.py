@@ -101,7 +101,8 @@ async def run_coder_agent(*, messages: list[Any], filestore: FileStore) -> LLMMe
     safe_context = messages.copy()
 
     files_to_edit = await read_files_to_edit(original_context=messages, filestore=filestore)
-    files_to_edit_msg = f"\n\n<files_available_for_editing>\n{files_to_edit}\n</files_available_for_editing>"
+    files_to_edit_msg = (f"\n\nThe following files are available for editing. Do not edit any other files.\n"
+                         f"<files_available_for_editing>\n{files_to_edit}\n</files_available_for_editing>")
     # We will just inject files context into the last message...
     safe_context[-1] = LLMMessage(role=safe_context[-1].role, content=safe_context[-1].content + files_to_edit_msg)
 
@@ -114,6 +115,7 @@ async def run_coder_agent(*, messages: list[Any], filestore: FileStore) -> LLMMe
     before = dict(files)
 
     try:
+        # TODO: add retry logic
         edits = apply_search_replace_many(files, search_replace_text)
     except Exception as e:
         # Atomic behavior: do not write anything on failure
