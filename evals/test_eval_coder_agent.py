@@ -36,14 +36,30 @@ def load_case(case_dir: Path) -> tuple[list[LLMMessage], FileStore]:
     store = InMemoryFileStore(initial)
     return (messages, store)
 
+
+async def run_case(case_dir: Path, save_result_files: bool = False) -> tuple[LLMMessage, FileStore]:
+    messages, store = load_case(case_dir)
+    agent_response = await run_coder_agent(messages=messages, filestore=store)
+    if save_result_files:
+        for file_name in store.list_files():
+            result_dir = case_dir / "result"
+            result_dir.mkdir(parents=True, exist_ok=True)
+            write_path = result_dir / file_name
+            file_content = store.read_text(file_name)
+            write_path.write_text(file_content)
+    return agent_response, store
+
+
 def combine_agent_response_with_files(agent_response: LLMMessage, store: FileStore):
     files_content = ""
     for file_name in store.list_files():
         file_content = store.read_text(file_name)
         files_content += _render_file(file_name, file_content)
-    return (f"The following files exist in the project. Use these files to evaluate content. We don't know if the files were modified:\n"
-            f"<project_files>\n{files_content}\n</project_files>\n\n"
-            f"Agent responded with the following message:\n{agent_response.content}")
+    return (
+        f"The following files exist in the project. Use these files to evaluate content. We don't know if the files were modified:\n"
+        f"<project_files>\n{files_content}\n</project_files>\n\n"
+        f"Agent responded with the following message:\n{agent_response.content}")
+
 
 async def run_evals(case_dir: Path, text: str):
     evals = load_evals(case_dir)
@@ -105,5 +121,15 @@ async def test_coder_modify_text_style_behavior() -> None:
 
     messages, store = load_case(case_dir)
     agent_response = await run_coder_agent(messages=messages, filestore=store)
+    combined_agent_response = combine_agent_response_with_files(agent_response, store)
+    await run_evals(case_dir, combined_agent_response)
+
+
+@pytest.mark.asyncio
+async def test_coder_add_navbar() -> None:
+    case_dir = Path(__file__).parent / "cases" / "add_navbar"
+
+    agent_response, store = await run_case(case_dir)
+
     combined_agent_response = combine_agent_response_with_files(agent_response, store)
     await run_evals(case_dir, combined_agent_response)

@@ -619,9 +619,14 @@ def apply_edits_many(files: dict[str,str], edits: list[EditRequest], fence=DEFAU
                 failed.append(f"File not found: {edit.path}")
 
         else:
-            # For new files we simply don't have a search block
+            # For new files or when appending we simply don't have a search block
             if edit.replace:
-                files[edit.path] = edit.replace
+                if edit.path in files.keys():
+                    # appending to file
+                    files[edit.path] = files[edit.path] + edit.replace
+                else:
+                    # new file
+                    files[edit.path] = edit.replace
             # If there is no replace block, we swallow the error because ignoring it is the best course of action
             passed.append(edit)
 

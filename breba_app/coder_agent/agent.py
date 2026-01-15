@@ -16,6 +16,8 @@ class FileStore(Protocol):
 
     def list_files(self) -> list[str]: ...
 
+    def file_exists(self, path: str) -> bool: ...
+
 
 def _snapshot(fs: FileStore) -> dict[str, str]:
     return {p: fs.read_text(p) for p in fs.list_files()}
@@ -71,6 +73,8 @@ async def read_files_to_edit(*, original_context: list[LLMMessage], filestore: F
         if new_files_set:
             seen_files = seen_files | new_files_set
             for file_name in new_files_set:
+                if not filestore.file_exists(file_name):
+                    continue
                 file_content = filestore.read_text(file_name)
                 response += _render_file(file_name, file_content)
         else:

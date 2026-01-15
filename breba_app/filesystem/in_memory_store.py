@@ -19,6 +19,9 @@ class InMemoryFileStore:
     def list_files(self) -> list[str]:
         return sorted(self._files.keys())
 
+    def file_exists(self, path: str) -> bool:
+        return path in self._files
+
     def snapshot(self) -> dict[str, str]:
         return dict(self._files)
 

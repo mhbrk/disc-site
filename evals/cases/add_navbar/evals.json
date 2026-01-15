@@ -1,0 +1,10 @@
+{
+  "system": "Given the provided context, respond with `true` or `false`",
+  "evals": [
+    {
+      "question": "The navbar is the same on both the index and faq pages?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    }
+  ]
+}
