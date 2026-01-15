@@ -1,5 +1,10 @@
 {
-  "system": "Given the provided context, respond with `true` or `false`",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Rename Hello World to Hello Universe"
+    }
+  ],
   "evals": [
     {
       "question": "Does the webpage text contain Hello Universe and not Hello World?",

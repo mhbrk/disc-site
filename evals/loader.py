@@ -5,7 +5,8 @@ from pathlib import Path
 
 
 def load_messages(case_dir: Path) -> list[dict]:
-    return json.loads((case_dir / "messages.json").read_text(encoding="utf-8"))
+    case = json.loads((case_dir / "case.json").read_text(encoding="utf-8"))
+    return case["messages"]
 
 
 def load_dir_texts(dir_path: Path) -> dict[str, str]:
@@ -25,4 +26,5 @@ def load_initial_files(case_dir: Path) -> dict[str, str]:
 
 
 def load_evals(case_dir: Path) -> dict:
-    return json.loads((case_dir / "evals.json").read_text(encoding="utf-8"))
+    case = json.loads((case_dir / "case.json").read_text(encoding="utf-8"))
+    return case["evals"]

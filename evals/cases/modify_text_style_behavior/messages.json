@@ -1,6 +1,0 @@
-[
-  {
-    "role": "user",
-    "content": "Modify the cta button text to `Request Access` and change the font color to red. When the button is clicked a modal form with a text field and a submit button should appear."
-  }
-]

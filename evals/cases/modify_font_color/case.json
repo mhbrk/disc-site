@@ -1,5 +1,10 @@
 {
-  "system": "Given the provided context, respond with `true` or `false`",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I want to modify the font color of Hello World to red."
+    }
+  ],
   "evals": [
     {
       "question": "Does the webpage have the font color of Hello World modified to red?",

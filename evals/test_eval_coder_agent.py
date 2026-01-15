@@ -63,7 +63,7 @@ def combine_agent_response_with_files(agent_response: LLMMessage, store: FileSto
 
 async def run_evals(case_dir: Path, text: str):
     evals = load_evals(case_dir)
-    for evaluation in evals["evals"]:
+    for evaluation in evals:
         eval_message_content = (f"#Given the following text:\n{text}\n\n"
                                 f"{evaluation["question"]}\n"
                                 f"Your allowed answer options: {evaluation.get("answer_options", "answer options are not restricted")}\n")

@@ -1,5 +1,10 @@
 {
-  "system": "Given the provided context, respond with `true` or `false`",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Create a simple hello world site with a call to action button."
+    }
+  ],
   "evals": [
     {
       "question": "Does the webpage have all of the following: sitemap.xml, index.html, styles.css, script.js, robots.txt?",

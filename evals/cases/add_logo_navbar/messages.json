@@ -1,6 +1,0 @@
-[
-  {
-    "role": "user",
-    "content": "Add a logo to the navbar. Modify index.html and about_us.html to include the logo. Modify styles.css to style the logo. Navbar must remain identical across index.html and about_us.html. Update sitemap.xml timestamps deterministically."
-  }
-]
