@@ -9,14 +9,21 @@ body {
     background-color: #ffffff;
     color: #111111;
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-main {
+.page-main {
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 5rem 1.5rem 3rem;
+}
+
+.hero {
     text-align: center;
-    padding: 2rem;
+    margin-bottom: 3rem;
+}
+
+.content-section {
+    text-align: center;
 }
 
 h1 {
@@ -49,4 +56,53 @@ p {
 
 #cta-button:active {
     transform: translateY(1px);
+}
+
+/* Header & navigation */
+.site-header {
+    border-bottom: 1px solid #e5e5e5;
+    background-color: #ffffff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.site-nav {
+    max-width: 64rem;
+    margin: 0 auto;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.site-logo {
+    font-weight: 600;
+    font-size: 1.1rem;
+    text-decoration: none;
+    color: #111111;
+}
+
+.nav-list {
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.nav-link {
+    text-decoration: none;
+    font-size: 0.95rem;
+    color: #555555;
+    padding-bottom: 0.25rem;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-link:hover {
+    color: #000000;
+}
+
+.nav-link-active {
+    color: #000000;
+    border-bottom-color: #000000;
 }
