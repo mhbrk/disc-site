@@ -16,7 +16,7 @@ load_dotenv()
 client = Client()
 
 EVALUATION_PROMPT = "You are evaluating correctness. Just answer the question. No comments or explanations. Just the answer."
-EVALUATION_MODEL = "gpt-4.1-nano"
+EVALUATION_MODEL = "gpt-4.1-mini"
 
 
 def _render_file(file_name: str, file_content: str):
@@ -41,9 +41,9 @@ def combine_agent_response_with_files(agent_response: LLMMessage, store: FileSto
     for file_name in store.list_files():
         file_content = store.read_text(file_name)
         files_content += _render_file(file_name, file_content)
-    return (f"Agent responded with the following message:\n{agent_response.content}\n\n"
-            f"The following files exist in the project. Use these files to evaluate content. We don't know if the files were modified:\n"
-            f"<project_files>\n{files_content}\n</project_files>")
+    return (f"The following files exist in the project. Use these files to evaluate content. We don't know if the files were modified:\n"
+            f"<project_files>\n{files_content}\n</project_files>\n\n"
+            f"Agent responded with the following message:\n{agent_response.content}")
 
 async def run_evals(case_dir: Path, text: str):
     evals = load_evals(case_dir)
@@ -92,6 +92,16 @@ async def test_coder_modify_font_color() -> None:
 @pytest.mark.asyncio
 async def test_coder_modify_text() -> None:
     case_dir = Path(__file__).parent / "cases" / "modify_text"
+
+    messages, store = load_case(case_dir)
+    agent_response = await run_coder_agent(messages=messages, filestore=store)
+    combined_agent_response = combine_agent_response_with_files(agent_response, store)
+    await run_evals(case_dir, combined_agent_response)
+
+
+@pytest.mark.asyncio
+async def test_coder_modify_text_style_behavior() -> None:
+    case_dir = Path(__file__).parent / "cases" / "modify_text_style_behavior"
 
     messages, store = load_case(case_dir)
     agent_response = await run_coder_agent(messages=messages, filestore=store)
