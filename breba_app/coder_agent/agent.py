@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Protocol
 
-from breba_app.coder_agent.baml_client.async_client import b  # type: ignore
+from breba_app.coder_agent.baml_client.async_client import b
 from breba_app.coder_agent.baml_client.types import LLMMessage
-from breba_app.search_replace_editing import apply_search_replace_many
+from breba_app.search_replace_editing import apply_search_replace_many, ApplyEditsError
+
+logger = logging.getLogger(__name__)
 
 NO_FILES_TO_MODIFY_MSG = "No files to modify for this request"
+MAX_RETRIES = 3
 
 
 class FileStore(Protocol):
@@ -32,7 +36,7 @@ def _modified_files(before: dict[str, str], after: dict[str, str]) -> list[str]:
     return sorted(out)
 
 
-def _render_file(file_name: str, file_content: str):
+def _render_file(file_name: str, file_content: str) -> str:
     return f"""{file_name}
 ```
 {file_content}
@@ -40,26 +44,42 @@ def _render_file(file_name: str, file_content: str):
 """
 
 
-async def read_files_to_edit(*, original_context: list[LLMMessage], filestore: FileStore):
+def _render_files(files: set[str], filestore: FileStore) -> str:
+    response = ""
+    for file_name in files:
+        if not filestore.file_exists(file_name):
+            continue
+        file_content = filestore.read_text(file_name)
+        response += _render_file(file_name, file_content)
+    return response
+
+
+def _retry_err_message(e: Exception | str) -> str:
+    return f"I tried to use your search and replace blocks and ran into the following errors, please fix them:\n{str(e)}"
+
+
+def _files_to_edit_message(file_contents: str) -> LLMMessage:
+    return LLMMessage(role="user",
+                      content=f"The following files are available for editing. Do not edit any other files.\n"
+                              f"<files_available_for_editing>\n{file_contents}\n</files_available_for_editing>")
+
+
+async def read_files_to_edit(*, original_context: list[LLMMessage], filestore: FileStore) -> tuple[str, set[str]]:
     max_depth = 5
     files_list = filestore.list_files()
     if not files_list:
-        # This indicates that we just don't have file.
-        return ""
+        # This indicates that we just don't have files.
+        return NO_FILES_TO_MODIFY_MSG, set()
     file_list_msg = f"\n\n<available_files_list>\n{",".join(files_list)}\n<available_files_list>"
 
     safe_context = original_context.copy()
-    response = ""
+    file_contents = ""
     # append the files list to the last user message.
+    # TODO: let BAML construct the context???
     safe_context[-1] = LLMMessage(role=safe_context[-1].role, content=safe_context[-1].content + file_list_msg)
 
     seen_files = set()
-    while True:
-        # Prevent infinite loop
-        max_depth -= 1
-        if max_depth == 0:
-            break
-
+    for _ in range(max_depth):
         files_response = await b.DetermineFilesToEdit(safe_context)
 
         if not files_response.files:
@@ -72,24 +92,18 @@ async def read_files_to_edit(*, original_context: list[LLMMessage], filestore: F
 
         if new_files_set:
             seen_files = seen_files | new_files_set
-            for file_name in new_files_set:
-                if not filestore.file_exists(file_name):
-                    continue
-                file_content = filestore.read_text(file_name)
-                response += _render_file(file_name, file_content)
+            file_contents += _render_files(new_files_set, filestore)
         else:
             # The new files are already in the list, no new files to add to the context
             break
 
-        safe_context.append(LLMMessage(role="assistant", content=response))
-
+        safe_context.append(LLMMessage(role="user", content=""))
         follow_up_msg = (f"Here are the file contents of the files:\n"
-                         f"{response}\n"
-                         f"Are additional files needed to satisfy?\n")
+                         f"{file_contents}\n"
+                         f"Are additional files needed to satisfy user request?\n")
         safe_context.append(LLMMessage(role="assistant", content=follow_up_msg))
 
-    # If no files ot modify maybe need a reason?
-    return response or NO_FILES_TO_MODIFY_MSG
+    return file_contents or NO_FILES_TO_MODIFY_MSG, seen_files
 
 
 async def run_coder_agent(*, messages: list[Any], filestore: FileStore) -> LLMMessage:
@@ -98,36 +112,47 @@ async def run_coder_agent(*, messages: list[Any], filestore: FileStore) -> LLMMe
     Success: returns a string listing updated files.
     Failure: returns an error string.
     """
+    # TODO: use decorator to sanitize inputs with proper deepcopy
     safe_context = messages.copy()
 
-    files_to_edit = await read_files_to_edit(original_context=messages, filestore=filestore)
-    files_to_edit_msg = (f"\n\nThe following files are available for editing. Do not edit any other files.\n"
-                         f"<files_available_for_editing>\n{files_to_edit}\n</files_available_for_editing>")
-    # We will just inject files context into the last message...
-    safe_context[-1] = LLMMessage(role=safe_context[-1].role, content=safe_context[-1].content + files_to_edit_msg)
-
-    try:
-        search_replace_text = await b.GenerateSearchReplaceBlocks(safe_context)  # type: ignore[attr-defined]
-    except Exception as e:
-        return LLMMessage(role="assistant", content=f"ERROR: BAML call failed: {e}")
+    latest_file_contents, files_working_set = await read_files_to_edit(original_context=messages, filestore=filestore)
 
     files = _snapshot(filestore)
     before = dict(files)
+    file_contents_index = None
 
-    try:
-        # TODO: add retry logic
-        edits = apply_search_replace_many(files, search_replace_text)
-    except Exception as e:
-        # Atomic behavior: do not write anything on failure
-        return LLMMessage(role="assistant", content=f"ERROR: {e}")
+    for attempt in range(MAX_RETRIES):
+        try:
+            # Remove the file contents message so we can add it back with the latest file contents
+            if file_contents_index:
+                safe_context.pop(file_contents_index)
+            safe_context.append(_files_to_edit_message(latest_file_contents))
+            # This is used for removing the file contents message on retry
+            file_contents_index = len(safe_context) - 1
+
+            search_replace_text = await b.GenerateSearchReplaceBlocks(safe_context)
+
+            safe_context.append(LLMMessage(role="assistant", content=search_replace_text))
+            edits = apply_search_replace_many(files, search_replace_text)
+        except ApplyEditsError as e:
+            # Atomic behavior: do not write anything on failure
+            logging.exception(f"Failed to apply code changes ({attempt} of {MAX_RETRIES})")
+
+            if attempt == MAX_RETRIES - 1:
+                # rollback to the last known good spec in case partially_updated_spec was used at any of the retries
+                logger.error("All attempts to apply code")
+                return LLMMessage(role="assistant",
+                                  content=f"ERROR: All edit attempts failed. Try making a more specific request.")
+
+            safe_context.append(LLMMessage(role="user", content=_retry_err_message(e)))
+            latest_file_contents = _render_files(files_working_set, filestore)
 
     modified = _modified_files(before, files)
+    if not modified:
+        return LLMMessage(role="assistant", content="UPDATED_FILES:\n(none)")
 
     # Write back only changed/new files
     for path in modified:
         filestore.write_text(path, files[path])
-
-    if not modified:
-        return LLMMessage(role="assistant", content="UPDATED_FILES:\n(none)")
 
     return LLMMessage(role="assistant", content="UPDATED_FILES:\n" + "\n".join(f"- {p}" for p in modified))

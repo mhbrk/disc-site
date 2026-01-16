@@ -673,6 +673,7 @@ def apply_search_replace_many(files: dict[str,str], search_replace_text: str) ->
     logger.info(f"Found {len(edits)} edits")
 
     if not edits:
+        # Probably need to raise ApplyEditsError because this could be recoverable
         raise ValueError(f"No edits found in the following search and replace pattern:\n{search_replace_text}")
 
     applied_edits = apply_edits_many(files, edits)

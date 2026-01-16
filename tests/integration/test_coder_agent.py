@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 import pytest
 
+import breba_app.coder_agent.agent as agent_mod
+from breba_app.coder_agent.baml_client.types import LLMMessage, FileList
 from breba_app.filesystem import InMemoryFileStore
 from .conftest import compute_modified_files
-import breba_app.coder_agent.agent as agent_mod
 
 
 def load_dir_texts(dir_path: Path) -> dict[str, str]:
@@ -55,6 +57,7 @@ async def test_agent_case_snapshots(monkeypatch, case_name: str, expected_modifi
     # create a dummy so we can still patch the attribute.
     if getattr(agent_mod, "b", None) is None:
         class DummyB: ...
+
         agent_mod.b = DummyB()
 
     monkeypatch.setattr(agent_mod.b, "GenerateSearchReplaceBlocks", fake_generate_search_replace_blocks)
@@ -105,6 +108,7 @@ async def test_agent_search_block_mismatch(monkeypatch) -> None:
 
     if getattr(agent_mod, "b", None) is None:
         class DummyB: ...
+
         agent_mod.b = DummyB()
 
     monkeypatch.setattr(agent_mod.b, "GenerateSearchReplaceBlocks", fake_generate_search_replace_blocks)
@@ -140,6 +144,7 @@ New content
 
     if getattr(agent_mod, "b", None) is None:
         class DummyB: ...
+
         agent_mod.b = DummyB()
 
     monkeypatch.setattr(agent_mod.b, "GenerateSearchReplaceBlocks", fake_generate_search_replace_blocks)
@@ -164,18 +169,24 @@ async def test_agent_partial_success(monkeypatch) -> None:
     async def fake_generate_search_replace_blocks(messages):
         return llm_output
 
+    async def fake_determine_files_to_edit(messages):
+        return FileList(
+            reasoning="We need to add a FAQ page and ensure navigation consistency, which requires editing the main index.html, creating faq.html, and updating sitemap.xml to include the new page for SEO. The styles and scripts remain unchanged since navigation styling already exists (or can be reused).",
+            files=["index.html"]
+        )
+
     if getattr(agent_mod, "b", None) is None:
         class DummyB: ...
+
         agent_mod.b = DummyB()
 
     monkeypatch.setattr(agent_mod.b, "GenerateSearchReplaceBlocks", fake_generate_search_replace_blocks)
+    monkeypatch.setattr(agent_mod.b, "DetermineFilesToEdit", fake_determine_files_to_edit)
 
     result_msg = await agent_mod.run_coder_agent(
-        messages=[{"role": "user", "content": "case=partial_success"}],
+        messages=[LLMMessage(role="user", content="case=partial_success")],
         filestore=store,
     )
 
-    assert isinstance(result_msg, str)
-    assert result_msg.startswith("ERROR: # 1 SEARCH/REPLACE"), result_msg
-    assert "# The other 1 SEARCH/REPLACE block were applied successfully." in result_msg
+    assert result_msg.content == "ERROR: All edit attempts failed. Try making a more specific request."
     assert store.snapshot() == before, "FileStore should remain unchanged despite partial success"
