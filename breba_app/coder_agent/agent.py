@@ -134,6 +134,8 @@ async def run_coder_agent(*, messages: list[Any], filestore: FileStore) -> LLMMe
 
             safe_context.append(LLMMessage(role="assistant", content=search_replace_text))
             edits = apply_search_replace_many(files, search_replace_text)
+             # break on success
+            break
         except ApplyEditsError as e:
             # Atomic behavior: do not write anything on failure
             logging.exception(f"Failed to apply code changes ({attempt} of {MAX_RETRIES})")

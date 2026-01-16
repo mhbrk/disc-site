@@ -53,21 +53,23 @@ async def test_agent_case_snapshots(monkeypatch, case_name: str, expected_modifi
     async def fake_generate_search_replace_blocks(messages):
         return llm_output
 
-    # If the import of b failed in the agent module for any reason,
-    # create a dummy so we can still patch the attribute.
+    async def fake_determine_files_to_edit(messages):
+        return FileList(reasoning="", files=[])
+
     if getattr(agent_mod, "b", None) is None:
         class DummyB: ...
 
         agent_mod.b = DummyB()
 
     monkeypatch.setattr(agent_mod.b, "GenerateSearchReplaceBlocks", fake_generate_search_replace_blocks)
+    monkeypatch.setattr(agent_mod.b, "DetermineFilesToEdit", fake_determine_files_to_edit)
 
     result_msg = await agent_mod.run_coder_agent(
-        messages=[{"role": "user", "content": f"case={case_name}"}],
+        messages=[LLMMessage(role="user", content=f"case={case_name}")],
         filestore=store,
     )
-    assert isinstance(result_msg, str)
-    assert not result_msg.startswith("ERROR:"), result_msg
+    assert isinstance(result_msg, LLMMessage)
+    assert not result_msg.content.startswith("ERROR:"), result_msg.content
 
     after = store.snapshot()
     modified = compute_modified_files(before, after)
@@ -80,7 +82,7 @@ async def test_agent_case_snapshots(monkeypatch, case_name: str, expected_modifi
 
     # Sanity: returned message should mention modified files
     for p in expected_modified:
-        assert p in result_msg
+        assert p in result_msg.content
 
 
 @pytest.mark.asyncio
@@ -106,20 +108,24 @@ async def test_agent_search_block_mismatch(monkeypatch) -> None:
     async def fake_generate_search_replace_blocks(messages):
         return mismatching_llm_output
 
+    async def fake_determine_files_to_edit(messages):
+        return FileList(reasoning="", files=[])
+
     if getattr(agent_mod, "b", None) is None:
         class DummyB: ...
 
         agent_mod.b = DummyB()
 
     monkeypatch.setattr(agent_mod.b, "GenerateSearchReplaceBlocks", fake_generate_search_replace_blocks)
+    monkeypatch.setattr(agent_mod.b, "DetermineFilesToEdit", fake_determine_files_to_edit)
 
     result_msg = await agent_mod.run_coder_agent(
-        messages=[{"role": "user", "content": "case=search_mismatch"}],
+        messages=[LLMMessage(role="user", content="case=search_mismatch")],
         filestore=store,
     )
 
-    assert isinstance(result_msg, str)
-    assert result_msg.startswith("ERROR: # 1 SEARCH/REPLACE"), result_msg
+    assert isinstance(result_msg, LLMMessage)
+    assert result_msg.content == "ERROR: All edit attempts failed. Try making a more specific request."
     assert store.snapshot() == before, "FileStore should remain unchanged on mismatch"
 
 
@@ -142,20 +148,24 @@ New content
     async def fake_generate_search_replace_blocks(messages):
         return missing_file_output
 
+    async def fake_determine_files_to_edit(messages):
+        return FileList(reasoning="", files=[])
+
     if getattr(agent_mod, "b", None) is None:
         class DummyB: ...
 
         agent_mod.b = DummyB()
 
     monkeypatch.setattr(agent_mod.b, "GenerateSearchReplaceBlocks", fake_generate_search_replace_blocks)
+    monkeypatch.setattr(agent_mod.b, "DetermineFilesToEdit", fake_determine_files_to_edit)
 
     result_msg = await agent_mod.run_coder_agent(
-        messages=[{"role": "user", "content": "case=missing_file"}],
+        messages=[LLMMessage(role="user", content="case=missing_file")],
         filestore=store,
     )
 
-    assert isinstance(result_msg, str)
-    assert "File not found: nonexistent.md" in result_msg, result_msg
+    assert isinstance(result_msg, LLMMessage)
+    assert result_msg.content == "ERROR: All edit attempts failed. Try making a more specific request."
     assert store.snapshot() == before, "FileStore should remain unchanged when file is missing"
 
 
