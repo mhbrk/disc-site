@@ -1,4 +1,17 @@
-class InMemoryFileStore:
+from typing import Protocol
+
+
+class FileStore(Protocol):
+    def read_text(self, path: str) -> str: ...
+
+    def write_text(self, path: str, content: str) -> None: ...
+
+    def list_files(self) -> list[str]: ...
+
+    def file_exists(self, path: str) -> bool: ...
+
+
+class InMemoryFileStore(FileStore):
     """
     Minimal FileStore implementation for tests:
     - paths are treated as case-sensitive POSIX-ish strings
@@ -24,4 +37,3 @@ class InMemoryFileStore:
 
     def snapshot(self) -> dict[str, str]:
         return dict(self._files)
-

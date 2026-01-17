@@ -1,1 +1,1 @@
-from .in_memory_store import InMemoryFileStore
+from .in_memory_store import InMemoryFileStore, FileStore

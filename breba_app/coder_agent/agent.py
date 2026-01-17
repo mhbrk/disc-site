@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Protocol
+from typing import Any
 
 from breba_app.coder_agent.baml_client.async_client import b
 from breba_app.coder_agent.baml_client.types import LLMMessage
+from breba_app.filesystem import FileStore
 from breba_app.search_replace_editing import apply_search_replace_many, ApplyEditsError
 
 logger = logging.getLogger(__name__)
@@ -12,15 +13,6 @@ logger = logging.getLogger(__name__)
 NO_FILES_TO_MODIFY_MSG = "No files to modify for this request"
 MAX_RETRIES = 3
 
-
-class FileStore(Protocol):
-    def read_text(self, path: str) -> str: ...
-
-    def write_text(self, path: str, content: str) -> None: ...
-
-    def list_files(self) -> list[str]: ...
-
-    def file_exists(self, path: str) -> bool: ...
 
 
 def _snapshot(fs: FileStore) -> dict[str, str]:
