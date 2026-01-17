@@ -9,7 +9,7 @@ import posixpath
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Iterable, List, Dict, Any
+from typing import Iterable, Any
 
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
@@ -106,7 +106,7 @@ class VersionedR2FileSystem:
             raise NotFound(f"Version {version} does not exist")
         self._put_text(self._latest_key(), str(version))
 
-    def list_files(self, version: int | None = None, prefix: str = "", absolute: bool = False) -> List[str]:
+    def list_files(self, version: int | None = None, prefix: str = "", absolute: bool = False) -> list[str]:
         """List all logical file paths in the given version."""
         v = self.get_version() if version is None else version
         manifest = self._get_manifest(v)
@@ -256,7 +256,7 @@ class VersionedR2FileSystem:
     def _get_next_version(self) -> int:
         return max(self.list_versions()) + 1
 
-    def _get_manifest(self, version: int) -> Dict[str, Any]:
+    def _get_manifest(self, version: int) -> dict[str, Any]:
         try:
             obj = self._s3.get_object(Bucket=self._bucket, Key=self._manifest_key(version))
             return json.loads(obj["Body"].read().decode("utf-8"))
@@ -279,7 +279,7 @@ class VersionedR2FileSystem:
             Bucket=self._bucket, Key=key, Body=text.encode("utf-8"), ContentType="text/plain"
         )
 
-    def _put_json(self, key: str, obj: Dict[str, Any]) -> None:
+    def _put_json(self, key: str, obj: dict[str, Any]) -> None:
         self._s3.put_object(
             Bucket=self._bucket,
             Key=key,
