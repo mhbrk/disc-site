@@ -51,6 +51,7 @@ class BamlSyncClient:
     def with_options(self,
         tb: typing.Optional[type_builder.TypeBuilder] = None,
         client_registry: typing.Optional[baml_py.baml_py.ClientRegistry] = None,
+        client: typing.Optional[str] = None,
         collector: typing.Optional[typing.Union[baml_py.baml_py.Collector, typing.List[baml_py.baml_py.Collector]]] = None,
         env: typing.Optional[typing.Dict[str, typing.Optional[str]]] = None,
         tags: typing.Optional[typing.Dict[str, str]] = None,
@@ -61,6 +62,8 @@ class BamlSyncClient:
             options["tb"] = tb
         if client_registry is not None:
             options["client_registry"] = client_registry
+        if client is not None:
+            options["client"] = client
         if collector is not None:
             options["collector"] = collector
         if env is not None:
@@ -90,35 +93,35 @@ class BamlSyncClient:
     @property
     def parse_stream(self):
       return self.__llm_stream_parser
-    
+
     def GenerateFollowUpQuestions(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
     ) -> str:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
-            stream = self.stream.GenerateFollowUpQuestions(messages=messages,
+            __stream__ = self.stream.GenerateFollowUpQuestions(messages=messages,
                 baml_options=baml_options)
-            return stream.get_final_response()
+            return __stream__.get_final_response()
         else:
             # Original non-streaming code
-            result = self.__options.merge_options(baml_options).call_function_sync(function_name="GenerateFollowUpQuestions", args={
+            __result__ = self.__options.merge_options(baml_options).call_function_sync(function_name="GenerateFollowUpQuestions", args={
                 "messages": messages,
             })
-            return typing.cast(str, result.cast_to(types, types, stream_types, False, __runtime__))
+            return typing.cast(str, __result__.cast_to(types, types, stream_types, False, __runtime__))
     def GenerateSpecificationFromTemplate(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
     ) -> typing.Union["types.Question", "types.WebsiteSpecification"]:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
-            stream = self.stream.GenerateSpecificationFromTemplate(messages=messages,
+            __stream__ = self.stream.GenerateSpecificationFromTemplate(messages=messages,
                 baml_options=baml_options)
-            return stream.get_final_response()
+            return __stream__.get_final_response()
         else:
             # Original non-streaming code
-            result = self.__options.merge_options(baml_options).call_function_sync(function_name="GenerateSpecificationFromTemplate", args={
+            __result__ = self.__options.merge_options(baml_options).call_function_sync(function_name="GenerateSpecificationFromTemplate", args={
                 "messages": messages,
             })
-            return typing.cast(typing.Union["types.Question", "types.WebsiteSpecification"], result.cast_to(types, types, stream_types, False, __runtime__))
+            return typing.cast(typing.Union["types.Question", "types.WebsiteSpecification"], __result__.cast_to(types, types, stream_types, False, __runtime__))
     
 
 
@@ -131,26 +134,26 @@ class BamlStreamClient:
     def GenerateFollowUpQuestions(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlSyncStream[str, str]:
-        ctx, result = self.__options.merge_options(baml_options).create_sync_stream(function_name="GenerateFollowUpQuestions", args={
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_sync_stream(function_name="GenerateFollowUpQuestions", args={
             "messages": messages,
         })
         return baml_py.BamlSyncStream[str, str](
-          result,
+          __result__,
           lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
           lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
-          ctx,
+          __ctx__,
         )
     def GenerateSpecificationFromTemplate(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlSyncStream[typing.Union["stream_types.Question", "stream_types.WebsiteSpecification"], typing.Union["types.Question", "types.WebsiteSpecification"]]:
-        ctx, result = self.__options.merge_options(baml_options).create_sync_stream(function_name="GenerateSpecificationFromTemplate", args={
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_sync_stream(function_name="GenerateSpecificationFromTemplate", args={
             "messages": messages,
         })
         return baml_py.BamlSyncStream[typing.Union["stream_types.Question", "stream_types.WebsiteSpecification"], typing.Union["types.Question", "types.WebsiteSpecification"]](
-          result,
+          __result__,
           lambda x: typing.cast(typing.Union["stream_types.Question", "stream_types.WebsiteSpecification"], x.cast_to(types, types, stream_types, True, __runtime__)),
           lambda x: typing.cast(typing.Union["types.Question", "types.WebsiteSpecification"], x.cast_to(types, types, stream_types, False, __runtime__)),
-          ctx,
+          __ctx__,
         )
     
 
@@ -163,17 +166,17 @@ class BamlHttpRequestClient:
     def GenerateFollowUpQuestions(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateFollowUpQuestions", args={
+        __result__ = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateFollowUpQuestions", args={
             "messages": messages,
         }, mode="request")
-        return result
+        return __result__
     def GenerateSpecificationFromTemplate(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateSpecificationFromTemplate", args={
+        __result__ = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateSpecificationFromTemplate", args={
             "messages": messages,
         }, mode="request")
-        return result
+        return __result__
     
 
 class BamlHttpStreamRequestClient:
@@ -185,17 +188,17 @@ class BamlHttpStreamRequestClient:
     def GenerateFollowUpQuestions(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateFollowUpQuestions", args={
+        __result__ = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateFollowUpQuestions", args={
             "messages": messages,
         }, mode="stream")
-        return result
+        return __result__
     def GenerateSpecificationFromTemplate(self, messages: typing.List["types.LLMMessage"],
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateSpecificationFromTemplate", args={
+        __result__ = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateSpecificationFromTemplate", args={
             "messages": messages,
         }, mode="stream")
-        return result
+        return __result__
     
 
 b = BamlSyncClient(DoNotUseDirectlyCallManager({}))

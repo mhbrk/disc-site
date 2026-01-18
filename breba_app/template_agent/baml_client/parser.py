@@ -27,14 +27,14 @@ class LlmResponseParser:
     def GenerateFollowUpQuestions(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> str:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GenerateFollowUpQuestions", llm_response=llm_response, mode="request")
-        return typing.cast(str, result)
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateFollowUpQuestions", llm_response=llm_response, mode="request")
+        return typing.cast(str, __result__)
 
     def GenerateSpecificationFromTemplate(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> typing.Union["types.Question", "types.WebsiteSpecification"]:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GenerateSpecificationFromTemplate", llm_response=llm_response, mode="request")
-        return typing.cast(typing.Union["types.Question", "types.WebsiteSpecification"], result)
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateSpecificationFromTemplate", llm_response=llm_response, mode="request")
+        return typing.cast(typing.Union["types.Question", "types.WebsiteSpecification"], __result__)
 
     
 
@@ -47,13 +47,13 @@ class LlmStreamParser:
     def GenerateFollowUpQuestions(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> str:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GenerateFollowUpQuestions", llm_response=llm_response, mode="stream")
-        return typing.cast(str, result)
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateFollowUpQuestions", llm_response=llm_response, mode="stream")
+        return typing.cast(str, __result__)
 
     def GenerateSpecificationFromTemplate(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> typing.Union["stream_types.Question", "stream_types.WebsiteSpecification"]:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GenerateSpecificationFromTemplate", llm_response=llm_response, mode="stream")
-        return typing.cast(typing.Union["stream_types.Question", "stream_types.WebsiteSpecification"], result)
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateSpecificationFromTemplate", llm_response=llm_response, mode="stream")
+        return typing.cast(typing.Union["stream_types.Question", "stream_types.WebsiteSpecification"], __result__)
 
     
