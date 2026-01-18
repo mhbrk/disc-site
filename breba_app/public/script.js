@@ -166,13 +166,15 @@ if (document.getElementById('brebaWaitlistForm')) {
 
         try {
             const response = await fetch("https://script.google.com/macros/s/AKfycbwCbKjWjO4ZkDWzFCeh7zo7e1rnHu6OP-ydwlJVJRyp-AjGav1gaG_5N1yEzOArvklW/exec", {
+                redirect: "follow",
                 method: "POST",
-                mode: "no-cors",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "text/plain;charset=utf-8",
                 },
                 body: JSON.stringify(data)
             });
+            const text = await response.text();
+            if (!response.ok) throw new Error(text);
 
             form.reset();
             alertBox.className = "alert alert-success";
