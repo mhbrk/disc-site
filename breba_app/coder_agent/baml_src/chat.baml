@@ -13,7 +13,7 @@ template_string  ChatSystemInfo() #"<system_info>
 </system_info>
 "#
 
-function UserResponseOrCoder(messages: LLMMessage[], spec: string, files: string[]) -> ResponseToUser | Coder{
+function UserResponseOrCoder(messages: LLMMessage[], spec: string, files: string[]) -> ResponseToUser | Coder {
   client Gpt5Low
   prompt #"
   You are an AI agent within Breba App. You will talk with user and when appropriate route them to the coder agent.
