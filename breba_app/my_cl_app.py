@@ -7,12 +7,15 @@ from bson import DBRef
 from chainlit import Message
 
 from auth import verify_password
+from breba_app.config import SPEC_FILE_NAME, INDEX_FILE_NAME
 from breba_app.controllers.product_controller import delete_product
+from breba_app.filesystem import InMemoryFileStore
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product, create_or_update_product_for, create_blank_product_for, set_product_active
 from breba_app.models.user import User
-from breba_app.orchestrator import init_state, start_product_task
-from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active
+from breba_app.orchestrator import init_state, start_product_task, handle_user_message, save_state, OrchestratorState
+from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active, \
+    read_all_files_in_memory, save_files
 from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
     landing_page_follow_up_questions
 from breba_app.ui_bus import send_index_html_to_ui, send_specification_to_ui, send_index_html_chunk_to_ui, \
@@ -44,17 +47,41 @@ async def ask_user_streaming(token_stream: AsyncIterator[str] | str):
 
 
 async def populate_from_cloud_storage(user_name: str, session_id: str):
-    spec, product = await asyncio.gather(
-        read_spec_text(user_name, session_id),
-        read_index_html(user_name, session_id),
-    )
+    in_memory_store = await read_all_files_in_memory(user_name, session_id)
+
+    save_state(user_name, session_id, OrchestratorState(messages=[], filestore=in_memory_store))
+
+    spec = in_memory_store.read_text(SPEC_FILE_NAME)
+    product = in_memory_store.read_text(INDEX_FILE_NAME)
 
     await asyncio.gather(
-        init_state(session_id, spec, product),
         send_specification_to_ui(spec),
         send_index_html_to_ui(product)
     )
 
+
+async def coder_completed(user_name: str, product_id: str, file_store: InMemoryFileStore):
+    """
+    This is called when the coder agent is done.
+    It will update the UI with the updated files
+    It will also persist the files to the cloud storage
+
+    :param user_name: used to identify the session
+    :param product_id: used to identify the session
+    :param file_store the in memory file store provided by the coder agent
+    """
+    spec = file_store.read_text("spec.txt")
+    # TODO: This should be the file being viewed by the user.
+    html = file_store.read_text("index.html")
+    await asyncio.gather(
+        send_specification_to_ui(spec),
+        send_index_html_to_ui(html)
+    )
+
+    # TODO: need file type because this tuple stuff was supposed to be temporary
+    files_to_save = [(file_path, file_content.encode("utf-8"), "") for file_path, file_content in
+                     file_store.snapshot().items()]
+    await save_files(user_name, product_id, files_to_save)
 
 
 async def builder_completed(payload: str):
@@ -222,7 +249,8 @@ async def respond(message: Message):
             blob_image_path = save_image_file_to_private(user_name, product_id, message.elements[0].name,
                                                          message.elements[0].path,
                                                          message.content)
-            message.content = f"Here is a newly uploaded file: {blob_image_path} \n {message.content}.\n\nDon't forget to ask if the I would like to upload another file."
+            message.content = f"Here is a newly uploaded file: {blob_image_path} \n {message.content}.\n\nDon't forget to ask if I would like to upload another file."
+
             await to_builder(user_name, product_id, message.content, builder_completed, ask_user_streaming,
                              process_generator_message)
         except ValueError as e:
@@ -232,8 +260,8 @@ async def respond(message: Message):
                 content="Something went wrong while uploading the file. Try again later, or contact support.").send()
     else:
         # TODO: need some error handling here similar to the above or better
-        await to_builder(user_name, product_id, message.content, builder_completed, ask_user_streaming,
-                         process_generator_message)
+        await handle_user_message(user_name, product_id, message.content, coder_completed_callback=coder_completed,
+                                  stream_to_user_callback=ask_user_streaming)
 
 
 @cl.password_auth_callback

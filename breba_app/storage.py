@@ -12,6 +12,7 @@ import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
 
+from breba_app.filesystem import InMemoryFileStore
 from breba_app.filesystem.versioned_r2 import VersionedR2FileSystem, FileWrite
 
 load_dotenv()
@@ -222,6 +223,30 @@ async def save_files(user_name: str, session_id: str, files: list[tuple[str, byt
         s3_client=s3_client,
     )
     return await asyncio.to_thread(filesystem.batch_write, files_writes, version)
+
+
+async def read_all_files_in_memory(user_name: str, session_id: str):
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+
+    files = filesystem.list_files()
+    in_memory = InMemoryFileStore()
+
+    async def read_one(file_path: str):
+        file_content = await filesystem.read_text(file_path)
+        return file_path, file_content
+
+    results = await asyncio.gather(
+        *(read_one(file_path) for file_path in files)
+    )
+
+    for file_path, content in results:
+        in_memory.write_text(file_path, content)
+
+    return in_memory
 
 
 async def read_spec_text(user_name: str, session_id: str) -> str | None:

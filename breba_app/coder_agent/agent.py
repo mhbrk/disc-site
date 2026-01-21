@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, AsyncIterable, Literal
 
 from breba_app.coder_agent.baml_client.async_client import b
+from breba_app.coder_agent.baml_client.stream_types import ResponseToUser, Coder
 from breba_app.coder_agent.baml_client.types import LLMMessage
 from breba_app.filesystem import FileStore
 from breba_app.search_replace_editing import apply_search_replace_many, ApplyEditsError
@@ -12,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 NO_FILES_TO_MODIFY_MSG = "No files to modify for this request"
 MAX_RETRIES = 3
-
 
 
 def _snapshot(fs: FileStore) -> dict[str, str]:
@@ -54,6 +54,33 @@ def _files_to_edit_message(file_contents: str) -> LLMMessage:
     return LLMMessage(role="user",
                       content=f"The following files are available for editing. Do not edit any other files.\n"
                               f"<files_available_for_editing>\n{file_contents}\n</files_available_for_editing>")
+
+
+async def _to_user_stream(first_msg: ResponseToUser, stream: AsyncIterable[ResponseToUser]) -> AsyncIterable[str]:
+    yield first_msg.response
+    async for msg in stream:
+        yield msg.response
+
+
+async def stream_user_response_or_coder(*, messages: list[LLMMessage], filestore: FileStore) \
+        -> AsyncIterable[str] | Literal["__coder__"]:
+    # TODO: should read spec
+    if filestore.file_exists("index.html"):
+        spec = filestore.read_text("index.html")
+    else:
+        spec = ""
+    stream = b.stream.UserResponseOrCoder(messages, spec, filestore.list_files())
+
+    async for msg in stream:
+        if type(msg) is ResponseToUser:
+            # For some reason when streaming Coder, the first message is empty response.
+            if not msg.response:
+                continue
+            return _to_user_stream(msg, stream)
+        if type(msg) is Coder:
+            return "__coder__"
+    # This should never happen
+    raise ValueError("Unexpected message type")
 
 
 async def read_files_to_edit(*, original_context: list[LLMMessage], filestore: FileStore) -> tuple[str, set[str]]:
@@ -126,7 +153,7 @@ async def run_coder_agent(*, messages: list[Any], filestore: FileStore) -> LLMMe
 
             safe_context.append(LLMMessage(role="assistant", content=search_replace_text))
             edits = apply_search_replace_many(files, search_replace_text)
-             # break on success
+            # break on success
             break
         except ApplyEditsError as e:
             # Atomic behavior: do not write anything on failure

@@ -1,9 +1,15 @@
 import asyncio
 import difflib
 import logging
+from collections import defaultdict
+from dataclasses import dataclass
+from typing import AsyncIterable, AsyncIterator
 
 import breba_app.storage
 from agent_model import TextPart, Message
+from breba_app.coder_agent.agent import stream_user_response_or_coder, run_coder_agent
+from breba_app.coder_agent.baml_client.types import LLMMessage
+from breba_app.filesystem import InMemoryFileStore
 from breba_app.generator_agent.accumulator import TagAccumulator
 from breba_app.generator_agent.agent import agent as generator_agent
 from breba_app.search_replace_editing import ApplyEditsError
@@ -16,6 +22,47 @@ from breba_app.website import get_canonical_url, generate_sitemap_xml, generate_
 from builder_agent.agent import agent as builder_agent
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class OrchestratorState:
+    messages: list[LLMMessage]
+    filestore: InMemoryFileStore
+
+
+# Keyed by (user_name, product_id)
+_state_store: dict[tuple[str, str], OrchestratorState] = defaultdict(
+    lambda: OrchestratorState(
+        messages=[],
+        filestore=InMemoryFileStore()
+    )
+)
+
+
+def load_state(user_name: str, product_id: str) -> OrchestratorState:
+    """Retrieve the current state for a given user/product pair."""
+    # TODO: make deep copy of state before passing it out
+    return _state_store[(user_name, product_id)]
+
+
+def save_state(user_name: str, product_id: str, state: OrchestratorState) -> None:
+    """Persist the given state for a user/product pair."""
+    _state_store[(user_name, product_id)] = state
+
+
+async def baml_stream_and_collect(stream: AsyncIterable[str], stream_receiver) -> str:
+    final_value: str = ""
+
+    async def gen() -> AsyncIterator[str]:
+        nonlocal final_value
+        async for chunk in stream:
+            # BAML chunks already contain all previous chunks
+            final_value = chunk
+            yield chunk
+
+    await stream_receiver(gen())
+
+    return final_value
 
 
 def get_generator_response(session_id: str):
@@ -130,8 +177,9 @@ async def builder_editing_task(user_name: str, session_id: str, message: str):
 
             # Prepare next attempt message
             partially_updated_spec = e.partial_content
-            attempt_message = (f"I tried to use your search and replace blocks and ran into the following errors, please fix them:\n {str(e)}\n\n"
-                               f"Below is the full spec that we are editing:\n {partially_updated_spec}")
+            attempt_message = (
+                f"I tried to use your search and replace blocks and ran into the following errors, please fix them:\n {str(e)}\n\n"
+                f"Below is the full spec that we are editing:\n {partially_updated_spec}")
         except Exception as e:
             logging.exception(f"edit_invoke failed (attempt {attempt + 1}/3)")
 
@@ -231,6 +279,25 @@ async def update_product(user_name: str, session_id: str, message: str,
         logger.info(f"Waiting for user input: {message}")
         update_status("Waiting for user input...")
         await message_to_user_callback(message)
+
+
+async def handle_user_message(user_name: str, product_id: str, message: str,
+                              coder_completed_callback, stream_to_user_callback):
+    orchestrator_state = load_state(user_name, product_id)
+    file_store = orchestrator_state.filestore
+    orchestrator_state.messages.append(LLMMessage(role="user", content=message))
+    response = await stream_user_response_or_coder(messages=orchestrator_state.messages, filestore=file_store)
+
+    if isinstance(response, str) and response == "__coder__":
+        coder_response = await run_coder_agent(messages=orchestrator_state.messages, filestore=file_store)
+        orchestrator_state.messages.append(LLMMessage(role="assistant", content=coder_response.content))
+        await coder_completed_callback(user_name, product_id, file_store)
+    elif isinstance(response, AsyncIterable):
+        # Stream message to user and collect the final message, then store the message into message history
+        message = await baml_stream_and_collect(response, stream_to_user_callback)
+        orchestrator_state.messages.append(LLMMessage(role="assistant", content=message))
+    else:
+        raise ValueError("Unexpected response type")
 
 
 async def to_builder(user_name: str, session_id: str, message: str, builder_completed_callback,
