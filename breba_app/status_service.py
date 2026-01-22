@@ -1,6 +1,8 @@
 import asyncio
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
+from functools import wraps
+from typing import Callable, Awaitable, TypeVar
 
 import chainlit as cl
 
@@ -79,6 +81,7 @@ def task_started():
     _current_task.set(Task())
     asyncio.create_task(signal_task_started())
 
+
 async def task_completed():
     task = _current_task.get()
     if task is None:
@@ -93,7 +96,7 @@ async def task_completed():
 
 
 @asynccontextmanager
-async def agent_task():
+async def agent_task_context():
     """
     Use this context manager around any agent/task run.
     All update_status() calls inside will affect only this task's message.
@@ -108,3 +111,15 @@ async def agent_task():
     finally:
         await task_completed()
         _current_task.reset(parent_task)
+
+
+T = TypeVar("T")
+
+
+def agent_task(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+    @wraps(func)
+    async def wrapper(*args, **kwargs) -> T:
+        async with agent_task_context():
+            return await func(*args, **kwargs)
+
+    return wrapper

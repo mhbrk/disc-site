@@ -13,7 +13,7 @@ from breba_app.filesystem import InMemoryFileStore
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product, create_or_update_product_for, create_blank_product_for, set_product_active
 from breba_app.models.user import User
-from breba_app.orchestrator import start_product_task, handle_user_message, save_state, OrchestratorState
+from breba_app.orchestrator import handle_user_message, save_state, OrchestratorState, start_product
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active, \
     read_all_files_in_memory, save_files
 from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
@@ -205,7 +205,7 @@ async def window_message(message: str | dict):
         await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
                            builder_completed, process_generator_message, ask_user_streaming)
     elif method == "load_template":
-        await start_product_task(
+        await start_product(
             user_name, product_id,
             landing_page_instructions,
             builder_completed,
