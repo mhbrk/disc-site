@@ -70,12 +70,6 @@ def get_generator_response(session_id: str):
     return generator_agent.get_last_html(session_id)
 
 
-async def init_state(session_id: str, spec: str, html_output: str):
-    await builder_agent.set_agent_prompt(session_id, spec)
-    generator_agent.set_last_html(session_id, html_output)
-    generator_agent.set_spec(session_id, spec)
-
-
 def get_html_diff(old_html: str, new_html: str):
     diff = difflib.unified_diff(
         old_html.splitlines(),
