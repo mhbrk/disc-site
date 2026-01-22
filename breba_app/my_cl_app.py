@@ -13,7 +13,7 @@ from breba_app.filesystem import InMemoryFileStore
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product, create_or_update_product_for, create_blank_product_for, set_product_active
 from breba_app.models.user import User
-from breba_app.orchestrator import init_state, start_product_task, handle_user_message, save_state, OrchestratorState
+from breba_app.orchestrator import start_product_task, handle_user_message, save_state, OrchestratorState
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active, \
     read_all_files_in_memory, save_files
 from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
@@ -22,9 +22,8 @@ from breba_app.ui_bus import send_index_html_to_ui, send_specification_to_ui, se
     update_products_list, update_versions_list, update_follow_up_questions_list
 from controllers.deployment_controller import run_deployment
 from llm_utils import get_product_name
-from orchestrator import to_builder, to_generator
-from storage import save_image_file_to_private, read_spec_text, \
-    read_index_html, get_public_url
+from orchestrator import to_generator
+from storage import save_image_file_to_private, get_public_url
 
 PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
 
@@ -70,7 +69,9 @@ async def coder_completed(user_name: str, product_id: str, file_store: InMemoryF
     :param product_id: used to identify the session
     :param file_store the in memory file store provided by the coder agent
     """
-    spec = file_store.read_text("spec.txt")
+    spec = ""
+    if file_store.file_exists("spec.txt"):
+        spec = file_store.read_text("spec.txt")
     # TODO: This should be the file being viewed by the user.
     html = file_store.read_text("index.html")
     await asyncio.gather(
@@ -81,7 +82,9 @@ async def coder_completed(user_name: str, product_id: str, file_store: InMemoryF
     # TODO: need file type because this tuple stuff was supposed to be temporary
     files_to_save = [(file_path, file_content.encode("utf-8"), "") for file_path, file_content in
                      file_store.snapshot().items()]
-    await save_files(user_name, product_id, files_to_save)
+    new_version = await save_files(user_name, product_id, files_to_save)
+    versions = await list_versions(user_name, product_id)
+    await update_versions_list(versions, new_version)
 
 
 async def builder_completed(payload: str):
@@ -193,9 +196,9 @@ async def window_message(message: str | dict):
     user_name = cl.user_session.get("user").identifier
 
     if method == "to_builder":
-        await to_builder(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
-                         builder_completed,
-                         ask_user_streaming, process_generator_message)
+        await handle_user_message(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
+                                  coder_completed_callback=coder_completed,
+                                  stream_to_user_callback=ask_user_streaming)
     elif method == "to_generator":
         await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
                            builder_completed, process_generator_message, ask_user_streaming)
@@ -251,8 +254,8 @@ async def respond(message: Message):
                                                          message.content)
             message.content = f"Here is a newly uploaded file: {blob_image_path} \n {message.content}.\n\nDon't forget to ask if I would like to upload another file."
 
-            await to_builder(user_name, product_id, message.content, builder_completed, ask_user_streaming,
-                             process_generator_message)
+            await handle_user_message(user_name, product_id, message.content, coder_completed_callback=coder_completed,
+                                      stream_to_user_callback=ask_user_streaming)
         except ValueError as e:
             await cl.Message(content=str(e)).send()
         except Exception as e:

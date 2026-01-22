@@ -9,6 +9,7 @@ import breba_app.storage
 from agent_model import TextPart, Message
 from breba_app.coder_agent.agent import stream_user_response_or_coder, run_coder_agent
 from breba_app.coder_agent.baml_client.types import LLMMessage
+from breba_app.config import INDEX_FILE_NAME
 from breba_app.filesystem import InMemoryFileStore
 from breba_app.generator_agent.accumulator import TagAccumulator
 from breba_app.generator_agent.agent import agent as generator_agent
@@ -281,11 +282,14 @@ async def update_product(user_name: str, session_id: str, message: str,
         await message_to_user_callback(message)
 
 
-async def handle_user_message(user_name: str, product_id: str, message: str,
-                              coder_completed_callback, stream_to_user_callback):
+async def edit_product(user_name: str, product_id: str, message: str,
+                       coder_completed_callback,
+                       stream_to_user_callback):
+    # TODO: This duplication can be overcome by memoization, or passing state as param
     orchestrator_state = load_state(user_name, product_id)
     file_store = orchestrator_state.filestore
     orchestrator_state.messages.append(LLMMessage(role="user", content=message))
+
     response = await stream_user_response_or_coder(messages=orchestrator_state.messages, filestore=file_store)
 
     if isinstance(response, str) and response == "__coder__":
@@ -294,10 +298,44 @@ async def handle_user_message(user_name: str, product_id: str, message: str,
         await coder_completed_callback(user_name, product_id, file_store)
     elif isinstance(response, AsyncIterable):
         # Stream message to user and collect the final message, then store the message into message history
-        message = await baml_stream_and_collect(response, stream_to_user_callback)
-        orchestrator_state.messages.append(LLMMessage(role="assistant", content=message))
+        chat_response_message = await baml_stream_and_collect(response, stream_to_user_callback)
+        orchestrator_state.messages.append(LLMMessage(role="assistant", content=chat_response_message))
     else:
         raise ValueError("Unexpected response type")
+
+
+async def start_product2(user_name: str, product_id: str, message: str,
+                         coder_completed_callback, message_to_user_callback):
+    t_agent = TemplateAgent(user_name, product_id)
+    response = await t_agent.build_specification(message, message_to_user_callback)
+
+    # We will only proceed to next step, if we have a website specification. Otherwise, wait for additional user input
+    if isinstance(response, WebsiteSpecification):
+        # TODO: This duplication can be overcome by memoization, or passing state as param, or using a class
+        orchestrator_state = load_state(user_name, product_id)
+        file_store = orchestrator_state.filestore
+        new_spec = response.spec
+
+        orchestrator_state.messages.append(LLMMessage(role="user", content=message))
+        orchestrator_state.messages.append(LLMMessage(role="assistant", content=new_spec))
+        orchestrator_state.messages.append(
+            LLMMessage(role="user", content="Let's use this specification to build the website"))
+        coder_response = await run_coder_agent(messages=orchestrator_state.messages, filestore=file_store)
+        orchestrator_state.messages.append(LLMMessage(role="assistant", content=coder_response.content))
+        await coder_completed_callback(user_name, product_id, file_store)
+
+        update_status("The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website")
+
+
+async def handle_user_message(user_name: str, product_id: str, message: str,
+                              coder_completed_callback, stream_to_user_callback):
+    async with agent_task():
+        orchestrator_state = load_state(user_name, product_id)
+        file_store = orchestrator_state.filestore
+        if file_store.file_exists(INDEX_FILE_NAME):
+            await edit_product(user_name, product_id, message, coder_completed_callback, stream_to_user_callback)
+        else:
+            await start_product2(user_name, product_id, message, coder_completed_callback, stream_to_user_callback)
 
 
 async def to_builder(user_name: str, session_id: str, message: str, builder_completed_callback,
