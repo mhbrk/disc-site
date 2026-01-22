@@ -22,7 +22,6 @@ from breba_app.ui_bus import send_index_html_to_ui, send_specification_to_ui, se
     update_products_list, update_versions_list, update_follow_up_questions_list
 from controllers.deployment_controller import run_deployment
 from llm_utils import get_product_name
-from orchestrator import to_generator
 from storage import save_image_file_to_private, get_public_url
 
 PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
@@ -202,8 +201,9 @@ async def window_message(message: str | dict):
                                   coder_completed_callback=coder_completed,
                                   stream_to_user_callback=ask_user_streaming)
     elif method == "to_generator":
-        await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
-                           builder_completed, process_generator_message, ask_user_streaming)
+        await handle_user_message(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
+                                  coder_completed_callback=coder_completed,
+                                  stream_to_user_callback=ask_user_streaming)
     elif method == "load_template":
         await start_product(
             user_name, product_id,
@@ -214,7 +214,7 @@ async def window_message(message: str | dict):
         await update_follow_up_questions_list(landing_page_follow_up_questions)
     elif method == "deploy":
         site_name = message.get("body")
-        # TODO: This needs to go awaay
+        # TODO: This needs to go away
         # TODO: optimize this. Product_id should come with the request from the forntend
         #  (in fact this is a bug that product is stored in session).
         product = await Product.find_one(Product.product_id == product_id)

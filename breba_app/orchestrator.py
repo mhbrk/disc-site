@@ -212,44 +212,6 @@ async def write_new_version(user_name: str, product_id: str, spec: str, html: st
 
 
 @agent_task
-async def to_generator(user_name: str, session_id: str, message: str, builder_completed_callback, generator_callback,
-                       message_to_user_callback):
-    old_html = generator_agent.get_last_html(session_id)
-    update_status("Generator is processing your request...")
-    await start_editing_task(user_name, session_id, message, generator_callback)
-    new_html = generator_agent.get_last_html(session_id)
-    # TODO: use diff module
-    diff = get_html_diff(old_html, new_html)
-
-    message_with_instructions = (f"{message} \n"
-                                 f"\n In response to the user message, the generator modified the output according to this diff {diff}.\n"
-                                 f"When a user requests a change to the website, update the website specification to reflect the new requirement, unless the requested change is already explicitly included in the current specification. Only refrain from updating the specification if the issue was due to an implementation error (i.e., the generator did not follow the existing specification)."
-                                 f"IMPORTANT: If the diff shows that an the issue stemmed from a bug in the implementation, do not modify the website specification.")
-
-    # TODO: should probably ask user to confirm
-    update_status("Rebuilding the specification... Please wait for completion before doing anything else")
-    agent_response = await builder_editing_task(user_name, session_id, message_with_instructions)
-
-    new_spec = agent_response.get("content")
-    is_task_completed = agent_response.get("is_task_complete")
-
-    if is_task_completed:
-        update_status("The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website.")
-        # TODO: This shouldn't be needed. Future calls to generator need to include the actual spec
-        generator_agent.set_spec(session_id, new_spec)
-        await builder_completed_callback(new_spec)
-    else:
-        logger.info(f"Waiting for user input: {new_spec}")
-        update_status("Waiting for user input...")
-        await message_to_user_callback(new_spec)
-
-    new_version = await write_new_version(user_name, session_id, new_spec, new_html)
-
-    versions = await breba_app.storage.list_versions(user_name, session_id)
-    await update_versions_list(versions, new_version)
-
-
-@agent_task
 async def update_product(user_name: str, session_id: str, message: str,
                          builder_completed_callback,
                          message_to_user_callback,
@@ -304,7 +266,7 @@ async def edit_product(user_name: str, product_id: str, message: str,
 
 @agent_task
 async def start_product(user_name: str, product_id: str, message: str,
-                         coder_completed_callback, message_to_user_callback):
+                        coder_completed_callback, message_to_user_callback):
     t_agent = TemplateAgent(user_name, product_id)
     response = await t_agent.build_specification(message, message_to_user_callback)
 
@@ -347,4 +309,3 @@ async def to_builder(user_name: str, session_id: str, message: str, builder_comp
     else:
         await start_product(user_name, session_id, message, builder_completed_callback, message_to_user_callback,
                             generator_callback)
-
