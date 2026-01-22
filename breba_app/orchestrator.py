@@ -288,14 +288,16 @@ async def edit_product(user_name: str, product_id: str, message: str,
     # TODO: This duplication can be overcome by memoization, or passing state as param
     orchestrator_state = load_state(user_name, product_id)
     file_store = orchestrator_state.filestore
+    update_status("Thinking...")
     orchestrator_state.messages.append(LLMMessage(role="user", content=message))
-
     response = await stream_user_response_or_coder(messages=orchestrator_state.messages, filestore=file_store)
 
     if isinstance(response, str) and response == "__coder__":
+        update_status("Coder is writing the code...")
         coder_response = await run_coder_agent(messages=orchestrator_state.messages, filestore=file_store)
         orchestrator_state.messages.append(LLMMessage(role="assistant", content=coder_response.content))
         await coder_completed_callback(user_name, product_id, file_store)
+        update_status("The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website")
     elif isinstance(response, AsyncIterable):
         # Stream message to user and collect the final message, then store the message into message history
         chat_response_message = await baml_stream_and_collect(response, stream_to_user_callback)
@@ -320,6 +322,7 @@ async def start_product2(user_name: str, product_id: str, message: str,
         orchestrator_state.messages.append(LLMMessage(role="assistant", content=new_spec))
         orchestrator_state.messages.append(
             LLMMessage(role="user", content="Let's use this specification to build the website"))
+        update_status("Coder is writing the code...")
         coder_response = await run_coder_agent(messages=orchestrator_state.messages, filestore=file_store)
         orchestrator_state.messages.append(LLMMessage(role="assistant", content=coder_response.content))
         await coder_completed_callback(user_name, product_id, file_store)
