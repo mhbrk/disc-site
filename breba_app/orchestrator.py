@@ -303,7 +303,7 @@ async def edit_product(user_name: str, product_id: str, message: str,
 
 
 @agent_task
-async def start_product2(user_name: str, product_id: str, message: str,
+async def start_product(user_name: str, product_id: str, message: str,
                          coder_completed_callback, message_to_user_callback):
     t_agent = TemplateAgent(user_name, product_id)
     response = await t_agent.build_specification(message, message_to_user_callback)
@@ -334,7 +334,7 @@ async def handle_user_message(user_name: str, product_id: str, message: str,
     if file_store.file_exists(INDEX_FILE_NAME):
         await edit_product(user_name, product_id, message, coder_completed_callback, stream_to_user_callback)
     else:
-        await start_product2(user_name, product_id, message, coder_completed_callback, stream_to_user_callback)
+        await start_product(user_name, product_id, message, coder_completed_callback, stream_to_user_callback)
 
 
 async def to_builder(user_name: str, session_id: str, message: str, builder_completed_callback,
@@ -348,27 +348,3 @@ async def to_builder(user_name: str, session_id: str, message: str, builder_comp
         await start_product(user_name, session_id, message, builder_completed_callback, message_to_user_callback,
                             generator_callback)
 
-
-@agent_task
-async def start_product(user_name: str, product_id: str, message: str,
-                        builder_completed_callback, message_to_user_callback, generator_callback):
-    t_agent = TemplateAgent(user_name, product_id)
-    response = await t_agent.build_specification(message, message_to_user_callback)
-
-    # We will only proceed to next step, if we have a website specification. Otherwise, wait for additional user input
-    if isinstance(response, WebsiteSpecification):
-        new_spec = response.spec
-        await asyncio.gather(
-            builder_agent.set_agent_prompt(product_id, new_spec),
-            builder_completed_callback(new_spec),
-            # This is kind of spaghetti code. The coder instructions should probably be on the orchestrator agent state
-            generator_task(user_name, product_id, new_spec, generator_callback))
-
-        new_html = generator_agent.get_last_html(product_id)
-
-        new_version = await write_new_version(user_name, product_id, new_spec, new_html)
-
-        # Update status only after we save the files
-        update_status("The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website")
-        versions = await breba_app.storage.list_versions(user_name, product_id)
-        await update_versions_list(versions, new_version)
