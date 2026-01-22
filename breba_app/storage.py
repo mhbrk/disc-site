@@ -12,6 +12,7 @@ import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
 
+from breba_app.config import INDEX_FILE_NAME
 from breba_app.filesystem import InMemoryFileStore
 from breba_app.filesystem.versioned_r2 import VersionedR2FileSystem, FileWrite
 
@@ -433,7 +434,7 @@ async def has_cloud_storage(user_name: str, session_id: str):
         root_prefix=f"{user_name}/{session_id}",
         s3_client=s3_client,
     )
-    return filesystem.file_exists("spec.txt")
+    return filesystem.file_exists(INDEX_FILE_NAME)
 
 
 async def delete_product_files(user_name: str, session_id: str) -> int:

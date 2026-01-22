@@ -50,7 +50,9 @@ async def populate_from_cloud_storage(user_name: str, session_id: str):
 
     save_state(user_name, session_id, OrchestratorState(messages=[], filestore=in_memory_store))
 
-    spec = in_memory_store.read_text(SPEC_FILE_NAME)
+    spec = ""
+    if in_memory_store.file_exists(SPEC_FILE_NAME):
+        spec = in_memory_store.read_text(SPEC_FILE_NAME)
     product = in_memory_store.read_text(INDEX_FILE_NAME)
 
     await asyncio.gather(
