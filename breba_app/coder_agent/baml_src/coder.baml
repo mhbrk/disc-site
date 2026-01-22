@@ -54,9 +54,10 @@ Reply only in English. ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
 IMPORTANT: We will use a search and replace algorithm, therefore the search and replace blocks need to have exact text, NOT udiff format!
 </system_reminder>
 "#
-
+// index.html is the main file, but you can create other files to keep with the best practices.
 template_string  SystemInfo() #"<system_info>
-    Keep in mind, this project is an html page that follows best practices. index.html is the main file, but you can create other files to keep with the best practices.
+    Keep in mind, this project is an html page that follows best practices. 
+    This project has all css, html and javascript in a single index.html file.
     You are producing a production ready website that geared towards search engine discoverabilty and core web vitals.
     You must make sure that all changes are clean and complete. 
 </system_info>
