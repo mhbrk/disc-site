@@ -208,8 +208,8 @@ async def window_message(message: str | dict):
         await start_product(
             user_name, product_id,
             landing_page_instructions,
-            builder_completed,
-            ask_user_streaming, process_generator_message
+            coder_completed,
+            ask_user_streaming
         )
         await update_follow_up_questions_list(landing_page_follow_up_questions)
     elif method == "deploy":
