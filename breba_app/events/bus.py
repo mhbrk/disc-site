@@ -74,14 +74,14 @@ class EventBus:
         # Background tasks for wait=False mode
         self._bg_tasks: set[asyncio.Task[None]] = set()
 
-    async def subscribe[E: BaseModel](self, event_type: type[E], consumer: Consumer[E]) -> Subscription[E]:
+    async def subscribe[E: BaseModel](
+            self, event_type: type[E], consumer: Consumer[E]
+    ) -> Subscription[E]:
         async with self._lock:
             sub_id = self._next_id
             self._next_id += 1
-
             bucket = self._consumers.setdefault(event_type, {})
-            bucket[sub_id] = consumer  # type: ignore[assignment]
-
+            bucket[sub_id] = consumer
         return Subscription(id=sub_id, event_type=event_type)
 
     async def unsubscribe[E: BaseModel](self, subscription: Subscription[E]) -> bool:
@@ -100,7 +100,7 @@ class EventBus:
         # Snapshot subscriptions so unsubscribes during handling are safe.
         async with self._lock:
             bucket = self._consumers.get(event_type, {})
-            items = list(bucket.items())  # [(sub_id, consumer), ...]
+            items = list(bucket.items())
 
         if not items:
             return
@@ -120,9 +120,11 @@ class EventBus:
             self._bg_tasks.add(task)
             task.add_done_callback(self._bg_tasks.discard)
 
-    async def _run_consumer(self, consumer: Consumer[BaseModel], ctx: HandleContext, event: BaseModel) -> None:
+    async def _run_consumer(
+            self, consumer: Consumer[BaseModel], ctx: HandleContext, event: BaseModel
+    ) -> None:
         try:
-            await consumer.handle(ctx, event)  # type: ignore[arg-type]
+            await consumer.handle(ctx, event)
         except asyncio.CancelledError:
             raise
         except Exception:

@@ -110,13 +110,6 @@ async def builder_completed(payload: str):
     await send_specification_to_ui(payload)
 
 
-async def process_generator_message(message: str):
-    if message == "__completed__":
-        await send_index_html_to_ui(message)
-    else:
-        await send_index_html_chunk_to_ui(message)
-
-
 async def update_deployments_list(product_id: PydanticObjectId):
     deployments = await Deployment.find(Deployment.product == DBRef("products", product_id)).sort(
         [("deployed_at", SortDirection.DESCENDING)]).to_list()
@@ -166,6 +159,7 @@ async def main():
         # Newly created product don't hav e product_name until the first spec is generated
         product_name = active_product.name
         if product_name:
+            # IF product name is unnamed product create event listners for coder completion
             cl.user_session.set("product_name", product_name)
 
         if has_storage:
