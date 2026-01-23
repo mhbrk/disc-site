@@ -146,3 +146,5 @@ class EventBus:
             with contextlib.suppress(Exception):
                 await asyncio.gather(*tasks, return_exceptions=True)
         self._bg_tasks.clear()
+
+event_bus = EventBus()

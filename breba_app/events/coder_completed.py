@@ -11,4 +11,4 @@ class CoderCompleted(BaseModel):
 
     user_name: str
     product_id: str
-    file_store: InMemoryFileStore
+    filestore: InMemoryFileStore

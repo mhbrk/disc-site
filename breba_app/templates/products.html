@@ -147,6 +147,11 @@
         return col;
     }
 
+    function updateProductName(product_id, new_name) {
+        const cardNode = document.querySelector(`.product-card[data-product-id="${product_id}"]`);
+        cardNode.querySelector(".product-name").textContent = new_name;
+    }
+
     function closeMenu() {
         if (openMenu) {
             openMenu.remove();
@@ -168,6 +173,10 @@
                 const cardNode = renderProduct(product);
                 list.appendChild(cardNode);
             });
+        }
+        if (event.data.method === "update_product_name") {
+            const product = event.data.body;
+            updateProductName(product.product_id, product.name);
         }
     });
 

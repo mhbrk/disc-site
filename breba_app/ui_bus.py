@@ -18,6 +18,11 @@ async def send_index_html_chunk_to_ui(html: str):
     await cl.send_window_message({"method": "to_generator", "body": html})
 
 
+async def update_product_name(product_id: str, new_name: str):
+    await cl.send_window_message(
+        {"method": "update_product_name", "body": {"product_id": product_id, "name": new_name}})
+
+
 async def update_products_list(products: list[Product]):
     products_list = [{"product_id": product.product_id, "name": product.name, "active": product.active} for product in
                      products]
@@ -31,10 +36,12 @@ async def update_versions_list(versions: list[int], active: int):
 async def update_follow_up_questions_list(questions: list[str]):
     await cl.send_window_message({"method": "update_follow_up_questions_list", "body": questions})
 
+
 async def signal_task_started():
     await cl.context.emitter.task_start()
     await asyncio.sleep(0.01)
     await cl.send_window_message({"method": "task_started"})
+
 
 async def signal_task_completed():
     await cl.context.emitter.task_end()
