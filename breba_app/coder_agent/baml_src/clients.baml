@@ -63,8 +63,14 @@ client<llm> CustomGPT5Mini {
   provider openai-responses
   retry_policy Exponential
   options {
-    model "gpt-5.1-codex-mini"
+    model "gpt-5-mini"
     api_key env.OPENAI_API_KEY
+    text {
+      verbosity: "low"
+    }
+    reasoning {
+      effort "minimal"
+    }
   }
 }
 

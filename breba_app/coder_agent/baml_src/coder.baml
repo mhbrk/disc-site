@@ -5,8 +5,8 @@ class LLMMessage {
 }
 
 class FileList {
-  reasoning string  @description("Explanation of why these files need to be edited or not. Not more than 3 sentences")
-  files string[]  @description("List of file paths to edit.") 
+  reasoning string  @description("Explanation of why these files need to be edited or not in one short sentence.")
+  files string[]  @description("List of file paths to edit.")
 }
 
 template_string SystemReminder() #"<system_reminder>
@@ -58,7 +58,7 @@ IMPORTANT: We will use a search and replace algorithm, therefore the search and 
 template_string  SystemInfo() #"<system_info>
     Keep in mind, this project is an html page that follows best practices. 
     This project has all css, html and javascript in a single index.html file.
-    You are producing a production ready website that geared towards search engine discoverabilty and core web vitals.
+    We are producing a production ready website that geared towards search engine discoverabilty and core web vitals.
     You must make sure that all changes are clean and complete. 
 </system_info>
 "#
@@ -92,8 +92,8 @@ Always make changes with the best practices in mind
 function DetermineFilesToEdit(messages: LLMMessage[]) -> FileList {
   client CustomGPT5Mini
   prompt #"
-You are working with the user who is building a website.
-You need to determine files to edit based on user requests.
+You need to determine files to edit from the list of available files in the project and the file contents.
+Remember that if the project contains separate style files, style changes need to go into the appropriate style file. We will not be making inline style changes. All style changes need to go into appropriate css classes.
 When making changes to website content (not style only), we need to always update sitemap.xml.
 
 Your output will be a list of filepaths.
@@ -302,7 +302,6 @@ test DoubleCheckFileListWithFollowupStyles {
         role "assistant"
         content #"
           {
-  "reasoning": "The visible text change from “Hello World” to “Hello Universe” involves editing the HTML page (index.html). Because this is a visible change to end users, the sitemap must also be updated to reflect the new content.",
   "files": [
     "index.html",
     "sitemap.xml"
@@ -312,7 +311,8 @@ test DoubleCheckFileListWithFollowupStyles {
       }
       {
         role "user"
-        content #"index.html
+        content #"
+        index.html
           ```<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -345,8 +345,80 @@ sitemap.xml
 </urlset>
 ```
 
-Are additional files needed to make this change?
-IMPORTANT: Only list new files. Do not repeat files already listed
+Are additional css or javascript files needed to make this change?
+"#
+      }
+    ]
+  }
+}
+
+test DoubleCheckSinglularHTMOLFile {
+  functions [DetermineFilesToEdit]
+  args {
+    messages [
+      {
+        role "user"
+        content #"List files available in my project."#
+      }
+      {
+        role "assistant"
+        content #"index.html, script.js, sitemap.xml"#
+      }
+      {
+        role "user"
+        content #"Change text from Hello World to Hello Universe. And make the text red"#
+      }
+      {
+        role "assistant"
+        content #"
+          {
+  "files": [
+    "index.html",
+    "sitemap.xml"
+  ]
+}
+        "#
+      }
+      {
+        role "user"
+        content #"
+        index.html
+          ```<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World</title>
+    <style>
+      .text-green {
+        color: green;
+      }
+</head>
+<body>
+    <main>
+        <h1 class="text-green">Hello World</h1>
+        <p>Welcome to this minimalist site.</p>
+        <button id="cta-button">Get Started</button>
+    </main>
+    <script src="script.js" defer></script>
+</body>
+</html>
+```
+
+sitemap.xml
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://yourdomain.com/</loc>
+        <lastmod>2026-01-06</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>1.0</priority>
+    </url>
+</urlset>
+```
+
+Are additional css or javascript files needed to make this change?
 "#
       }
     ]
