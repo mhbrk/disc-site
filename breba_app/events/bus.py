@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import uuid
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -16,7 +17,7 @@ class Subscription[E: BaseModel]:
     """
     Opaque token used for unsubscribing.
     """
-    id: int
+    id: str
     event_type: type[E]
 
 
@@ -51,6 +52,8 @@ class Consumer[E: BaseModel](Protocol):
     ESB-ish consumer interface.
     """
 
+    id: str | None = None
+
     async def handle(self, ctx: HandleContext[E], event: E) -> None: ...
 
 
@@ -69,7 +72,7 @@ class EventBus:
         self._next_id = 1
 
         # event_type -> subscription_id -> consumer
-        self._consumers: dict[type[BaseModel], dict[int, Consumer[BaseModel]]] = {}
+        self._consumers: dict[type[BaseModel], dict[str, Consumer[BaseModel]]] = {}
 
         # Background tasks for wait=False mode
         self._bg_tasks: set[asyncio.Task[None]] = set()
@@ -78,11 +81,11 @@ class EventBus:
             self, event_type: type[E], consumer: Consumer[E]
     ) -> Subscription[E]:
         async with self._lock:
-            sub_id = self._next_id
-            self._next_id += 1
+            if consumer.id is None:
+                consumer.id = str(uuid.uuid4())
             bucket = self._consumers.setdefault(event_type, {})
-            bucket[sub_id] = consumer
-        return Subscription(id=sub_id, event_type=event_type)
+            bucket[consumer.id] = consumer
+        return Subscription(id=consumer.id, event_type=event_type)
 
     async def unsubscribe[E: BaseModel](self, subscription: Subscription[E]) -> bool:
         async with self._lock:
@@ -146,5 +149,6 @@ class EventBus:
             with contextlib.suppress(Exception):
                 await asyncio.gather(*tasks, return_exceptions=True)
         self._bg_tasks.clear()
+
 
 event_bus = EventBus()

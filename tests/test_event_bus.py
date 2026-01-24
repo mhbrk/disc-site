@@ -5,7 +5,7 @@ import pytest
 import pytest_asyncio
 from pydantic import BaseModel
 
-from breba_app.events.bus import EventBus, HandleContext, Subscription
+from breba_app.events.bus import EventBus, HandleContext, Subscription, Consumer
 
 
 # Test Event Models
@@ -24,7 +24,7 @@ class OrderPlaced(BaseModel):
 
 
 # Test Consumer Implementation
-class TestConsumer:
+class TestConsumer(Consumer):
     def __init__(self):
         self.handled_events: List[BaseModel] = []
         self.contexts: List[HandleContext] = []
@@ -36,7 +36,7 @@ class TestConsumer:
         self.contexts.append(ctx)
 
 
-class AsyncTestConsumer:
+class AsyncTestConsumer(Consumer):
     def __init__(self, delay: float = 0.0):
         self.delay = delay
         self.handled_events: List[BaseModel] = []
@@ -47,7 +47,7 @@ class AsyncTestConsumer:
         self.handled_events.append(event)
 
 
-class FailingConsumer:
+class FailingConsumer(Consumer):
     def __init__(self, exception: Exception = ValueError("Test error")):
         self.exception = exception
         self.call_count = 0
@@ -57,7 +57,7 @@ class FailingConsumer:
         raise self.exception
 
 
-class UnsubscribingConsumer:
+class UnsubscribingConsumer(Consumer):
     def __init__(self):
         self.call_count = 0
 
@@ -87,7 +87,7 @@ async def test_subscribe_returns_subscription(event_bus):
 
     assert isinstance(subscription, Subscription)
     assert subscription.event_type == UserCreated
-    assert subscription.id > 0
+    assert subscription.id is not None
 
 
 @pytest.mark.asyncio
@@ -279,12 +279,12 @@ async def test_handle_context_emit(event_bus_with_cleanup):
     """Test that consumers can emit events via HandleContext"""
     received_events = []
 
-    class EmittingConsumer:
+    class EmittingConsumer(Consumer):
         async def handle(self, ctx: HandleContext, event: UserCreated) -> None:
             # Emit a different event
             await ctx.emit(UserDeleted(user_id=event.user_id), wait=True)
 
-    class ListeningConsumer:
+    class ListeningConsumer(Consumer):
         async def handle(self, ctx: HandleContext, event: UserDeleted) -> None:
             received_events.append(event)
 
@@ -437,15 +437,15 @@ async def test_emit_with_no_event_type_match(event_bus_with_cleanup):
 
 
 @pytest.mark.asyncio
-async def test_subscription_id_increments(event_bus):
+async def test_consumer_subscribes_only_once(event_bus):
     consumer = TestConsumer()
 
     sub1 = await event_bus.subscribe(UserCreated, consumer)
     sub2 = await event_bus.subscribe(UserCreated, consumer)
     sub3 = await event_bus.subscribe(OrderPlaced, consumer)
 
-    assert sub2.id == sub1.id + 1
-    assert sub3.id == sub2.id + 1
+    assert sub2.id == sub1.id
+    assert sub3.id == sub2.id
 
 
 @pytest.mark.asyncio

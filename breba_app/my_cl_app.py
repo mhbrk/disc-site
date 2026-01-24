@@ -30,6 +30,7 @@ PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
 
 
 class ProductNameAssignmentConsumer(Consumer):
+    id = "product_name_assignment"
     async def handle(self, ctx: HandleContext, event: CoderCompleted) -> None:
         product_name = await get_product_name(event.filestore.read_text(INDEX_FILE_NAME))
         product = await create_or_update_product_for(event.user_name, event.product_id, product_name)
@@ -97,6 +98,7 @@ async def coder_completed(user_name: str, product_id: str, file_store: InMemoryF
     new_version = await save_files(user_name, product_id, files_to_save)
     versions = await list_versions(user_name, product_id)
     await update_versions_list(versions, new_version)
+    # TODO: This is just the first step. This entire callback should go away once event bus is work. That is the purpose of the event bus.
     await event_bus.emit(CoderCompleted(user_name=user_name, product_id=product_id, filestore=file_store))
 
 
