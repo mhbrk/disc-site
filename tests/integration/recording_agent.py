@@ -1,7 +1,6 @@
 import datetime
 import re
 
-from langchain.schema.messages import messages_from_dict
 import json
 import os
 from pathlib import Path
@@ -15,7 +14,6 @@ from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
-from breba_app.generator_agent.agent import HTMLAgent  # Adjust this import
 
 
 def normalize_kwargs(args):
@@ -72,33 +70,33 @@ class RecordingChatOpenAI(ChatOpenAI):
         return return_val
 
 
-@pytest.mark.asyncio
-async def test_stream_has_current_date(tmp_path):
-    query = "Create a simple Hello World site"
-    session_id = "test-session"
-    user_name = "test-user"
-    fixed_dt = datetime.datetime(2023, 1, 1, 15, 30, 0)
-
-    agent = HTMLAgent()
-
-    try:
-        with patch("breba_app.generator_agent.agent.ChatOpenAI",
-                   lambda *args, **kwargs: RecordingChatOpenAI("test_stream_has_current_date", *args, **kwargs)), \
-                patch("breba_app.generator_agent.agent.datetime") as mock_datetime:
-            # TODO: datetime should come form some sort of context getter, and we would mock the getter
-            # We want to make sure the timestamp is the same across all calls.
-            mock_datetime.datetime.now.return_value = fixed_dt
-            mock_datetime.datetime.strftime = datetime.datetime.strftime
-
-            await agent.ensure_initialized(os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN"))
-
-            # Run the agent's stream method
-            async for _ in agent.stream(query=query, user_name=user_name, session_id=session_id):
-                pass
-
-            model_calls = agent.model._recordings
-            assert "Current time is: 2023-01-01 15:30:00" in model_calls[0]["args"]
-
-    finally:
-        if agent._initialized:
-            await agent.close()
+# @pytest.mark.asyncio
+# async def test_stream_has_current_date(tmp_path):
+#     query = "Create a simple Hello World site"
+#     session_id = "test-session"
+#     user_name = "test-user"
+#     fixed_dt = datetime.datetime(2023, 1, 1, 15, 30, 0)
+#
+#     agent = HTMLAgent()
+#
+#     try:
+#         with patch("breba_app.generator_agent.agent.ChatOpenAI",
+#                    lambda *args, **kwargs: RecordingChatOpenAI("test_stream_has_current_date", *args, **kwargs)), \
+#                 patch("breba_app.generator_agent.agent.datetime") as mock_datetime:
+#             # TODO: datetime should come form some sort of context getter, and we would mock the getter
+#             # We want to make sure the timestamp is the same across all calls.
+#             mock_datetime.datetime.now.return_value = fixed_dt
+#             mock_datetime.datetime.strftime = datetime.datetime.strftime
+#
+#             await agent.ensure_initialized(os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN"))
+#
+#             # Run the agent's stream method
+#             async for _ in agent.stream(query=query, user_name=user_name, session_id=session_id):
+#                 pass
+#
+#             model_calls = agent.model._recordings
+#             assert "Current time is: 2023-01-01 15:30:00" in model_calls[0]["args"]
+#
+#     finally:
+#         if agent._initialized:
+#             await agent.close()

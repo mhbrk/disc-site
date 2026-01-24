@@ -16,7 +16,6 @@ from starlette.staticfiles import StaticFiles
 
 from breba_app.auth import change_password
 from breba_app.config import init_db
-from breba_app.generator_agent.agent import agent
 from breba_app.paths import app_path, templates
 
 logging.basicConfig(level=logging.INFO, )
@@ -29,10 +28,7 @@ PORT = int(os.environ.get("PORT", "8080"))
 @asynccontextmanager
 async def lifespan(app):
     await init_db()
-    pat = os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN")
-    await agent.ensure_initialized(pat)
     yield
-    await agent.close()
 
 
 app = FastAPI(lifespan=lifespan)
