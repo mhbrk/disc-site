@@ -41,11 +41,8 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 # #########################################################################
-# Generated classes (4)
+# Generated classes (2)
 # #########################################################################
-
-class Coder(BaseModel):
-    coder_request: str = Field(description='At most one short sentence for coder agent. Coder agent has the full conversation context so don\'t provide details. For example: \'Build the website\' or \'Fix the bug\' or \'Add the new section\'')
 
 class FileList(BaseModel):
     reasoning: str = Field(description='Explanation of why these files need to be edited or not in one short sentence.')
@@ -54,9 +51,6 @@ class FileList(BaseModel):
 class LLMMessage(BaseModel):
     role: typing.Union[typing_extensions.Literal['user'], typing_extensions.Literal['assistant']]
     content: str
-
-class ResponseToUser(BaseModel):
-    response: str = Field(description='Response to user from chat agent')
 
 # #########################################################################
 # Generated type aliases (0)

@@ -38,9 +38,9 @@ class LlmResponseParser:
 
     def UserResponseOrCoder(
         self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> typing.Union["types.ResponseToUser", "types.Coder"]:
+    ) -> str:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="UserResponseOrCoder", llm_response=llm_response, mode="request")
-        return typing.cast(typing.Union["types.ResponseToUser", "types.Coder"], __result__)
+        return typing.cast(str, __result__)
 
     
 
@@ -64,8 +64,8 @@ class LlmStreamParser:
 
     def UserResponseOrCoder(
         self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> typing.Union["stream_types.ResponseToUser", "stream_types.Coder"]:
+    ) -> str:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="UserResponseOrCoder", llm_response=llm_response, mode="stream")
-        return typing.cast(typing.Union["stream_types.ResponseToUser", "stream_types.Coder"], __result__)
+        return typing.cast(str, __result__)
 
     

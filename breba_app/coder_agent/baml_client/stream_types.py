@@ -23,11 +23,8 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (4)
+# Generated classes (2)
 # #########################################################################
-
-class Coder(BaseModel):
-    coder_request: typing.Optional[str] = Field(default=None, description='At most one short sentence for coder agent. Coder agent has the full conversation context so don\'t provide details. For example: \'Build the website\' or \'Fix the bug\' or \'Add the new section\'')
 
 class FileList(BaseModel):
     reasoning: typing.Optional[str] = Field(default=None, description='Explanation of why these files need to be edited or not in one short sentence.')
@@ -36,9 +33,6 @@ class FileList(BaseModel):
 class LLMMessage(BaseModel):
     role: typing.Optional[typing.Union[typing_extensions.Literal['user'], typing_extensions.Literal['assistant']]] = None
     content: typing.Optional[str] = None
-
-class ResponseToUser(BaseModel):
-    response: typing.Optional[str] = Field(default=None, description='Response to user from chat agent')
 
 # #########################################################################
 # Generated type aliases (0)
