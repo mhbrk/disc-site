@@ -30,7 +30,10 @@ PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
 
 
 class ProductNameAssignmentConsumer(Consumer):
-    id = "product_name_assignment"
+    def __init__(self, user_name: str, product_id: str):
+        self.id = f"product_name_assignment_{user_name}_{product_id}"
+        super().__init__()
+
     async def handle(self, ctx: HandleContext, event: CoderCompleted) -> None:
         product_name = await get_product_name(event.filestore.read_text(INDEX_FILE_NAME))
         product = await create_or_update_product_for(event.user_name, event.product_id, product_name)
@@ -148,11 +151,11 @@ async def main():
         has_storage = await has_cloud_storage(user_name, active_product.product_id)
         product_id = active_product.product_id
         cl.user_session.set("product_id", active_product.product_id)
-        # Newly created product don't hav e product_name until the first spec is generated
+        # Newly created product don't have product_name until the first spec is generated
         product_name = active_product.name
 
         if not product_name or product_name == PRODUCT_NAME_PLACEHOLDER:
-            await event_bus.subscribe(CoderCompleted, ProductNameAssignmentConsumer())
+            await event_bus.subscribe(CoderCompleted, ProductNameAssignmentConsumer(user_name, product_id))
         elif product_name:
             cl.user_session.set("product_name", product_name)
 
