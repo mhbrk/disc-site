@@ -4,7 +4,6 @@ import logging
 from typing import Any, AsyncIterable, Literal
 
 from breba_app.coder_agent.baml_client.async_client import b
-from breba_app.coder_agent.baml_client.stream_types import ResponseToUser, Coder
 from breba_app.coder_agent.baml_client.types import LLMMessage
 from breba_app.filesystem import FileStore
 from breba_app.search_replace_editing import apply_search_replace_many, ApplyEditsError
@@ -55,15 +54,24 @@ def _files_to_edit_message(file_contents: str) -> LLMMessage:
                       content=f"The following files are available for editing. Do not edit any other files.\n"
                               f"<files_available_for_editing>\n{file_contents}\n</files_available_for_editing>")
 
+async def _get_first_word(stream: AsyncIterable[str]):
+    buffer = ""
+    async for token in stream:
+        buffer += token
+        if " " in buffer:
+            # Return as soon as we see a space
+            return buffer
+    return buffer
 
-async def _to_user_stream(first_msg: ResponseToUser, stream: AsyncIterable[ResponseToUser]) -> AsyncIterable[str]:
-    yield first_msg.response
+
+async def _to_user_stream(first_msg: str, stream: AsyncIterable[str]) -> AsyncIterable[str]:
+    yield first_msg
     async for msg in stream:
-        yield msg.response
+        yield msg
 
 
 async def stream_user_response_or_coder(*, messages: list[LLMMessage], filestore: FileStore) \
-        -> AsyncIterable[str] | Literal["__coder__"]:
+        -> AsyncIterable[str] | Literal["__coder__"] | Literal["Something went wrong, empty message received"]:
     # TODO: should read spec
     if filestore.file_exists("index.html"):
         spec = filestore.read_text("index.html")
@@ -71,16 +79,15 @@ async def stream_user_response_or_coder(*, messages: list[LLMMessage], filestore
         spec = ""
     stream = b.stream.UserResponseOrCoder(messages, spec, filestore.list_files())
 
-    async for msg in stream:
-        if type(msg) is ResponseToUser:
-            # For some reason when streaming Coder, the first message is empty response.
-            if not msg.response:
-                continue
-            return _to_user_stream(msg, stream)
-        if type(msg) is Coder:
-            return "__coder__"
-    # This should never happen
-    raise ValueError("Unexpected message type")
+    first_words = await _get_first_word(stream)
+    if first_words.startswith("__coder__"):
+        return "__coder__"
+    else:
+        return _to_user_stream(first_words, stream)
+
+
+    logger.info(f"Empty message received: {await stream.get_final_response()}")
+    return "Something went wrong, empty message received"
 
 
 async def read_files_to_edit(*, original_context: list[LLMMessage], filestore: FileStore) -> tuple[str, set[str]]:
