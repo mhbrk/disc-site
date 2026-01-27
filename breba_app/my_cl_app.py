@@ -250,24 +250,18 @@ async def auth_callback(username: str, password: str):
     else:
         return None
 
-@cl.oauth_callback
-def oauth_callback(
-        provider_id: str,
-        token: str,
-        raw_user_data: dict[str, str],
-        default_user: cl.User,
-) -> cl.User | None:
+async def add_to_waitlist(email: str, comments: str):
     url = (
         "https://script.google.com/macros/s/"
         "AKfycbwCbKjWjO4ZkDWzFCeh7zo7e1rnHu6OP-ydwlJVJRyp-AjGav1gaG_5N1yEzOArvklW/exec"
     )
-    email = default_user.identifier  # this is your email
 
-    payload = {"email": email, "comments": f"Name: {raw_user_data.get("name")}, Given Name: {raw_user_data.get("given_name")}"}
+    payload = {"email": email,
+               "comments": comments}
 
     try:
-        http_client = httpx.Client(follow_redirects=True, timeout=8.0)
-        resp = http_client.post(
+        http_client = httpx.AsyncClient(follow_redirects=True, timeout=8.0)
+        resp = await http_client.post(
             url,
             content=json.dumps(payload),  # body: JSON string
             headers={
@@ -278,4 +272,19 @@ def oauth_callback(
     except Exception:
         logging.exception("Failed to send email to Apps Script")
 
+
+@cl.oauth_callback
+async def oauth_callback(
+        provider_id: str,
+        token: str,
+        raw_user_data: dict[str, str],
+        default_user: cl.User,
+) -> cl.User | None:
+
+    asyncio.create_task(
+        add_to_waitlist(
+            default_user.identifier,
+            f"Name: {raw_user_data.get("name")}, Given Name: {raw_user_data.get("given_name")}"
+        )
+    )
     return default_user
