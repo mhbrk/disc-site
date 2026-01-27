@@ -1,7 +1,10 @@
 import asyncio
+import json
+import logging
 from typing import AsyncIterator
 
 import chainlit as cl
+import httpx
 from beanie import SortDirection, PydanticObjectId
 from bson import DBRef
 from chainlit import Message
@@ -246,3 +249,33 @@ async def auth_callback(username: str, password: str):
         )
     else:
         return None
+
+@cl.oauth_callback
+def oauth_callback(
+        provider_id: str,
+        token: str,
+        raw_user_data: dict[str, str],
+        default_user: cl.User,
+) -> cl.User | None:
+    url = (
+        "https://script.google.com/macros/s/"
+        "AKfycbwCbKjWjO4ZkDWzFCeh7zo7e1rnHu6OP-ydwlJVJRyp-AjGav1gaG_5N1yEzOArvklW/exec"
+    )
+    email = default_user.identifier  # this is your email
+
+    payload = {"email": email, "comments": f"Name: {raw_user_data.get("name")}, Given Name: {raw_user_data.get("given_name")}"}
+
+    try:
+        http_client = httpx.Client(follow_redirects=True, timeout=8.0)
+        resp = http_client.post(
+            url,
+            content=json.dumps(payload),  # body: JSON string
+            headers={
+                "Content-Type": "text/plain;charset=utf-8",
+            },
+        )
+        resp.raise_for_status()
+    except Exception:
+        logging.exception("Failed to send email to Apps Script")
+
+    return default_user

@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Annotated
 
 import chainlit as cl
-from chainlit.auth import get_current_user
+from chainlit.auth import get_current_user, clear_auth_cookie
+from chainlit.auth.cookie import clear_oauth_state_cookie
 from chainlit.utils import mount_chainlit
 from fastapi import FastAPI, Request, Depends
 from fastapi import Form
@@ -78,6 +79,10 @@ async def index(request: Request):
     otherwise render app.html
     """
     session_cookie = request.cookies.get("X-Chainlit-Session-id")
+    oauth_success = request.query_params.get("oauth_success")
+    # Shortcut because oath is not being supported yet
+    if oauth_success:
+        return templates.TemplateResponse("home.html", {"request": request, "login_success": True})
 
     if session_cookie:
         # Cookie missing → render app.html
@@ -86,6 +91,15 @@ async def index(request: Request):
         # Cookie exists → render home.html
         return templates.TemplateResponse("home.html", {"request": request})
 
+
+@app.get("/chainlit/login/callback")
+async def chainlit_login_callback_passthrough(request: Request, current_user: Annotated[
+            cl.User, Depends(get_current_user)
+        ]):
+    response = RedirectResponse(url="/?oauth_success=true")
+    clear_auth_cookie(request, response)
+    clear_oauth_state_cookie(response)
+    return response
 
 @app.get("/login", response_class=HTMLResponse)
 async def login(request: Request):
