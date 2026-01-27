@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from breba_app.coder_agent.agent import run_coder_agent
-from breba_app.filesystem import InMemoryFileStore
+from breba_app.filesystem import InMemoryFileStore, FileWrite
 
 from evals.loader import load_messages, load_initial_files
 
@@ -23,7 +23,7 @@ class CaseResult:
     modified_files: list[str]
 
 
-def compute_modified_files(before: dict[str, str], after: dict[str, str]) -> list[str]:
+def compute_modified_files(before: dict[str, FileWrite], after: dict[str, FileWrite]) -> list[str]:
     modified: list[str] = []
     for path, after_content in after.items():
         before_content = before.get(path)

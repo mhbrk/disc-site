@@ -13,8 +13,8 @@ from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
 
 from breba_app.config import INDEX_FILE_NAME
-from breba_app.filesystem import InMemoryFileStore
-from breba_app.filesystem.versioned_r2 import VersionedR2FileSystem, FileWrite
+from breba_app.filesystem import InMemoryFileStore, FileWrite
+from breba_app.filesystem.versioned_r2 import VersionedR2FileSystem
 
 load_dotenv()
 
@@ -208,7 +208,7 @@ async def save_index_html(user_name: str, session_id: str, html: str) -> None:
     await save_file_versioned(user_name, session_id, "index.html", data, "text/html")
 
 
-async def save_files(user_name: str, session_id: str, files: list[tuple[str, bytes, str]], version: int | None = None):
+async def save_files(user_name: str, session_id: str, files: list[FileWrite], version: int | None = None):
     """
     Save files to user's namespace
     :param user_name: Used to find user namespace
@@ -217,13 +217,12 @@ async def save_files(user_name: str, session_id: str, files: list[tuple[str, byt
     :param version: version to save files to, if not specified, a new version will be created
     :return: The new version number
     """
-    files_writes = [FileWrite(name, content, type) for name, content, type in files]
     filesystem = VersionedR2FileSystem(
         bucket_name=USERS_BUCKET_NAME,
         root_prefix=f"{user_name}/{session_id}",
         s3_client=s3_client,
     )
-    return await asyncio.to_thread(filesystem.batch_write, files_writes, version)
+    return await asyncio.to_thread(filesystem.batch_write, files, version)
 
 
 async def read_all_files_in_memory(user_name: str, session_id: str):
@@ -233,21 +232,16 @@ async def read_all_files_in_memory(user_name: str, session_id: str):
         s3_client=s3_client,
     )
 
-    files = filesystem.list_files()
-    in_memory = InMemoryFileStore()
+    file_paths = filesystem.list_files()
 
-    async def read_one(file_path: str):
-        file_content = await filesystem.read_text(file_path)
-        return file_path, file_content
+    async def read_one(file_path: str) -> tuple[str, FileWrite]:
+        return file_path, await filesystem.read_file(file_path)
 
-    results = await asyncio.gather(
-        *(read_one(file_path) for file_path in files)
+    path_file_pairs = await asyncio.gather(
+        *(read_one(path) for path in file_paths)
     )
 
-    for file_path, content in results:
-        in_memory.write_text(file_path, content)
-
-    return in_memory
+    return InMemoryFileStore(dict(path_file_pairs))
 
 
 async def read_spec_text(user_name: str, session_id: str) -> str | None:

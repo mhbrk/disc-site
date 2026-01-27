@@ -1,4 +1,7 @@
+import mimetypes
 from typing import Protocol
+
+from breba_app.filesystem.models import FileWrite
 
 
 class FileStore(Protocol):
@@ -18,16 +21,17 @@ class InMemoryFileStore(FileStore):
     - all content is text (str)
     """
 
-    def __init__(self, initial: dict[str, str] | None = None):
-        self._files: dict[str, str] = dict(initial or {})
+    def __init__(self, initial: dict[str, FileWrite] | None = None):
+        self._files: dict[str, FileWrite] = dict(initial or {})
 
     def read_text(self, path: str) -> str:
         if path not in self._files:
             raise FileNotFoundError(path)
-        return self._files[path]
+        return self._files[path].content.decode("utf-8")
 
     def write_text(self, path: str, content: str) -> None:
-        self._files[path] = content
+        content_type, encoding = mimetypes.guess_type(path)
+        self._files[path] = FileWrite(path, content.encode("utf-8"), content_type)
 
     def list_files(self) -> list[str]:
         return sorted(self._files.keys())
@@ -35,5 +39,5 @@ class InMemoryFileStore(FileStore):
     def file_exists(self, path: str) -> bool:
         return path in self._files
 
-    def snapshot(self) -> dict[str, str]:
+    def snapshot(self) -> dict[str, FileWrite]:
         return dict(self._files)

@@ -6,7 +6,7 @@ import pytest
 
 import breba_app.coder_agent.agent as agent_mod
 from breba_app.coder_agent.baml_client.types import LLMMessage, FileList
-from breba_app.filesystem import InMemoryFileStore
+from breba_app.filesystem import InMemoryFileStore, FileWrite
 from .conftest import compute_modified_files
 
 
@@ -28,10 +28,10 @@ def load_case(case_dir: Path) -> tuple[dict[str, str], str, dict[str, str]]:
     return initial, llm_output, expected
 
 
-def assert_expected_files_match(store: InMemoryFileStore, expected: dict[str, str]) -> None:
-    for path, expected_content in expected.items():
+def assert_expected_files_match(store: InMemoryFileStore, expected: dict[str, FileWrite]) -> None:
+    for path, expected_file in expected.items():
         actual = store.read_text(path)
-        assert actual == expected_content, f"Mismatch in {path}"
+        assert actual == expected_file.content.decode("utf-8"), f"Mismatch in {path}"
 
 
 @pytest.mark.parametrize(
@@ -46,6 +46,10 @@ def assert_expected_files_match(store: InMemoryFileStore, expected: dict[str, st
 async def test_agent_case_snapshots(monkeypatch, case_name: str, expected_modified: list[str]) -> None:
     case_dir = Path(__file__).parent / "coder_agent_test_cases" / case_name
     initial, llm_output, expected = load_case(case_dir)
+
+    # Convert to simple dict for easy comparison
+    initial = {path: FileWrite(path, content.encode("utf-8"), "") for path, content in initial.items()}
+    expected = {path: FileWrite(path, content.encode("utf-8"), "") for path, content in expected.items()}
 
     store = InMemoryFileStore(initial)
     before = store.snapshot()
@@ -102,6 +106,8 @@ async def test_agent_search_block_mismatch(monkeypatch) -> None:
 >>>>>>> REPLACE
 ```
 """
+    # Convert to simple dict for easy comparison
+    initial = {path: FileWrite(path, content.encode("utf-8"), "") for path, content in initial.items()}
     store = InMemoryFileStore(initial)
     before = store.snapshot()
 
@@ -142,6 +148,8 @@ New content
 >>>>>>> REPLACE
 ```
 """
+    # Convert to simple dict for easy comparison
+    initial = {path: FileWrite(path, content.encode("utf-8"), "") for path, content in initial.items()}
     store = InMemoryFileStore(initial)
     before = store.snapshot()
 
@@ -173,6 +181,10 @@ New content
 async def test_agent_partial_success(monkeypatch) -> None:
     case_dir = Path(__file__).parent / "coder_agent_test_cases" / "partial_success"
     initial, llm_output, _ = load_case(case_dir)
+
+    # Convert to simple dict for easy comparison
+    initial = {path: FileWrite(path, content.encode("utf-8"), "") for path, content in initial.items()}
+
     store = InMemoryFileStore(initial)
     before = store.snapshot()
 

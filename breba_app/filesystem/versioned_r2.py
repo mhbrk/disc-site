@@ -14,15 +14,9 @@ from typing import Iterable, Any
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 
+from breba_app.filesystem.models import FileWrite
+
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class FileWrite:
-    """A single file write operation for batch_write."""
-    path: str
-    content: bytes | str
-    content_type: str | None = None
 
 
 @dataclass
@@ -124,7 +118,7 @@ class VersionedR2FileSystem:
         except (NotFound, ClientError):
             return False
 
-    async def read_file(self, path: str, *, version: int | None = None) -> bytes:
+    async def read_file(self, path: str, *, version: int | None = None) -> FileWrite:
         """Read file bytes from the given version."""
         sanitized_path = _sanitize_path(path)
 
@@ -141,7 +135,7 @@ class VersionedR2FileSystem:
                 key = self._prefix + "/" + sanitized_path
             try:
                 obj = self._s3.get_object(Bucket=self._bucket, Key=key)
-                return obj["Body"].read()
+                return FileWrite(sanitized_path, obj["Body"].read(), obj.get("ContentType"))
             except (ClientError, self._s3.exceptions.NoSuchKey):
                 raise NotFound(f"Object for {sanitized_path} not found (key={key})")
 
@@ -149,7 +143,7 @@ class VersionedR2FileSystem:
 
     async def read_text(self, path: str, *, version: int | None = None, encoding: str = "utf-8") -> str:
         """Read file content as text."""
-        return (await self.read_file(path, version=version)).decode(encoding)
+        return (await self.read_file(path, version=version)).content.decode(encoding)
 
     def write_file(self, path: str, content: bytes | str, *, content_type: str | None = None) -> int:
         """Write a single file and create a new version."""
@@ -183,7 +177,6 @@ class VersionedR2FileSystem:
             manifest["created_at"] = datetime.now(timezone.utc).isoformat()
 
         return manifest
-
 
     def batch_write(self, files: Iterable[FileWrite], version: int | None = None) -> int:
         """Atomically write a batch of files and create one new version."""

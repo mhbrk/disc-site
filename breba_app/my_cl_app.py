@@ -12,7 +12,7 @@ from breba_app.config import SPEC_FILE_NAME, INDEX_FILE_NAME
 from breba_app.controllers.product_controller import delete_product
 from breba_app.events.bus import HandleContext, Consumer, event_bus
 from breba_app.events.coder_completed import CoderCompleted
-from breba_app.filesystem import InMemoryFileStore
+from breba_app.filesystem import InMemoryFileStore, FileWrite
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product, create_or_update_product_for, create_blank_product_for, set_product_active
 from breba_app.models.user import User
@@ -95,9 +95,7 @@ async def coder_completed(user_name: str, product_id: str, file_store: InMemoryF
         ui_bus.send_index_html_to_ui(html)
     )
 
-    # TODO: need file type because this tuple stuff was supposed to be temporary
-    files_to_save = [(file_path, file_content.encode("utf-8"), "") for file_path, file_content in
-                     file_store.snapshot().items()]
+    files_to_save: list[FileWrite] = list(file_store.snapshot().values())
     new_version = await save_files(user_name, product_id, files_to_save)
     versions = await list_versions(user_name, product_id)
     await update_versions_list(versions, new_version)
