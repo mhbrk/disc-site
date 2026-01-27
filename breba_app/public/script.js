@@ -199,13 +199,6 @@ if (document.getElementById('brebaWaitlistForm')) {
         submitText.textContent = "Submit";
     });
 
-    // Build app button
-    document.getElementById("buildAppBtn").addEventListener("click", function () {
-        const idea = document.getElementById("buildAppInput").value; // get input value
-        const textarea = document.getElementById("comments");
-        textarea.value = idea; // put into textarea
-    });
-
     // Modal focus
     document.getElementById('waitlistModal').addEventListener('shown.bs.modal', function () {
         const emailInput = document.querySelector('#waitlistModal input[name="email"]');
