@@ -1,7 +1,10 @@
 import asyncio
+import json
+import logging
 from typing import AsyncIterator
 
 import chainlit as cl
+import httpx
 from beanie import SortDirection, PydanticObjectId
 from bson import DBRef
 from chainlit import Message
@@ -246,3 +249,42 @@ async def auth_callback(username: str, password: str):
         )
     else:
         return None
+
+async def add_to_waitlist(email: str, comments: str):
+    url = (
+        "https://script.google.com/macros/s/"
+        "AKfycbwCbKjWjO4ZkDWzFCeh7zo7e1rnHu6OP-ydwlJVJRyp-AjGav1gaG_5N1yEzOArvklW/exec"
+    )
+
+    payload = {"email": email,
+               "comments": comments}
+
+    try:
+        http_client = httpx.AsyncClient(follow_redirects=True, timeout=8.0)
+        resp = await http_client.post(
+            url,
+            content=json.dumps(payload),  # body: JSON string
+            headers={
+                "Content-Type": "text/plain;charset=utf-8",
+            },
+        )
+        resp.raise_for_status()
+    except Exception:
+        logging.exception("Failed to send request to Apps Script")
+
+
+@cl.oauth_callback
+async def oauth_callback(
+        provider_id: str,
+        token: str,
+        raw_user_data: dict[str, str],
+        default_user: cl.User,
+) -> cl.User | None:
+
+    asyncio.create_task(
+        add_to_waitlist(
+            default_user.identifier,
+            f"Name: {raw_user_data.get("name")}, Given Name: {raw_user_data.get("given_name")}"
+        )
+    )
+    return default_user
