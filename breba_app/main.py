@@ -79,10 +79,12 @@ async def index(request: Request):
     otherwise render app.html
     """
     session_cookie = request.cookies.get("X-Chainlit-Session-id")
-    oauth_success = request.query_params.get("oauth_success")
+    oauth_success = request.cookies.get("oauth_success")
     # Shortcut because oath is not being supported yet
     if oauth_success:
-        return templates.TemplateResponse("home.html", {"request": request, "login_success": True})
+        response = templates.TemplateResponse("home.html", {"request": request, "login_success": True})
+        response.delete_cookie("oauth_success")
+        return response
 
     if session_cookie:
         # Cookie missing → render app.html
@@ -93,10 +95,15 @@ async def index(request: Request):
 
 
 @app.get("/chainlit/login/callback")
-async def chainlit_login_callback_passthrough(request: Request, current_user: Annotated[
-            cl.User, Depends(get_current_user)
-        ]):
-    response = RedirectResponse(url="/?oauth_success=true")
+async def chainlit_login_callback_passthrough(request: Request):
+    response = RedirectResponse(url="/")
+    response.set_cookie(
+        "oauth_success",
+        "1",
+        max_age=5,
+        httponly=True,
+        samesite="lax",
+    )
     clear_auth_cookie(request, response)
     clear_oauth_state_cookie(response)
     return response
