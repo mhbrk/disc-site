@@ -1608,3 +1608,13 @@ section {
         flex-direction: column;
     }
 }
+
+
+html.oauth-loading,
+html.oauth-loading * {
+  cursor: progress !important;
+}
+
+a.oauth-link.is-loading {
+  pointer-events: none;
+}

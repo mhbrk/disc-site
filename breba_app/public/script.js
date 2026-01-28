@@ -225,3 +225,31 @@ if (document.getElementById('brebaWaitlistForm')) {
         frame.src = '';
     });
 }
+
+document.querySelectorAll('a[href*="/chainlit/auth/oauth/"]').forEach((a) => {
+    a.addEventListener("click", () => {
+        // show spinner inside button
+        a.classList.add("is-loading");
+
+
+        const spinner = a.querySelector(".spinner-border");
+        const label = a.querySelector(".oauth-label");
+        const img = a.querySelector("img")
+        const i = a.querySelector("i")
+
+        let old_text = ""
+        if (spinner) spinner.classList.remove("d-none");
+        if (img) img.classList.add("d-none");
+        if (i) i.classList.add("d-none");
+        if (label) {
+            old_text = label.textContent;
+            label.textContent = "Loading…";
+        }
+        setTimeout(() => {
+            if (spinner) spinner.classList.add("d-none");
+            if (img) img.classList.remove("d-none");
+            if (i) i.classList.remove("d-none");
+            if (label) label.textContent = old_text;
+        }, 1000)
+    });
+});
