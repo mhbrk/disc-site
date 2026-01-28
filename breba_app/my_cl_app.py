@@ -270,7 +270,7 @@ async def add_to_waitlist(email: str, comments: str):
         )
         resp.raise_for_status()
     except Exception:
-        logging.exception("Failed to send email to Apps Script")
+        logging.exception("Failed to send request to Apps Script")
 
 
 @cl.oauth_callback
