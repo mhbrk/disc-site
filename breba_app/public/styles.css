@@ -8,6 +8,8 @@
 :root {
     /* Breba Brand Colors - New Color Palette */
     --breba-primary: #5F31EB; /* Primary brand color - Purple */
+    --breba-primary-rgb: 161, 138, 231;
+
     --breba-light-text: #EAE7F2; /* Secondary brand color - light cream */
     --breba-background: #A696C8; /* Secondary brand color - Light Purple */
     --breba-background2: #373640; /* Secondary brand color - Dark Grey */
@@ -16,7 +18,7 @@
     --breba-success: #10b981; /* Success green */
     --breba-warning: #f59e0b; /* Warning yellow */
     --breba-error: #ef4444; /* Error red */
-    --breba-alert-success: #a18ae7;  /* Alert light lilac */
+    --breba-alert-success: #a18ae7; /* Alert light lilac */
     --breba-alert-border: #8a6fd1; /* Alert border lilac darker*/
 
     /* Neutral Colors */
@@ -55,6 +57,49 @@
     --font-size-4xl: 2.25rem;
     --font-size-5xl: 3rem;
     --font-size-6xl: 3.75rem;
+
+    /* =========================
+       Bootstrap theme bridge
+       ========================= */
+    /* Bootstrap core theme colors (wired to your tokens) */
+    --bs-primary: var(--breba-primary);
+    --bs-primary-rgb: 95, 49, 235;
+
+    --bs-success: var(--breba-success);
+    --bs-success-rgb: 16, 185, 129;
+
+    --bs-warning: var(--breba-warning);
+    --bs-warning-rgb: 245, 158, 11;
+
+    --bs-danger: var(--breba-error);
+    --bs-danger-rgb: 239, 68, 68;
+
+    --bs-dark: var(--breba-dark);
+    --bs-dark-rgb: 33, 37, 41;
+
+    /* Optional but useful */
+    --bs-link-color: var(--bs-primary);
+    --bs-link-hover-color: #4b22d9; /* or define --breba-primary-hover */
+    --bs-focus-ring-color: rgba(95, 49, 235, 0.25);
+
+    --bs-box-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
+
+    --bs-secondary: var(--breba-light-text);
+
+    --bs-secondary-rgb: 234, 231, 242;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--bs-primary);
+    --bs-btn-border-color: var(--bs-primary);
+
+    --bs-btn-hover-bg: #4b22d9;
+    --bs-btn-hover-border-color: #4b22d9;
+
+    --bs-btn-active-bg: #3f1fc0;
+    --bs-btn-active-border-color: #3f1fc0;
+
 }
 
 .modal {
@@ -66,6 +111,7 @@
     --bs-btn-close-color: var(--breba-light-text);
     --bs-btn-close-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23EAE7F2'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e")
 }
+
 .alert {
     --bs-alert-border-color: var(--breba-alert-border);
 }
@@ -142,35 +188,6 @@ body {
     box-shadow: var(--shadow-md);
     z-index: 1000;
     padding: 1rem 0;
-}
-
-/* Floating global alert */
-.breba-global-alert {
-    position: fixed;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(960px, calc(100% - 2rem));
-    z-index: 2001; /* above .breba-navbar (1000) */
-    border-radius: 0.75rem;
-    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.4);
-    border: 1px solid rgba(148, 163, 253, 0.8);
-    background: rgba(191, 219, 254, 1); /* slightly stronger than default */
-    padding: 0.75rem 1rem;
-}
-
-/* Layout inside alert */
-.breba-alert-inner {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-}
-
-/* Make the close button clearly visible on this background */
-.breba-alert-close {
-    margin-left: auto;
-    opacity: 1;                  /* override Bootstrap’s 0.5 */
-    filter: invert(0.8);         /* dark background → light X */
 }
 
 .btn-outline-breba {
@@ -1612,9 +1629,18 @@ section {
 
 html.oauth-loading,
 html.oauth-loading * {
-  cursor: progress !important;
+    cursor: progress !important;
 }
 
 a.oauth-link.is-loading {
-  pointer-events: none;
+    pointer-events: none;
+}
+
+.breba-global-overlay {
+    position: fixed;
+    top: 88px; /* below navbar */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1055; /* above navbar & modals backdrop */
+    width: min(92vw, 720px);
 }

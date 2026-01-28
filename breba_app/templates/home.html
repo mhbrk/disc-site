@@ -182,22 +182,39 @@
 </nav>
 
 {% if login_success %}
-<div class="breba-global-alert alert alert-primary alert-dismissible fade show" role="alert">
-    <div class="breba-alert-inner">
-        <div>
-            <h6 class="mb-1 fw-bold">Login successful</h6>
-            <p class="mb-1 text-primary-emphasis fw-semibold">
-                However, due to a high volume of new users we’re not able to provide access right now.
+<div class="breba-global-overlay">
+    <div class="card bg-dark shadow-lg breba-login-card position-relative">
+        <!-- Top-right close (X) -->
+        <button
+            type="button"
+            class="btn-close position-absolute top-0 end-0 m-3"
+            aria-label="Close"
+            onclick="this.closest('.breba-global-overlay').remove()">
+        </button>
+
+        <div class="card-body text-center px-4 pt-4 pb-4">
+            <h5 class="card-title mb-3 fw-bold text-secondary">
+                Capacity reached
+            </h5>
+
+            <p class="mb-2 text-secondary">
+                Your login was successful, but due to a high volume of new users, we’re not able to provide access at
+                this time.
+                As we scale up capacity, we’ll invite you to try Breba again.
             </p>
-            <p class="mb-0">
-                As we scale up capacity, we’ll invite you to try Breba again.<br><br>
+
+            <p class="mb-4 text-secondary">
                 Sorry for the inconvenience — hope to see you soon.
             </p>
+
+            <!-- Centered Close button -->
+            <button
+                type="button"
+                class="btn btn-outline-primary px-4"
+                onclick="this.closest('.breba-global-overlay').remove()">
+                Close
+            </button>
         </div>
-        <button type="button"
-                class="btn-close breba-alert-close"
-                data-bs-dismiss="alert"
-                aria-label="Close"></button>
     </div>
 </div>
 {% endif %}
