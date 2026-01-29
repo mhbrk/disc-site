@@ -41,3 +41,7 @@ class InMemoryFileStore(FileStore):
 
     def snapshot(self) -> dict[str, FileWrite]:
         return dict(self._files)
+
+
+def from_raw_strings(initial: dict[str, str]) -> InMemoryFileStore:
+    return InMemoryFileStore({k: FileWrite(k, v.encode("utf-8")) for k, v in initial.items()})

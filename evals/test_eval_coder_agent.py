@@ -8,7 +8,7 @@ from openai import Client
 
 from breba_app.coder_agent.agent import run_coder_agent, FileStore
 from breba_app.coder_agent.baml_client.types import LLMMessage
-from breba_app.filesystem import InMemoryFileStore
+from breba_app.filesystem import in_memory_store
 from evals.loader import load_messages, load_initial_files, load_evals
 
 load_dotenv()
@@ -33,8 +33,8 @@ def load_case(case_dir: Path) -> tuple[list[LLMMessage], FileStore]:
 
     initial = load_initial_files(case_dir)
 
-    store = InMemoryFileStore(initial)
-    return (messages, store)
+    store = in_memory_store.from_raw_strings(initial)
+    return messages, store
 
 
 async def run_case(case_dir: Path, save_result_files: bool = False) -> tuple[LLMMessage, FileStore]:
