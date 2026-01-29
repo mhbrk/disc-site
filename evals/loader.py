@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from breba_app.coder_agent.baml_client.stream_types import LLMMessage
 
-def load_messages(case_dir: Path) -> list[dict]:
+
+def load_messages(case_dir: Path) -> list[LLMMessage]:
     case = json.loads((case_dir / "case.json").read_text(encoding="utf-8"))
-    return case["messages"]
+    return [LLMMessage.model_validate(message) for message in case["messages"]]
 
 
 def load_dir_texts(dir_path: Path) -> dict[str, str]:

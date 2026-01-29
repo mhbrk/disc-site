@@ -28,8 +28,7 @@ def _render_file(file_name: str, file_content: str):
 
 
 def load_case(case_dir: Path) -> tuple[list[LLMMessage], FileStore]:
-    raw_messages = load_messages(case_dir)
-    messages = [LLMMessage.model_validate(message) for message in raw_messages]
+    messages = load_messages(case_dir)
 
     initial = load_initial_files(case_dir)
 

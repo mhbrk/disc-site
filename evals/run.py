@@ -7,8 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from breba_app.coder_agent.agent import run_coder_agent
-from breba_app.filesystem import InMemoryFileStore, FileWrite
-
+from breba_app.filesystem import FileWrite, in_memory_store
 from evals.loader import load_messages, load_initial_files
 
 
@@ -38,7 +37,7 @@ async def run_case(case_dir: Path) -> CaseResult:
     messages = load_messages(case_dir)
     initial = load_initial_files(case_dir)
 
-    store = InMemoryFileStore(initial)
+    store = in_memory_store.from_raw_strings(initial)
     before = store.snapshot()
 
     try:
