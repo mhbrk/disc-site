@@ -228,10 +228,6 @@ if (document.getElementById('brebaWaitlistForm')) {
 
 document.querySelectorAll('a[href*="/chainlit/auth/oauth/"]').forEach((a) => {
     a.addEventListener("click", () => {
-        // show spinner inside button
-        a.classList.add("is-loading");
-
-
         const spinner = a.querySelector(".spinner-border");
         const label = a.querySelector(".oauth-label");
         const img = a.querySelector("img")
