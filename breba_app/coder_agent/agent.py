@@ -132,7 +132,7 @@ async def read_files_to_edit(*, original_context: list[LLMMessage], filestore: F
     return file_contents or NO_FILES_TO_MODIFY_MSG, seen_files
 
 
-async def run_coder_agent(*, messages: list[Any], filestore: FileStore) -> LLMMessage:
+async def run_coder_agent(*, messages: list[LLMMessage], filestore: FileStore) -> LLMMessage:
     """
     Stateless agent.
     Success: returns a string listing updated files.
