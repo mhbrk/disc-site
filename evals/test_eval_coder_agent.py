@@ -55,9 +55,10 @@ def combine_agent_response_with_files(agent_response: LLMMessage, store: FileSto
         file_content = store.read_text(file_name)
         files_content += _render_file(file_name, file_content)
     return (
-        f"The following files exist in the project. Use these files to evaluate content. We don't know if the files were modified:\n"
-        f"<project_files>\n{files_content}\n</project_files>\n\n"
-        f"Agent responded with the following message:\n{agent_response.content}")
+        f"<project_files>"
+        f"<description>\nThe following files exist in the project. Use these files to evaluate content. We don't know if the files were modified\n</description>"
+        f"\n{files_content}\n</project_files>\n\n"
+        f"<agent_response>\n{agent_response.content}\n</agent_response>")
 
 
 async def run_evals(case_dir: Path, text: str):
