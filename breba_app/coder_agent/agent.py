@@ -96,17 +96,13 @@ async def read_files_to_edit(*, original_context: list[LLMMessage], filestore: F
     if not files_list:
         # This indicates that we just don't have files.
         return NO_FILES_TO_MODIFY_MSG, set()
-    file_list_msg = f"\n\n<available_files_list>\n{",".join(files_list)}\n<available_files_list>"
 
     safe_context = original_context.copy()
     file_contents = ""
-    # append the files list to the last user message.
-    # TODO: let BAML construct the context???
-    safe_context[-1] = LLMMessage(role=safe_context[-1].role, content=safe_context[-1].content + file_list_msg)
 
     seen_files = set()
     for _ in range(max_depth):
-        files_response = await b.DetermineFilesToEdit(safe_context)
+        files_response = await b.DetermineFilesToEdit(safe_context, files_list)
 
         if not files_response.files:
             # There are no new files to read for this task

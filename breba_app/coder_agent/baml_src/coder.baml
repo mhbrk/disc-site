@@ -89,7 +89,7 @@ Always make changes with the best practices in mind
 </static_website_best_practices>
 "#
 
-function DetermineFilesToEdit(messages: LLMMessage[]) -> FileList {
+function DetermineFilesToEdit(messages: LLMMessage[], files: string[]) -> FileList {
   client CustomGPT5Mini
   prompt #"
 You need to determine files to edit from the list of available files in the project and the file contents.
@@ -103,7 +103,13 @@ Your output will be a list of filepaths.
   {% for message in messages %}
       {{ _.role(message.role) }} 
       {{ message.content }}
-    {% endfor %}
+  {% endfor %}
+
+  <available_files_list>
+  {% for file in files %}
+    {{ file }}
+  {% endfor %}
+  </available_files_list>    
 
   {{ ctx.output_format }}
   "#
@@ -176,17 +182,10 @@ test ProduceFileList {
     messages [
       {
         role "user"
-        content #"List files available in my project."#
-      }
-      {
-        role "assistant"
-        content #"index.html, styles.css, script.js, sitemap.xml"#
-      }
-      {
-        role "user"
         content #"Change text from Hello World to Hello Universe"#
       }
-    ]
+    ],
+    files ["index.html", "styles.css", "script.js", "sitemap.xml"]
   }
 }
 
@@ -196,17 +195,10 @@ test TestFileListIncludesStyles {
     messages [
       {
         role "user"
-        content #"List files available in my project."#
-      }
-      {
-        role "assistant"
-        content #"index.html, styles.css, script.js, sitemap.xml"#
-      }
-      {
-        role "user"
         content #"Change text from Hello World to Hello Universe. And make the text red"#
       }
-    ]
+    ],
+    files ["index.html", "styles.css", "script.js", "sitemap.xml"]
   }
 }
 
@@ -214,14 +206,6 @@ test DoubleCheckFileList {
   functions [DetermineFilesToEdit]
   args {
     messages [
-      {
-        role "user"
-        content #"List files available in my project."#
-      }
-      {
-        role "assistant"
-        content #"index.html, styles.css, script.js, sitemap.xml"#
-      }
       {
         role "user"
         content #"Change text from Hello World to Hello Universe"#
@@ -234,7 +218,7 @@ test DoubleCheckFileList {
   "files": [
     "index.html",
     "sitemap.xml"
-  ]
+  ],
 }
         "#
       }
@@ -274,10 +258,10 @@ sitemap.xml
 ```
 
 Are additional files needed to make this change?
-IMPORTANT: Only list new files. Do not repeat files already listed
 "#
       }
-    ]
+    ],
+    files ["index.html", "styles.css", "script.js", "sitemap.xml"]
   }
 }
 
@@ -348,11 +332,12 @@ sitemap.xml
 Are additional css or javascript files needed to make this change?
 "#
       }
-    ]
+    ],
+    files ["index.html", "styles.css", "script.js", "sitemap.xml"]
   }
 }
 
-test DoubleCheckSinglularHTMOLFile {
+test DoubleCheckSinglularHTMLFile {
   functions [DetermineFilesToEdit]
   args {
     messages [
@@ -421,6 +406,7 @@ sitemap.xml
 Are additional css or javascript files needed to make this change?
 "#
       }
-    ]
+    ],
+    files ["index.html", "sitemap.xml"]
   }
 }
