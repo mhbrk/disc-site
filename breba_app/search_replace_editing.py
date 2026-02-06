@@ -24,6 +24,7 @@ missing_filename_err = (
     " {fence[0]}"
 )
 
+
 @dataclass
 class EditRequest:
     path: str
@@ -38,6 +39,7 @@ class ApplyEditsError(Exception):
         self.failed = failed
         self.passed = passed
         self.updated_edits = updated_edits
+
 
 def strip_filename(filename, fence):
     filename = filename.strip()
@@ -132,6 +134,7 @@ def find_filename(lines, fence, valid_fnames):
 
     if filenames:
         return filenames[0]
+
 
 def update_blocks_gen(content, fence=DEFAULT_FENCE, valid_fnames=None):
     lines = content.splitlines(keepends=True)
@@ -498,79 +501,6 @@ def find_similar_lines(search_lines, content_lines, threshold=0.6):
     return "\n".join(best)
 
 
-def apply_edits(content, edits, fence=DEFAULT_FENCE):
-    if not edits:
-        raise ValueError("No edits found")
-    if not content:
-        raise ValueError("No content to apply edits to")
-    failed = []
-    passed = []
-    updated_edits = []
-    new_content = None
-
-    for edit in edits:
-        path, original, updated = edit
-
-        # make sure to use new_content to iteratively apply edits
-        new_content = do_replace(new_content or content, original, updated)
-
-        updated_edits.append((path, original, updated))
-
-        if new_content:
-            passed.append(edit)
-        else:
-            failed.append(edit)
-
-    if not failed:
-        return updated_edits, new_content
-
-    blocks = "block" if len(failed) == 1 else "blocks"
-
-    res = f"# {len(failed)} SEARCH/REPLACE {blocks} failed to match!\n"
-    for edit in failed:
-        path, original, updated = edit
-
-        res += f"""
-## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in {path}
-<<<<<<< SEARCH
-{original}=======
-{updated}>>>>>>> REPLACE
-
-"""
-        did_you_mean = find_similar_lines(original, content)
-        if did_you_mean:
-            res += f"""Did you mean to match some of these actual lines from {path}?
-
-{fence[0]}
-{did_you_mean}
-{fence[1]}
-
-"""
-
-        if updated in content and updated:
-            res += f"""Are you sure you need this SEARCH/REPLACE block?
-The REPLACE lines are already in {path}!
-
-"""
-    res += (
-        "The SEARCH section must exactly match an existing block of lines including all white"
-        " space, comments, indentation, docstrings, etc\n"
-    )
-    if passed:
-        pblocks = "block" if len(passed) == 1 else "blocks"
-        res += f"""
-# The other {len(passed)} SEARCH/REPLACE {pblocks} were applied successfully.
-Don't re-send them.
-Just reply with fixed versions of the {blocks} above that failed to match. You MUST attempt to fix the errors!
-"""
-    raise ApplyEditsError(
-        message=res,
-        partial_content=new_content or content,
-        failed=failed,
-        passed=passed,
-        updated_edits=updated_edits,
-    )
-
 def default_failed_match_message(edit: EditRequest, content: str, fence=DEFAULT_FENCE) -> str:
     error_message = f"""
 ## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in
@@ -581,7 +511,7 @@ def default_failed_match_message(edit: EditRequest, content: str, fence=DEFAULT_
 """
     did_you_mean = find_similar_lines(edit.search, content)
     if did_you_mean:
-        error_message+=  f"""Did you mean to match some of these actual lines from {edit.path}?
+        error_message += f"""Did you mean to match some of these actual lines from {edit.path}?
 {fence[0]}
 {did_you_mean}
 {fence[1]}
@@ -593,8 +523,7 @@ def default_failed_match_message(edit: EditRequest, content: str, fence=DEFAULT_
     return error_message
 
 
-
-def apply_edits_many(files: dict[str,str], edits: list[EditRequest], fence=DEFAULT_FENCE) -> list[EditRequest]:
+def apply_edits_many(files: dict[str, str], edits: list[EditRequest], fence=DEFAULT_FENCE) -> list[EditRequest]:
     if not edits:
         raise ValueError("No edits found")
 
@@ -632,7 +561,6 @@ def apply_edits_many(files: dict[str,str], edits: list[EditRequest], fence=DEFAU
 
         updated_edits.append(edit)
 
-
     if not failed:
         return updated_edits
 
@@ -661,8 +589,7 @@ Just reply with fixed versions of the {blocks} above that failed to match. You M
     )
 
 
-
-def apply_search_replace_many(files: dict[str,str], search_replace_text: str) -> list[str]:
+def apply_search_replace_many(files: dict[str, str], search_replace_text: str) -> list[str]:
     """
     This method is used to apply search and replace blocks to many files
     :param files: list of files that need to change
@@ -678,29 +605,3 @@ def apply_search_replace_many(files: dict[str,str], search_replace_text: str) ->
 
     applied_edits = apply_edits_many(files, edits)
     return [edit.path for edit in applied_edits]
-
-
-def apply_search_replace(html: str, search_replace_text: str) -> str:
-    """
-    This method is used to apply the diff to the html.
-    :param html: html to apply the diff to
-    :param search_replace_text: AI generated diff to apply
-    :return: list of applied edits and modified html
-    """
-    edits = list(find_original_update_blocks(search_replace_text))
-    logger.info(f"Found {len(edits)} edits")
-
-    if not edits:
-        raise ValueError(f"No edits found in the following search and replace pattern:\n{search_replace_text}")
-    applied_edits, modified = apply_edits(html, edits)
-    if not applied_edits:
-        raise ValueError(f"No edits applied in the following search and replace pattern:\n{search_replace_text}")
-
-    if html and not modified:
-        raise ValueError(f"Unknown error occurred. After applying the following search and replace pattern, original text was deleted:\n{search_replace_text}")
-    logger.info(f"Successfully applied {len(applied_edits)} out of {len(edits)} edits")
-    return modified
-
-def has_search_replace_edits(search_replace_text: str):
-    return HEAD_ERR in search_replace_text
-
