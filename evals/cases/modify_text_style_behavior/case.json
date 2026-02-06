@@ -1,0 +1,30 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Modify the cta button text to `Request Access` and change the font color to red. When the button is clicked a modal form with a text field and a submit button should appear."
+    }
+  ],
+  "evals": [
+    {
+      "question": "Is the CTA button text `Request Access`?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    },
+    {
+      "question": "Does the CTA button click open a modal popup?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    },
+    {
+      "question": "Does the CTA button click open the Request Access page?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    },
+    {
+      "question": "Are index.html, styles.css, script.js, and sitemap.xml the ONLY file updated by the agent?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    }
+  ]
+}

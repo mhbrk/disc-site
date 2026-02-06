@@ -1,5 +1,7 @@
 import logging
+from pathlib import Path
 
+from jinja2 import Environment, FileSystemLoader
 from openai import AsyncOpenAI
 
 client = AsyncOpenAI()
@@ -25,3 +27,9 @@ async def get_product_name(description: str) -> str:
         logger.error(f"Product name generation failed: {e}")
         # This is not a critical function. Just return the first word of the description
         return description.split()[0]
+
+
+def get_instructions(agent_dir: Path, name, **kwargs):
+    env = Environment(loader=FileSystemLoader(agent_dir / "instructions"))
+    template = env.get_template(f"{name}.jinja2")
+    return template.render(**kwargs)

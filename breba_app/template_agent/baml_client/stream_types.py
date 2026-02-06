@@ -12,7 +12,7 @@
 
 import typing
 import typing_extensions
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 import baml_py
 
@@ -27,14 +27,14 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
 # #########################################################################
 
 class LLMMessage(BaseModel):
-    role: typing.Optional[typing.Union[str, str]] = None
+    role: typing.Optional[typing.Union[typing_extensions.Literal['user'], typing_extensions.Literal['assistant']]] = None
     content: typing.Optional[str] = None
 
 class Question(BaseModel):
-    question: typing.Optional[str] = None
+    question: typing.Optional[str] = Field(default=None, description='Question that requires the user to answer')
 
 class WebsiteSpecification(BaseModel):
-    spec: typing.Optional[str] = None
+    spec: typing.Optional[str] = Field(default=None, description='Full website specification')
 
 # #########################################################################
 # Generated type aliases (0)

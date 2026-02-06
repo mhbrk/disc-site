@@ -1626,16 +1626,6 @@ section {
     }
 }
 
-
-html.oauth-loading,
-html.oauth-loading * {
-    cursor: progress !important;
-}
-
-a.oauth-link.is-loading {
-    pointer-events: none;
-}
-
 .breba-global-overlay {
     position: fixed;
     top: 88px; /* below navbar */

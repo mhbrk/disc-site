@@ -1,0 +1,114 @@
+index.html
+```
+<<<<<<< SEARCH
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main>
+        <h1>Hello World</h1>
+        <p>Welcome to this minimalist site.</p>
+        <button id="cta-button">Get Started</button>
+    </main>
+    <script src="script.js" defer></script>
+</body>
+</html>
+>>>>>>> REPLACE
+
+styles.css
+```
+<<<<<<< SEARCH
+=======
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background-color: #ffffff;
+    color: #111111;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+main {
+    text-align: center;
+    padding: 2rem;
+}
+
+h1 {
+    font-size: 3.5rem;
+    font-weight: 300;
+    margin-bottom: 1rem;
+    letter-spacing: -0.5px;
+}
+
+p {
+    font-size: 1.2rem;
+    margin-bottom: 2.5rem;
+    color: #555555;
+}
+
+#cta-button {
+    padding: 0.9rem 2rem;
+    font-size: 1.1rem;
+    background-color: #000000;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#cta-button:hover {
+    background-color: #333333;
+}
+
+#cta-button:active {
+    transform: translateY(1px);
+}
+>>>>>>> REPLACE
+
+script.js
+```
+<<<<<<< SEARCH
+=======
+document.getElementById('cta-button').addEventListener('click', () => {
+    alert('Hello! Welcome to the site.');
+});
+>>>>>>> REPLACE
+
+sitemap.xml
+```
+<<<<<<< SEARCH
+=======
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://yourdomain.com/</loc>
+        <lastmod>2026-01-06</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>1.0</priority>
+    </url>
+</urlset>
+>>>>>>> REPLACE
+
+robots.txt
+```
+<<<<<<< SEARCH
+=======
+User-agent: *
+Allow: /
+
+Sitemap: https://yourdomain.com/sitemap.xml
+>>>>>>> REPLACE

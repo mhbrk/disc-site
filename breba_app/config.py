@@ -12,6 +12,9 @@ load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI")
 
+SPEC_FILE_NAME = "spec.txt"
+INDEX_FILE_NAME = "index.html"
+
 
 async def init_db():
     client = AsyncIOMotorClient(MONGO_URI)

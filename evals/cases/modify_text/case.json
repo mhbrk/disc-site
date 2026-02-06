@@ -1,0 +1,25 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Rename Hello World to Hello Universe"
+    }
+  ],
+  "evals": [
+    {
+      "question": "Does the webpage text contain Hello Universe and not Hello World?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    },
+    {
+      "question": "Does the webpage mention Hello World anywhere?",
+      "answer_options": "true, false",
+      "expected_answer": "false"
+    },
+    {
+      "question": "Are index.html and sitemap.xml the ONLY file updated by the agent?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    }
+  ]
+}
