@@ -11,6 +11,10 @@ from breba_app.search_replace_editing import HEAD_ERR, DIVIDER_ERR, UPDATED_ERR
 from .conftest import compute_modified_files
 
 
+async def fake_determine_files_to_edit(messages, files_list):
+    return FileList(reasoning="", files=[])
+
+
 def load_dir_texts(dir_path: Path) -> dict[str, str]:
     if not dir_path.exists():
         return {}
@@ -57,9 +61,6 @@ async def test_agent_case_snapshots(monkeypatch, case_name: str, expected_modifi
 
     async def fake_generate_search_replace_blocks(messages):
         return llm_output
-
-    async def fake_determine_files_to_edit(messages):
-        return FileList(reasoning="", files=[])
 
     if getattr(agent_mod, "b", None) is None:
         class DummyB: ...
@@ -115,9 +116,6 @@ async def test_agent_search_block_mismatch(monkeypatch) -> None:
     async def fake_generate_search_replace_blocks(messages):
         return mismatching_llm_output
 
-    async def fake_determine_files_to_edit(messages):
-        return FileList(reasoning="", files=[])
-
     if getattr(agent_mod, "b", None) is None:
         class DummyB: ...
 
@@ -140,7 +138,7 @@ async def test_agent_search_block_mismatch(monkeypatch) -> None:
 async def test_agent_missing_file(monkeypatch) -> None:
     case_dir = Path(__file__).parent / "coder_agent_test_cases" / "modify_text"
     initial, _, _ = load_case(case_dir)
-    missing_file_output = """nonexistent.md
+    missing_file_output = f"""nonexistent.md
 ```
 {HEAD_ERR}
 Old content
@@ -156,9 +154,6 @@ New content
 
     async def fake_generate_search_replace_blocks(messages):
         return missing_file_output
-
-    async def fake_determine_files_to_edit(messages):
-        return FileList(reasoning="", files=[])
 
     if getattr(agent_mod, "b", None) is None:
         class DummyB: ...
@@ -192,7 +187,7 @@ async def test_agent_partial_success(monkeypatch) -> None:
     async def fake_generate_search_replace_blocks(messages):
         return llm_output
 
-    async def fake_determine_files_to_edit(messages):
+    async def fake_determine_files_to_edit(messages, files_list):
         return FileList(
             reasoning="We need to add a FAQ page and ensure navigation consistency, which requires editing the main index.html, creating faq.html, and updating sitemap.xml to include the new page for SEO. The styles and scripts remain unchanged since navigation styling already exists (or can be reused).",
             files=["index.html"]
