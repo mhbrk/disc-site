@@ -505,9 +505,9 @@ def default_failed_match_message(edit: EditRequest, content: str, fence=DEFAULT_
     error_message = f"""
 ## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in
 {edit.path}
-<<<<<<< SEARCH
-{edit.search}=======
-{edit.replace}>>>>>>> REPLACE
+{HEAD_ERR}
+{edit.search}{DIVIDER_ERR}
+{edit.replace}{UPDATED_ERR}
 """
     did_you_mean = find_similar_lines(edit.search, content)
     if did_you_mean:

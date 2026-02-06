@@ -7,6 +7,7 @@ import pytest
 import breba_app.coder_agent.agent as agent_mod
 from breba_app.coder_agent.baml_client.types import LLMMessage, FileList
 from breba_app.filesystem import InMemoryFileStore, FileWrite
+from breba_app.search_replace_editing import HEAD_ERR, DIVIDER_ERR, UPDATED_ERR
 from .conftest import compute_modified_files
 
 
@@ -93,17 +94,17 @@ async def test_agent_case_snapshots(monkeypatch, case_name: str, expected_modifi
 async def test_agent_search_block_mismatch(monkeypatch) -> None:
     case_dir = Path(__file__).parent / "coder_agent_test_cases" / "modify_text"
     initial, _, _ = load_case(case_dir)
-    mismatching_llm_output = """index.html
+    mismatching_llm_output = f"""index.html
 ```
-<<<<<<< SEARCH
+{HEAD_ERR}
     <main>
         <h1>Totally Different Heading</h1>
         <p>This block does not exist.</p>
-=======
+{DIVIDER_ERR}
     <main>
         <h1>Updated Heading</h1>
         <p>Still will not match.</p>
->>>>>>> REPLACE
+{UPDATED_ERR}
 ```
 """
     # Convert to simple dict for easy comparison
@@ -141,11 +142,11 @@ async def test_agent_missing_file(monkeypatch) -> None:
     initial, _, _ = load_case(case_dir)
     missing_file_output = """nonexistent.md
 ```
-<<<<<<< SEARCH
+{HEAD_ERR}
 Old content
-=======
+{DIVIDER_ERR}
 New content
->>>>>>> REPLACE
+{UPDATED_ERR}
 ```
 """
     # Convert to simple dict for easy comparison
