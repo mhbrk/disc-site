@@ -52,7 +52,6 @@ DirTree = dict[str, DirTreeValue]
 def public_file_url(user_name: str, session_id: str, file_name: str) -> str:
     return f"{CDN_BASE_URL}/{user_name}/{session_id}/{file_name}"
 
-
 def _join_prefix(base: str) -> str:
     """Normalize a prefix to end with '/' if it is non-empty and not already ending with it."""
     if not base:
@@ -251,6 +250,14 @@ async def read_spec_text(user_name: str, session_id: str) -> str | None:
         s3_client=s3_client,
     )
     return await filesystem.read_text("spec.txt")
+
+async def get_index_html_path(user_name: str, session_id: str) -> str:
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+    return CDN_BASE_URL + "/" + filesystem.get_absolute_path_to(INDEX_FILE_NAME)
 
 
 async def read_index_html(user_name: str, session_id: str) -> str:

@@ -21,7 +21,7 @@ from breba_app.models.product import Product, create_or_update_product_for, crea
 from breba_app.models.user import User
 from breba_app.orchestrator import handle_user_message, save_state, OrchestratorState, start_product
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active, \
-    read_all_files_in_memory, save_files
+    read_all_files_in_memory, save_files, get_index_html_path
 from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
     landing_page_follow_up_questions
 from breba_app.ui_bus import update_products_list, update_versions_list, update_follow_up_questions_list
@@ -70,11 +70,13 @@ async def populate_from_cloud_storage(user_name: str, session_id: str):
     spec = ""
     if in_memory_store.file_exists(SPEC_FILE_NAME):
         spec = in_memory_store.read_text(SPEC_FILE_NAME)
-    product = in_memory_store.read_text(INDEX_FILE_NAME)
+    index_path = await get_index_html_path(user_name, session_id)
+    root_dir_path = index_path.split(INDEX_FILE_NAME)[0]
+
 
     await asyncio.gather(
         ui_bus.send_specification_to_ui(spec),
-        ui_bus.send_index_html_to_ui(product)
+        ui_bus.init_product_preview(root_dir_path, INDEX_FILE_NAME)
     )
 
 

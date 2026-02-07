@@ -303,6 +303,19 @@
         popup.style.display = 'none';
     });
 
+    function reload_preview(src) {
+        // Base URL to start from: override if provided, else current iframe src
+        const base = src || iframe.src;
+
+        // Use URL so we preserve existing query params correctly
+        const url = new URL(base, window.location.href);
+
+        // Cache-bust (set/replace t)
+        url.searchParams.set("t", Date.now().toString());
+
+        iframe.src = url.toString();
+    }
+
 
     // Promise-based mutex for processChunk
     let chunkLock = Promise.resolve();
@@ -419,6 +432,11 @@
         } else if (event.data.method === "to_generator") {
             console.log('Generator panel message:', event.data);
             processChunkLocked(event.data.body);
+        } else if (event.data.method === "load_preview") {
+            console.log('Loading product preview', event.data);
+            const base = event.data.product_root;
+            const path = event.data.path;
+            reload_preview(base + path)
         } else if (event.data.method === "task_started") {
             showOverlay();
         } else if (event.data.method === "task_completed") {
