@@ -14,9 +14,9 @@ async def send_index_html_to_ui(html: str):
     await cl.send_window_message({"method": "to_generator", "body": "__completed__"})
 
 
-async def init_product_preview(product_root: str, path: str):
+async def init_product_preview(url: str):
     await cl.send_window_message(
-        {"method": "load_preview", "product_root": product_root, "path": path})
+        {"method": "load_preview", "url": url})
 
 
 async def reload_product_preview():

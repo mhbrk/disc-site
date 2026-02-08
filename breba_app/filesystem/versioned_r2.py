@@ -71,7 +71,6 @@ class VersionedR2FileSystem:
 
     # ----------------------------- Public API ----------------------------- #
 
-
     def list_versions(self) -> list[int]:
         """Return a list of all version integers."""
         try:
