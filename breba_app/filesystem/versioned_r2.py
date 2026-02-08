@@ -71,11 +71,6 @@ class VersionedR2FileSystem:
 
     # ----------------------------- Public API ----------------------------- #
 
-    def get_absolute_path_to(self, file: str, version: int | None = None):
-        v = self.get_version() if version is None else version
-        manifest = self._get_manifest(v)
-        file_path = _sanitize_path(file)
-        return manifest["files"][file_path]["key"]
 
     def list_versions(self) -> list[int]:
         """Return a list of all version integers."""
