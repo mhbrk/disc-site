@@ -71,12 +71,12 @@ async def populate_from_cloud_storage(user_name: str, session_id: str):
     spec = ""
     if in_memory_store.file_exists(SPEC_FILE_NAME):
         spec = in_memory_store.read_text(SPEC_FILE_NAME)
-    index_path = await get_index_html_path(user_name, session_id)
-    root_dir_path = index_path.split(INDEX_FILE_NAME)[0]
+    index_path = get_index_html_path(session_id)
+    root_dir_path, index_file = index_path.rsplit("/", 1)
 
     await asyncio.gather(
         ui_bus.send_specification_to_ui(spec),
-        ui_bus.init_product_preview(root_dir_path, INDEX_FILE_NAME)
+        ui_bus.init_product_preview(f"{root_dir_path}/", index_file)
     )
 
 
