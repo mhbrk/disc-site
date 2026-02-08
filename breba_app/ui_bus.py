@@ -19,9 +19,9 @@ async def init_product_preview(product_root: str, path: str):
         {"method": "load_preview", "product_root": product_root, "path": path})
 
 
-async def reload_product_preview(product_root: str | None = None, path: str | None = None):
+async def reload_product_preview():
     await cl.send_window_message(
-        {"method": "load_preview", "product_root": product_root, "path": path})
+        {"method": "refresh_preview"})
 
 
 async def send_index_html_chunk_to_ui(html: str):

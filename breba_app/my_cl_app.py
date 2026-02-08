@@ -93,18 +93,18 @@ async def coder_completed(user_name: str, product_id: str, file_store: InMemoryF
     spec = ""
     if file_store.file_exists("spec.txt"):
         spec = file_store.read_text("spec.txt")
-    # TODO: This should be the file being viewed by the user.
-    html = file_store.read_text("index.html")
-    await asyncio.gather(
+
+    # First we persist the files and preview
+    files_to_save: list[FileWrite] = list(file_store.snapshot().values())
+    new_version, _ = await asyncio.gather(save_files(user_name, product_id, files_to_save),
+                                          build_preview(product_id, file_store))
+
+    _, _, versions = await asyncio.gather(
         ui_bus.send_specification_to_ui(spec),
-        ui_bus.send_index_html_to_ui(html)
+        ui_bus.reload_product_preview(),
+        list_versions(user_name, product_id)
     )
 
-    files_to_save: list[FileWrite] = list(file_store.snapshot().values())
-    new_version, _ = asyncio.gather(save_files(user_name, product_id, files_to_save),
-                                    build_preview(product_id, file_store))
-
-    versions = await list_versions(user_name, product_id)
     await update_versions_list(versions, new_version)
     # TODO: This is just the first step. This entire callback should go away once event bus is work. That is the purpose of the event bus.
     await event_bus.emit(CoderCompleted(user_name=user_name, product_id=product_id, filestore=file_store))

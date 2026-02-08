@@ -106,31 +106,6 @@
 <script>
     let reloadTimeoutId = null;
 
-    function reload() {
-        // reload only at certain internvals. This allows for contents to load before reading currentContent. (Chrome bug)
-        if (reloadTimeoutId === null) {
-            reloadTimeoutId = setTimeout(() => {
-                try {
-                    const currentContent = doc.documentElement.outerHTML;
-                    console.log("currentContent: " + currentContent)
-                    const pNode = iframe.parentNode
-                    pNode.removeChild(iframe);
-                    pNode.appendChild(iframe);
-                    doc = iframe.contentWindow.document;
-                    doc.open();
-                    doc.write(currentContent);
-                    doc.close();
-                } catch (err) {
-                    console.error("Reload failed:", err);
-                } finally {
-                    reloadTimeoutId = null
-                }
-            }, 500);
-        } else {
-            console.info("Reload is already scheduled")
-        }
-    }
-
     const overlay = document.getElementById('generator-overlay');
 
     function showOverlay() {
@@ -141,72 +116,13 @@
         overlay.classList.remove('active');
     }
 
-    function processChunk(chunk) {
-        console.log("chunk:" + chunk);
-        // Check for image references
-        const imageUrls = [
-            ...chunk.matchAll(/["'](https?:\/\/cdn\.breba\.app\/[^"']+\.(?:jpg|jpeg|png|webp|gif))["']/gi),
-        ].map(match => match[1]);
-
-        for (const imageUrl of imageUrls) {
-            setTimeout(async () => {
-                const res = await fetch(imageUrl + "?v=" + Date.now(), {method: 'HEAD'});
-                // Only reload if image is not ready
-                if (!res.ok) {
-                    // Start polling every 5 seconds
-                    const intervalId = setInterval(async () => {
-                        try {
-                            const res = await fetch(imageUrl + "?v=" + Date.now(), {method: 'HEAD'});
-                            if (res.ok) {
-                                clearInterval(intervalId);
-                                console.log(`Image ${imageUrl} loaded — triggering reload`);
-                                if (!docOpened) {
-                                    reload();
-                                }
-                            } else {
-                                console.log(`Image ${imageUrl} not ready yet (status: ${res.status})`);
-                            }
-                        } catch (e) {
-                            console.log(`Error checking image ${imageUrl}:`, e);
-                        }
-                    }, 5000);
-                } else {
-                    console.log(`Image ${imageUrl} already loaded`);
-                }
-            }, 1);
-        }
-
-        if (chunk === "__completed__") {
-            if (docOpened) {
-                console.log("chunk completed");
-                doc.close();
-                docOpened = false;
-                // Need to wait for page tha loads slowly
-                setTimeout(reload, 100)
-            }
-            return;
-        }
-
-        if (!docOpened) {
-            // Initialize iframe content when first chunk arrives
-            console.log("chunk opened");
-            doc.open();
-            docOpened = true;
-        }
-
-        doc.write(chunk.trim());
-    }
 
     const iframe = document.getElementById('generator-frame');
-
-    let docOpened = false;
-    let doc = iframe.contentWindow.document;
 
     const popup = document.getElementById('popup');
     const input = document.getElementById('popup-input');
     const submit = document.getElementById('popup-submit');
-    let suppressNextMouseup = false;
-
+    
     function hidePopup() {
         popup.style.display = 'none';
         delete popup.dataset.selection;
@@ -220,68 +136,68 @@
     });
 
     // 1) Inject listener into iframe on load
-    iframe.addEventListener('load', () => {
-        const win = iframe.contentWindow;
-        const doc = win.document;
-
-        doc.addEventListener('mouseup', () => {
-            if (suppressNextMouseup) {
-                // clear the flag and bail out once
-                suppressNextMouseup = false;
-                return;
-            }
-            const sel = win.getSelection().toString().trim();
-            if (!sel) return;
-
-            popup.style.visibility = 'hidden';
-            popup.style.display = 'block';
-
-            // get the bounding rect of the selection
-            const range = win.getSelection().getRangeAt(0);
-            const r = range.getBoundingClientRect();
-            const fRect = iframe.getBoundingClientRect();
-
-            // ideal absolute coords
-            const absLeft = window.scrollX + fRect.left + r.left;
-            const absTop = window.scrollY + fRect.top + r.bottom + 5;
-
-            // clamp into viewport
-            const margin = 8;
-            const vpW = document.documentElement.clientWidth;
-            const vpH = document.documentElement.clientHeight;
-            const popW = popup.offsetWidth;
-            const popH = popup.offsetHeight;
-
-            const left = Math.min(
-                Math.max(absLeft, margin),
-                vpW - popW - margin
-            );
-            const top = Math.min(
-                Math.max(absTop, margin),
-                vpH - popH - margin
-            );
-
-            // position & show
-            popup.style.left = `${left}px`;
-            popup.style.top = `${top}px`;
-            popup.dataset.selection = sel;
-
-            popup.style.visibility = 'visible';
-            input.value = '';
-            input.focus();
-        });
-
-        doc.addEventListener('mousedown', () => {
-            if (popup.style.display === 'block') {
-                // we were visible → hide & suppress the very next mouseup
-                hidePopup();
-                suppressNextMouseup = true;
-            } else {
-                // already hidden → don’t suppress mouseup
-                suppressNextMouseup = false;
-            }
-        });
-    });
+    // iframe.addEventListener('load', () => {
+    //     const win = iframe.contentWindow;
+    //     const doc = win.document;
+    //
+    //     doc.addEventListener('mouseup', () => {
+    //         if (suppressNextMouseup) {
+    //             // clear the flag and bail out once
+    //             suppressNextMouseup = false;
+    //             return;
+    //         }
+    //         const sel = win.getSelection().toString().trim();
+    //         if (!sel) return;
+    //
+    //         popup.style.visibility = 'hidden';
+    //         popup.style.display = 'block';
+    //
+    //         // get the bounding rect of the selection
+    //         const range = win.getSelection().getRangeAt(0);
+    //         const r = range.getBoundingClientRect();
+    //         const fRect = iframe.getBoundingClientRect();
+    //
+    //         // ideal absolute coords
+    //         const absLeft = window.scrollX + fRect.left + r.left;
+    //         const absTop = window.scrollY + fRect.top + r.bottom + 5;
+    //
+    //         // clamp into viewport
+    //         const margin = 8;
+    //         const vpW = document.documentElement.clientWidth;
+    //         const vpH = document.documentElement.clientHeight;
+    //         const popW = popup.offsetWidth;
+    //         const popH = popup.offsetHeight;
+    //
+    //         const left = Math.min(
+    //             Math.max(absLeft, margin),
+    //             vpW - popW - margin
+    //         );
+    //         const top = Math.min(
+    //             Math.max(absTop, margin),
+    //             vpH - popH - margin
+    //         );
+    //
+    //         // position & show
+    //         popup.style.left = `${left}px`;
+    //         popup.style.top = `${top}px`;
+    //         popup.dataset.selection = sel;
+    //
+    //         popup.style.visibility = 'visible';
+    //         input.value = '';
+    //         input.focus();
+    //     });
+    //
+    //     doc.addEventListener('mousedown', () => {
+    //         if (popup.style.display === 'block') {
+    //             // we were visible → hide & suppress the very next mouseup
+    //             hidePopup();
+    //             suppressNextMouseup = true;
+    //         } else {
+    //             // already hidden → don’t suppress mouseup
+    //             suppressNextMouseup = false;
+    //         }
+    //     });
+    // });
 
     // 3) Submit handler: fire request, then hide popup
     submit.addEventListener('click', async () => {
@@ -312,6 +228,7 @@
 
         // Cache-bust (set/replace t)
         url.searchParams.set("t", Date.now().toString());
+        console.log("Setting iframe src to " + url.toString());
 
         iframe.src = url.toString();
     }
@@ -437,6 +354,9 @@
             const base = event.data.product_root;
             const path = event.data.path;
             reload_preview(base + path)
+        } else if (event.data.method === "refresh_preview") {
+            console.log('Refreshing preview', event.data);
+            reload_preview()
         } else if (event.data.method === "task_started") {
             showOverlay();
         } else if (event.data.method === "task_completed") {
