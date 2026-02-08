@@ -42,7 +42,7 @@ Sitemap: {canonical_url}/sitemap.xml"""
 
 
 _SCRIPT_TAG = (
-    '<script src="https://cdn.breba.app/preview_bridge.js"></script>'
+    '<script src="https://cdn.breba.app/breba/preview_bridge.js"></script>'
 )
 
 # Case-insensitive patterns. We keep them simple but robust enough for typical HTML.

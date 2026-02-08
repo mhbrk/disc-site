@@ -104,7 +104,7 @@
 </div>
 
 <script>
-    let reloadTimeoutId = null;
+    let suppressNextMouseup = false;
 
     const overlay = document.getElementById('generator-overlay');
 
@@ -122,7 +122,7 @@
     const popup = document.getElementById('popup');
     const input = document.getElementById('popup-input');
     const submit = document.getElementById('popup-submit');
-    
+
     function hidePopup() {
         popup.style.display = 'none';
         delete popup.dataset.selection;
@@ -134,6 +134,62 @@
             submit.click();      // trigger your submit‐button handler
         }
     });
+
+    function popupMouseUpHandler(sel, relLeft, relTop) {
+        if (suppressNextMouseup) {
+            // clear the flag and bail out once
+            suppressNextMouseup = false;
+            return;
+        }
+
+        if (!sel) return;
+        popup.style.visibility = 'hidden';
+        popup.style.display = 'block';
+
+        const fRect = iframe.getBoundingClientRect();
+
+        // ideal absolute coords
+        const absLeft = window.scrollX + fRect.left + relLeft;
+        const absTop = window.scrollY + fRect.top + relTop;
+
+        // clamp into viewport, to make sure the popup doesn't go outside the viewport
+        const margin = 8;
+        const vpW = document.documentElement.clientWidth;
+        const vpH = document.documentElement.clientHeight;
+        const popW = popup.offsetWidth;
+        const popH = popup.offsetHeight;
+
+        const left = Math.min(
+            Math.max(absLeft, margin),
+            vpW - popW - margin
+        );
+        const top = Math.min(
+            Math.max(absTop, margin),
+            vpH - popH - margin
+        );
+
+
+        // position & show
+        popup.style.left = `${left}px`;
+        popup.style.top = `${top}px`;
+        popup.dataset.selection = sel;
+
+        popup.style.visibility = 'visible';
+        input.value = '';
+        input.focus();
+
+    }
+
+    function popupMousedownHandler() {
+        if (popup.style.display === 'block') {
+            // we were visible → hide & suppress the very next mouseup
+            hidePopup();
+            suppressNextMouseup = true;
+        } else {
+            // already hidden → don’t suppress mouseup
+            suppressNextMouseup = false;
+        }
+    }
 
     // 1) Inject listener into iframe on load
     // iframe.addEventListener('load', () => {
@@ -361,6 +417,11 @@
             showOverlay();
         } else if (event.data.method === "task_completed") {
             hideOverlay();
+        } else if (event.data.method === "preview_mouseup") {
+            popupMouseUpHandler(event.data.selection, event.data.left, event.data.top)
+        } else if (event.data.method === "preview_mousedown") {
+            console.log("Preview Mouse down");
+            popupMousedownHandler();
         }
     });
 
