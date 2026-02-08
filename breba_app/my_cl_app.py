@@ -25,6 +25,7 @@ from breba_app.storage import has_cloud_storage, list_versions, get_active_versi
 from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
     landing_page_follow_up_questions
 from breba_app.ui_bus import update_products_list, update_versions_list, update_follow_up_questions_list
+from breba_app.website import build_preview
 from controllers.deployment_controller import run_deployment
 from llm_utils import get_product_name
 from storage import save_image_file_to_private, get_public_url
@@ -73,7 +74,6 @@ async def populate_from_cloud_storage(user_name: str, session_id: str):
     index_path = await get_index_html_path(user_name, session_id)
     root_dir_path = index_path.split(INDEX_FILE_NAME)[0]
 
-
     await asyncio.gather(
         ui_bus.send_specification_to_ui(spec),
         ui_bus.init_product_preview(root_dir_path, INDEX_FILE_NAME)
@@ -101,7 +101,9 @@ async def coder_completed(user_name: str, product_id: str, file_store: InMemoryF
     )
 
     files_to_save: list[FileWrite] = list(file_store.snapshot().values())
-    new_version = await save_files(user_name, product_id, files_to_save)
+    new_version, _ = asyncio.gather(save_files(user_name, product_id, files_to_save),
+                                    build_preview(product_id, file_store))
+
     versions = await list_versions(user_name, product_id)
     await update_versions_list(versions, new_version)
     # TODO: This is just the first step. This entire callback should go away once event bus is work. That is the purpose of the event bus.
@@ -161,7 +163,6 @@ async def main():
             await event_bus.subscribe(CoderCompleted, ProductNameAssignmentConsumer(user_name, product_id))
         elif product_name:
             cl.user_session.set("product_name", product_name)
-
 
         if has_storage:
             await cl.Message(
@@ -275,6 +276,7 @@ async def auth_callback(username: str, password: str):
     else:
         return None
 
+
 async def add_to_waitlist(email: str, comments: str):
     url = (
         "https://script.google.com/macros/s/"
@@ -305,7 +307,6 @@ async def oauth_callback(
         raw_user_data: dict[str, str],
         default_user: cl.User,
 ) -> cl.User | None:
-
     asyncio.create_task(
         add_to_waitlist(
             default_user.identifier,

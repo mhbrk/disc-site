@@ -1,7 +1,10 @@
+import re
 from datetime import timezone, datetime
 from html.parser import HTMLParser
 
+from breba_app.filesystem import FileStore
 from breba_app.paths import templates
+from breba_app.storage import PreviewFileStore
 
 
 class CanonicalParser(HTMLParser):
@@ -37,6 +40,49 @@ Allow: /
 
 Sitemap: {canonical_url}/sitemap.xml"""
 
+
+_SCRIPT_TAG = (
+    '<script src="https://cdn.breba.app/preview_bridge.js"></script>'
+)
+
+# Case-insensitive patterns. We keep them simple but robust enough for typical HTML.
+_BODY_OPEN_RE = re.compile(r"<body\b[^>]*>", re.IGNORECASE)
+_BODY_CLOSE_RE = re.compile(r"</body\s*>", re.IGNORECASE)
+
+
+def _inject_preview_bridge(html: str) -> str:
+    """
+    Returns modified HTML if injection happened, else None (no <body> found).
+    """
+    m_open = _BODY_OPEN_RE.search(html)
+    if not m_open:
+        return html
+
+    m_close = _BODY_CLOSE_RE.search(html)
+    if m_close:
+        # Insert right before </body>
+        insert_at = m_close.start()
+        return html[:insert_at] + _SCRIPT_TAG + "\n" + html[insert_at:]
+
+    return html
+
+
+async def build_preview(product_id: str, filestore: FileStore) -> None:
+    """
+    Copies ALL files to the preview bucket prefix {product_id}/.
+    Injects preview bridge into any HTML file that contains a <body> tag.
+    """
+    target_filestore = PreviewFileStore(product_id=product_id)
+    for path in filestore.list_files():
+        file_text = filestore.read_text(path)
+        lower = path.lower()
+        if not (lower.endswith(".html") or lower.endswith(".htm")):
+            target_filestore.write_text(path, file_text)
+        else:
+            modified_html = _inject_preview_bridge(file_text)
+            target_filestore.write_text(path, modified_html)
+
+    await target_filestore.flush()
 
 if __name__ == "__main__":
     urls_list = [
