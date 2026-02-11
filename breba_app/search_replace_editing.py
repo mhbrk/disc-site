@@ -136,6 +136,13 @@ def find_filename(lines, fence, valid_fnames):
         return filenames[0]
 
 
+def normalize_marker_line(line: str, fence: str) -> str:
+    s = line.strip()
+    if fence:
+        s = re.sub(rf"\s*{re.escape(fence)}\s*$", "", s)
+    return s
+
+
 def update_blocks_gen(content, fence=DEFAULT_FENCE, valid_fnames=None):
     lines = content.splitlines(keepends=True)
     i = 0
@@ -177,14 +184,14 @@ def update_blocks_gen(content, fence=DEFAULT_FENCE, valid_fnames=None):
                 updated_text = []
                 i += 1
                 while i < len(lines) and not (
-                        updated_pattern.match(lines[i].strip())
+                        updated_pattern.match(normalize_marker_line(lines[i], fence[1]))
                         or divider_pattern.match(lines[i].strip())
                 ):
                     updated_text.append(lines[i])
                     i += 1
 
                 if i >= len(lines) or not (
-                        updated_pattern.match(lines[i].strip())
+                        updated_pattern.match(normalize_marker_line(lines[i], fence[1]))
                         or divider_pattern.match(lines[i].strip())
                 ):
                     raise ValueError(f"Expected `{UPDATED_ERR}` or `{DIVIDER_ERR}`")
