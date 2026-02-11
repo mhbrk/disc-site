@@ -43,6 +43,8 @@ class ProductNameAssignmentConsumer(Consumer):
         product = await create_or_update_product_for(event.user_name, event.product_id, product_name)
         cl.user_session.set("product_name", product.name)
         await ui_bus.update_product_name(event.product_id, product.name)
+        # The first time
+        await ui_bus.init_product_preview(get_index_html_path(event.product_id))
         await ctx.unsubscribe_self()
 
 
@@ -175,7 +177,9 @@ async def main():
             return
     else:
         # When starting a new project for the first time, set the product_id to session_id
-        cl.user_session.set("product_id", cl.user_session.get("id"))
+        product_id = cl.user_session.get("id")
+        cl.user_session.set("product_id", product_id)
+        await event_bus.subscribe(CoderCompleted, ProductNameAssignmentConsumer(user_name, product_id))
 
     await cl.Message(
         content="Hello, I'm here to assist you with building your website. We can build it together one step at a time,"
