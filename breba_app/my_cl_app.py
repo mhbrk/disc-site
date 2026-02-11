@@ -66,18 +66,18 @@ async def ask_user_streaming(token_stream: AsyncIterator[str] | str):
 
 
 async def populate_from_cloud_storage(user_name: str, session_id: str):
-    in_memory_store = await read_all_files_in_memory(user_name, session_id)
+    index_path = get_index_html_path(session_id)
+    in_memory_store, _ = await asyncio.gather(read_all_files_in_memory(user_name, session_id),
+                                              ui_bus.init_product_preview(index_path))
 
     save_state(user_name, session_id, OrchestratorState(messages=[], filestore=in_memory_store))
 
     spec = ""
     if in_memory_store.file_exists(SPEC_FILE_NAME):
         spec = in_memory_store.read_text(SPEC_FILE_NAME)
-    index_path = get_index_html_path(session_id)
 
     await asyncio.gather(
-        ui_bus.send_specification_to_ui(spec),
-        ui_bus.init_product_preview(index_path)
+        ui_bus.send_specification_to_ui(spec)
     )
 
 
