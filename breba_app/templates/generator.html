@@ -204,7 +204,7 @@
         const base = src || iframe.src;
 
         // Use URL so we preserve existing query params correctly
-        const url = new URL(base, window.location.href);
+        const url = new URL(base);
 
         // Cache-bust (set/replace t)
         url.searchParams.set("t", Date.now().toString());
