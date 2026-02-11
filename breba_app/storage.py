@@ -309,17 +309,17 @@ async def save_files(user_name: str, session_id: str, files: list[FileWrite], ve
     return await asyncio.to_thread(filesystem.batch_write, files, version)
 
 
-async def read_all_files_in_memory(user_name: str, session_id: str):
+async def read_all_files_in_memory(user_name: str, session_id: str, version: int | None = None):
     filesystem = VersionedR2FileSystem(
         bucket_name=USERS_BUCKET_NAME,
         root_prefix=f"{user_name}/{session_id}",
         s3_client=s3_client,
     )
 
-    file_paths = filesystem.list_files()
+    file_paths = filesystem.list_files(version)
 
     async def read_one(file_path: str) -> tuple[str, FileWrite]:
-        return file_path, await filesystem.read_file(file_path)
+        return file_path, await filesystem.read_file(file_path, version=version)
 
     path_file_pairs = await asyncio.gather(
         *(read_one(path) for path in file_paths)

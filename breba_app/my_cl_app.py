@@ -233,7 +233,12 @@ async def window_message(message: str | dict):
         await delete_product(user_name, message.get("body"))
         await cl.send_window_message({"method": "reload_product"})
     elif method == "select_version":
-        await set_version_active(user_name, product_id, message.get("body"))
+        version = int(message.get("body"))
+        await set_version_active(user_name, product_id, version)
+        # After setting version, we need to rebuild preview
+        filestore = await read_all_files_in_memory(user_name, product_id, version)
+        await build_preview(product_id, filestore)
+        # To avoid race condition, we want to wait for the preview to build, before reloading product
         await cl.send_window_message({"method": "reload_product"})
     else:
         # TODO: remove this, it is replaced by the "ask_user" function callback
