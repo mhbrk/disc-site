@@ -179,7 +179,8 @@ async def main():
         # When starting a new project for the first time, set the product_id to session_id
         product_id = cl.user_session.get("id")
         cl.user_session.set("product_id", product_id)
-        await event_bus.subscribe(CoderCompleted, ProductNameAssignmentConsumer(user_name, product_id))
+        await asyncio.gather(create_blank_product_for(user_name, PRODUCT_NAME_PLACEHOLDER, True),
+                             event_bus.subscribe(CoderCompleted, ProductNameAssignmentConsumer(user_name, product_id)))
 
     await cl.Message(
         content="Hello, I'm here to assist you with building your website. We can build it together one step at a time,"
