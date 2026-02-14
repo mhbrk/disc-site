@@ -169,6 +169,7 @@ async def main():
             await cl.Message(
                 content=f"Welcome back, here is your last project: {product_name}.").send()
             await populate_from_cloud_storage(user_name, product_id)
+            await update_follow_up_questions_list(landing_page_follow_up_questions)
             return
         else:
             # We are starting a new project
