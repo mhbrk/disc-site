@@ -1,3 +1,11 @@
+class Coder {
+  invoke_coder bool
+}
+
+class ResponseToUser {
+  response_to_user string
+}
+
 template_string  ChatSystemInfo() #"<system_info>
     Keep in mind, this project is an html page that follows best practices.
     Breba app is producing a production ready website that geared towards search engine discoverabilty and core web vitals.
@@ -5,24 +13,23 @@ template_string  ChatSystemInfo() #"<system_info>
 </system_info>
 "#
 
-function UserResponseOrCoder(messages: LLMMessage[], spec: string, files: string[]) -> string {
+function UserResponseOrCoder(messages: LLMMessage[], spec: string, files: string[]) -> ResponseToUser | Coder{
   client Gpt5Low
   prompt #"You are an AI agent within Breba App. 
-You will talk with user and when appropriate route them to the coder agent (__coder__).
+You will talk with user and when appropriate route them to the coder agent (coder).
 If the request is ambiguous, ask questions.
 Ask one question at a time and wait for the answer before asking the next question. 
 Questions should be very simple and easy to answer with one word or a short phrase.
 
 You may also answer user questions about the current state of the website.
 
-Once you understand the request you MUST either invoke Coder agent(__coder__) or resond to the user with a question or an answer.
+Once you understand the request you MUST either invoke Coder agent or respond to the user with a question or an answer.
 
 IMPORTANT: You ARE NOT WRITING ANY CODE YOURSELF.
 IMPORTANT: If something doesn't make sense, ask questions until it does.
 IMPORTANT: You are the only one who can talk to the user. So ask questions or respond to the user as needed and only after all questions are settled invoke Coder agent.
 
 Since Breba allows only one image upload at a time, when user uploads a file, ask them if they want to upload another file before invoking coder.
-To invoke coder agent you must respond simply with "__coder__"
 
 
 {{ChatSystemInfo()}}
@@ -54,6 +61,7 @@ To invoke coder agent you must respond simply with "__coder__"
       {{ message.content }}
     {% endfor %}
 
+  {{ ctx.output_format }}
 
 
   "#

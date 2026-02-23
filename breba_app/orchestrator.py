@@ -3,8 +3,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import AsyncIterable, AsyncIterator
 
+from baml_py import BamlStream
+
 from breba_app.coder_agent.agent import stream_user_response_or_coder, run_coder_agent
-from breba_app.coder_agent.baml_client.types import LLMMessage
+from breba_app.coder_agent.baml_client.stream_types import Coder as CoderStream, ResponseToUser as ResponseToUserStream
+from breba_app.coder_agent.baml_client.types import LLMMessage, Coder, ResponseToUser
 from breba_app.config import INDEX_FILE_NAME
 from breba_app.filesystem import InMemoryFileStore
 from breba_app.status_service import agent_task, update_status
@@ -40,19 +43,22 @@ def save_state(user_name: str, product_id: str, state: OrchestratorState) -> Non
     _state_store[(user_name, product_id)] = state
 
 
-async def baml_stream_and_collect(stream: AsyncIterable[str], stream_receiver) -> str:
-    final_value: str = ""
-
+async def baml_stream_and_collect_user_response(stream: BamlStream, stream_receiver) -> str:
     async def gen() -> AsyncIterator[str]:
-        nonlocal final_value
-        async for chunk in stream:
-            # BAML chunks already contain all previous chunks
-            final_value = chunk
-            yield chunk
+        async for msg in stream:
+            if type(msg) is CoderStream:
+                update_status("Coder is writing the code...")
+                # ignore coder messages because we don't want to stream them
+                continue
+            if type(msg) is ResponseToUserStream:
+                # Stream message to user and collect the final message, then store the message into message history
+                if not msg.response_to_user:
+                    continue
+                yield msg.response_to_user
 
     await stream_receiver(gen())
 
-    return final_value
+    return await stream.get_final_response()
 
 
 @agent_task
@@ -66,16 +72,14 @@ async def edit_product(user_name: str, product_id: str, message: str,
     orchestrator_state.messages.append(LLMMessage(role="user", content=message))
     response = await stream_user_response_or_coder(messages=orchestrator_state.messages, filestore=file_store)
 
-    if isinstance(response, str) and response == "__coder__":
-        update_status("Coder is writing the code...")
+    final_response = await baml_stream_and_collect_user_response(response, stream_to_user_callback)
+    if isinstance(final_response, Coder):
         coder_response = await run_coder_agent(messages=orchestrator_state.messages, filestore=file_store)
         orchestrator_state.messages.append(LLMMessage(role="assistant", content=coder_response.content))
         await coder_completed_callback(user_name, product_id, file_store)
         update_status("The website is ready to be deployed. Use the 🚀 from the sidebar to deploy your website")
-    elif isinstance(response, AsyncIterable):
-        # Stream message to user and collect the final message, then store the message into message history
-        chat_response_message = await baml_stream_and_collect(response, stream_to_user_callback)
-        orchestrator_state.messages.append(LLMMessage(role="assistant", content=chat_response_message))
+    elif isinstance(final_response, ResponseToUser):
+        orchestrator_state.messages.append(LLMMessage(role="assistant", content=final_response.response_to_user))
     else:
         raise ValueError("Unexpected response type")
 

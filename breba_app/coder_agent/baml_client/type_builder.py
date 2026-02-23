@@ -20,7 +20,7 @@ from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIM
 class TypeBuilder(type_builder.TypeBuilder):
     def __init__(self):
         super().__init__(classes=set(
-          ["FileList","LLMMessage",]
+          ["Coder","FileList","LLMMessage","ResponseToUser",]
         ), enums=set(
           []
         ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
@@ -31,8 +31,12 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
     # #########################################################################
-    # Generated classes 2
+    # Generated classes 4
     # #########################################################################
+
+    @property
+    def Coder(self) -> "CoderViewer":
+        return CoderViewer(self)
 
     @property
     def FileList(self) -> "FileListViewer":
@@ -42,6 +46,10 @@ class TypeBuilder(type_builder.TypeBuilder):
     def LLMMessage(self) -> "LLMMessageViewer":
         return LLMMessageViewer(self)
 
+    @property
+    def ResponseToUser(self) -> "ResponseToUserViewer":
+        return ResponseToUserViewer(self)
+
 
 
 # #########################################################################
@@ -50,8 +58,47 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
 # #########################################################################
-# Generated classes 2
+# Generated classes 4
 # #########################################################################
+
+class CoderAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("Coder")
+        self._properties: typing.Set[str] = set([  "invoke_coder",  ])
+        self._props = CoderProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "CoderProperties":
+        return self._props
+
+
+class CoderViewer(CoderAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class CoderProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def invoke_coder(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("invoke_coder"))
+    
+    
+
 
 class FileListAst:
     def __init__(self, tb: type_builder.TypeBuilder):
@@ -135,6 +182,45 @@ class LLMMessageProperties:
     @property
     def content(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("content"))
+    
+    
+
+
+class ResponseToUserAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("ResponseToUser")
+        self._properties: typing.Set[str] = set([  "response_to_user",  ])
+        self._props = ResponseToUserProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "ResponseToUserProperties":
+        return self._props
+
+
+class ResponseToUserViewer(ResponseToUserAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class ResponseToUserProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def response_to_user(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("response_to_user"))
     
     
 
