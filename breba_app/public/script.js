@@ -103,7 +103,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typingEl && ghostEl) {
         const text = ghostEl.textContent.trim(); // plain text for typing
         typingEl.textContent = '';
-        typingEl.style.borderRight = '2px solid rgba(255,255,255,.9)';
 
         let i = 0;
         const step = () => {
