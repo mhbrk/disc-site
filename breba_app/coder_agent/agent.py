@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, AsyncIterable, Literal
+from typing import AsyncIterable
+
+from baml_py import BamlStream
 
 from breba_app.coder_agent.baml_client.async_client import b
 from breba_app.coder_agent.baml_client.types import LLMMessage
@@ -54,6 +56,7 @@ def _files_to_edit_message(file_contents: str) -> LLMMessage:
                       content=f"The following files are available for editing. Do not edit any other files.\n"
                               f"<files_available_for_editing>\n{file_contents}\n</files_available_for_editing>")
 
+
 async def _get_first_word(stream: AsyncIterable[str]):
     buffer = ""
     async for token in stream:
@@ -71,20 +74,13 @@ async def _to_user_stream(first_msg: str, stream: AsyncIterable[str]) -> AsyncIt
 
 
 async def stream_user_response_or_coder(*, messages: list[LLMMessage], filestore: FileStore) \
-        -> AsyncIterable[str] | Literal["__coder__"] | Literal["Something went wrong, empty message received"]:
+        -> BamlStream:
     # TODO: should read spec
     if filestore.file_exists("index.html"):
         spec = filestore.read_text("index.html")
     else:
         spec = ""
-    stream = b.stream.UserResponseOrCoder(messages, spec, filestore.list_files())
-
-    first_words = await _get_first_word(stream)
-    if first_words.startswith("__coder__"):
-        return "__coder__"
-    else:
-        return _to_user_stream(first_words, stream)
-
+    return b.stream.UserResponseOrCoder(messages, spec, filestore.list_files())
 
     logger.info(f"Empty message received: {await stream.get_final_response()}")
     return "Something went wrong, empty message received"

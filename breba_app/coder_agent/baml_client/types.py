@@ -41,8 +41,11 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 # #########################################################################
-# Generated classes (2)
+# Generated classes (4)
 # #########################################################################
+
+class Coder(BaseModel):
+    invoke_coder: bool
 
 class FileList(BaseModel):
     reasoning: str = Field(description='Explanation of why these files need to be edited or not in one short sentence.')
@@ -51,6 +54,9 @@ class FileList(BaseModel):
 class LLMMessage(BaseModel):
     role: typing.Union[typing_extensions.Literal['user'], typing_extensions.Literal['assistant']]
     content: str
+
+class ResponseToUser(BaseModel):
+    response_to_user: str
 
 # #########################################################################
 # Generated type aliases (0)

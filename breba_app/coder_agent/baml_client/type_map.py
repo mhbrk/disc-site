@@ -16,11 +16,17 @@ from . import stream_types
 
 type_map = {
 
+    "types.Coder": types.Coder,
+    "stream_types.Coder": stream_types.Coder,
+
     "types.FileList": types.FileList,
     "stream_types.FileList": stream_types.FileList,
 
     "types.LLMMessage": types.LLMMessage,
     "stream_types.LLMMessage": stream_types.LLMMessage,
+
+    "types.ResponseToUser": types.ResponseToUser,
+    "stream_types.ResponseToUser": stream_types.ResponseToUser,
 
 
 }

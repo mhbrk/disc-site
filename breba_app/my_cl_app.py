@@ -21,10 +21,11 @@ from breba_app.models.product import Product, create_or_update_product_for, crea
 from breba_app.models.user import User
 from breba_app.orchestrator import handle_user_message, save_state, OrchestratorState, start_product
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active, \
-    read_all_files_in_memory, save_files
+    read_all_files_in_memory, save_files, get_index_html_path
 from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
     landing_page_follow_up_questions
 from breba_app.ui_bus import update_products_list, update_versions_list, update_follow_up_questions_list
+from breba_app.website import build_preview
 from controllers.deployment_controller import run_deployment
 from llm_utils import get_product_name
 from storage import save_image_file_to_private, get_public_url
@@ -42,6 +43,8 @@ class ProductNameAssignmentConsumer(Consumer):
         product = await create_or_update_product_for(event.user_name, event.product_id, product_name)
         cl.user_session.set("product_name", product.name)
         await ui_bus.update_product_name(event.product_id, product.name)
+        # The first time
+        await ui_bus.init_product_preview(get_index_html_path(event.product_id))
         await ctx.unsubscribe_self()
 
 
@@ -63,18 +66,18 @@ async def ask_user_streaming(token_stream: AsyncIterator[str] | str):
 
 
 async def populate_from_cloud_storage(user_name: str, session_id: str):
-    in_memory_store = await read_all_files_in_memory(user_name, session_id)
+    index_path = get_index_html_path(session_id)
+    in_memory_store, _ = await asyncio.gather(read_all_files_in_memory(user_name, session_id),
+                                              ui_bus.init_product_preview(index_path))
 
     save_state(user_name, session_id, OrchestratorState(messages=[], filestore=in_memory_store))
 
     spec = ""
     if in_memory_store.file_exists(SPEC_FILE_NAME):
         spec = in_memory_store.read_text(SPEC_FILE_NAME)
-    product = in_memory_store.read_text(INDEX_FILE_NAME)
 
     await asyncio.gather(
-        ui_bus.send_specification_to_ui(spec),
-        ui_bus.send_index_html_to_ui(product)
+        ui_bus.send_specification_to_ui(spec)
     )
 
 
@@ -91,16 +94,18 @@ async def coder_completed(user_name: str, product_id: str, file_store: InMemoryF
     spec = ""
     if file_store.file_exists("spec.txt"):
         spec = file_store.read_text("spec.txt")
-    # TODO: This should be the file being viewed by the user.
-    html = file_store.read_text("index.html")
-    await asyncio.gather(
+
+    # First we persist the files and preview
+    files_to_save: list[FileWrite] = list(file_store.snapshot().values())
+    new_version, _ = await asyncio.gather(save_files(user_name, product_id, files_to_save),
+                                          build_preview(product_id, file_store))
+
+    _, _, versions = await asyncio.gather(
         ui_bus.send_specification_to_ui(spec),
-        ui_bus.send_index_html_to_ui(html)
+        ui_bus.reload_product_preview(),
+        list_versions(user_name, product_id)
     )
 
-    files_to_save: list[FileWrite] = list(file_store.snapshot().values())
-    new_version = await save_files(user_name, product_id, files_to_save)
-    versions = await list_versions(user_name, product_id)
     await update_versions_list(versions, new_version)
     # TODO: This is just the first step. This entire callback should go away once event bus is work. That is the purpose of the event bus.
     await event_bus.emit(CoderCompleted(user_name=user_name, product_id=product_id, filestore=file_store))
@@ -160,11 +165,11 @@ async def main():
         elif product_name:
             cl.user_session.set("product_name", product_name)
 
-
         if has_storage:
             await cl.Message(
                 content=f"Welcome back, here is your last project: {product_name}.").send()
             await populate_from_cloud_storage(user_name, product_id)
+            await update_follow_up_questions_list(landing_page_follow_up_questions)
             return
         else:
             # We are starting a new project
@@ -173,7 +178,10 @@ async def main():
             return
     else:
         # When starting a new project for the first time, set the product_id to session_id
-        cl.user_session.set("product_id", cl.user_session.get("id"))
+        product_id = cl.user_session.get("id")
+        cl.user_session.set("product_id", product_id)
+        await asyncio.gather(create_blank_product_for(user_name, PRODUCT_NAME_PLACEHOLDER, True),
+                             event_bus.subscribe(CoderCompleted, ProductNameAssignmentConsumer(user_name, product_id)))
 
     await cl.Message(
         content="Hello, I'm here to assist you with building your website. We can build it together one step at a time,"
@@ -226,7 +234,12 @@ async def window_message(message: str | dict):
         await delete_product(user_name, message.get("body"))
         await cl.send_window_message({"method": "reload_product"})
     elif method == "select_version":
-        await set_version_active(user_name, product_id, message.get("body"))
+        version = int(message.get("body"))
+        await set_version_active(user_name, product_id, version)
+        # After setting version, we need to rebuild preview
+        filestore = await read_all_files_in_memory(user_name, product_id, version)
+        await build_preview(product_id, filestore)
+        # To avoid race condition, we want to wait for the preview to build, before reloading product
         await cl.send_window_message({"method": "reload_product"})
     else:
         # TODO: remove this, it is replaced by the "ask_user" function callback
@@ -273,6 +286,7 @@ async def auth_callback(username: str, password: str):
     else:
         return None
 
+
 async def add_to_waitlist(email: str, comments: str):
     url = (
         "https://script.google.com/macros/s/"
@@ -303,7 +317,6 @@ async def oauth_callback(
         raw_user_data: dict[str, str],
         default_user: cl.User,
 ) -> cl.User | None:
-
     asyncio.create_task(
         add_to_waitlist(
             default_user.identifier,

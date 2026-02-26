@@ -14,6 +14,16 @@ async def send_index_html_to_ui(html: str):
     await cl.send_window_message({"method": "to_generator", "body": "__completed__"})
 
 
+async def init_product_preview(url: str):
+    await cl.send_window_message(
+        {"method": "load_preview", "url": url})
+
+
+async def reload_product_preview():
+    await cl.send_window_message(
+        {"method": "refresh_preview"})
+
+
 async def send_index_html_chunk_to_ui(html: str):
     await cl.send_window_message({"method": "to_generator", "body": html})
 

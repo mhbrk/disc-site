@@ -124,7 +124,7 @@ class BamlSyncClient:
             return typing.cast(str, __result__.cast_to(types, types, stream_types, False, __runtime__))
     def UserResponseOrCoder(self, messages: typing.List["types.LLMMessage"],spec: str,files: typing.List[str],
         baml_options: BamlCallOptions = {},
-    ) -> str:
+    ) -> typing.Union["types.ResponseToUser", "types.Coder"]:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             __stream__ = self.stream.UserResponseOrCoder(messages=messages,spec=spec,files=files,
@@ -135,7 +135,7 @@ class BamlSyncClient:
             __result__ = self.__options.merge_options(baml_options).call_function_sync(function_name="UserResponseOrCoder", args={
                 "messages": messages,"spec": spec,"files": files,
             })
-            return typing.cast(str, __result__.cast_to(types, types, stream_types, False, __runtime__))
+            return typing.cast(typing.Union["types.ResponseToUser", "types.Coder"], __result__.cast_to(types, types, stream_types, False, __runtime__))
     
 
 
@@ -171,14 +171,14 @@ class BamlStreamClient:
         )
     def UserResponseOrCoder(self, messages: typing.List["types.LLMMessage"],spec: str,files: typing.List[str],
         baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlSyncStream[str, str]:
+    ) -> baml_py.BamlSyncStream[typing.Union["stream_types.ResponseToUser", "stream_types.Coder"], typing.Union["types.ResponseToUser", "types.Coder"]]:
         __ctx__, __result__ = self.__options.merge_options(baml_options).create_sync_stream(function_name="UserResponseOrCoder", args={
             "messages": messages,"spec": spec,"files": files,
         })
-        return baml_py.BamlSyncStream[str, str](
+        return baml_py.BamlSyncStream[typing.Union["stream_types.ResponseToUser", "stream_types.Coder"], typing.Union["types.ResponseToUser", "types.Coder"]](
           __result__,
-          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
+          lambda x: typing.cast(typing.Union["stream_types.ResponseToUser", "stream_types.Coder"], x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(typing.Union["types.ResponseToUser", "types.Coder"], x.cast_to(types, types, stream_types, False, __runtime__)),
           __ctx__,
         )
     

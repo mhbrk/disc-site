@@ -1,19 +1,42 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from functools import wraps
 from typing import Callable, Awaitable, TypeVar
 
 import chainlit as cl
+from chainlit.context import ChainlitContextException
+from chainlit.message import MessageBase
 
 from breba_app.ui_bus import signal_task_started, signal_task_completed
 
 DONE = "Done"
 
+logger = logging.getLogger(__name__)
+
+
+class NullMessage(MessageBase):
+
+    def __init__(self):
+        self.content = "NullMessage::NOOP"
+
+    async def stream_token(self, token: str, is_sequence=False):
+        logger.info(f"NullMessage::Stream token: {token}")
+
+    async def send(self):
+        logger.info("NullMessage::Send")
+
+
 
 class Task:
     def __init__(self):
-        self.msg = cl.Message(content="")
+        try:
+            message = cl.Message(content="")
+        except ChainlitContextException:
+            message = NullMessage()
+
+        self.msg = message
         self.action_queue = asyncio.Queue()
         self._drain_lock = asyncio.Lock()
 

@@ -23,8 +23,11 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (2)
+# Generated classes (4)
 # #########################################################################
+
+class Coder(BaseModel):
+    invoke_coder: typing.Optional[bool] = None
 
 class FileList(BaseModel):
     reasoning: typing.Optional[str] = Field(default=None, description='Explanation of why these files need to be edited or not in one short sentence.')
@@ -33,6 +36,9 @@ class FileList(BaseModel):
 class LLMMessage(BaseModel):
     role: typing.Optional[typing.Union[typing_extensions.Literal['user'], typing_extensions.Literal['assistant']]] = None
     content: typing.Optional[str] = None
+
+class ResponseToUser(BaseModel):
+    response_to_user: typing.Optional[str] = None
 
 # #########################################################################
 # Generated type aliases (0)
