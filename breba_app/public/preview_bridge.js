@@ -13,8 +13,8 @@ doc.addEventListener('mouseup', () => {
     const r = range.getBoundingClientRect();
 
     // ideal absolute coords
-    const absLeft = window.scrollX + r.left;
-    const absTop = window.scrollY + r.bottom + 5;
+    const absLeft = r.left;
+    const absTop = r.bottom + 5;
 
 
     window.parent.postMessage({method: "preview_mouseup", selection: sel, left: absLeft, top: absTop}, "*")
