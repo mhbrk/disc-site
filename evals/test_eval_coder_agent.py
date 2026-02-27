@@ -87,7 +87,7 @@ async def run_evals(case_dir: Path, text: str):
 
 @pytest.mark.asyncio
 async def test_coder_create_new_website() -> None:
-    case_dir = Path(__file__).parent / "cases" / "create_hello_world"
+    case_dir = Path(__file__).parent / "cases" / "coder_evals" / "create_hello_world"
 
     messages, store = load_case(case_dir)
     agent_response = await run_coder_agent(messages=messages, filestore=store)
@@ -97,7 +97,7 @@ async def test_coder_create_new_website() -> None:
 
 @pytest.mark.asyncio
 async def test_coder_create_new_website_with_bootstrap() -> None:
-    case_dir = Path(__file__).parent / "cases" / "create_hello_world_bootstrap"
+    case_dir = Path(__file__).parent / "cases" / "coder_evals" / "coder_evals" / "create_hello_world_bootstrap"
 
     messages, store = load_case(case_dir)
     agent_response = await run_coder_agent(messages=messages, filestore=store)
@@ -107,7 +107,7 @@ async def test_coder_create_new_website_with_bootstrap() -> None:
 
 @pytest.mark.asyncio
 async def test_coder_modify_font_color() -> None:
-    case_dir = Path(__file__).parent / "cases" / "modify_font_color"
+    case_dir = Path(__file__).parent / "cases" / "coder_evals" / "modify_font_color"
 
     messages, store = load_case(case_dir)
     agent_response = await run_coder_agent(messages=messages, filestore=store)
@@ -117,7 +117,7 @@ async def test_coder_modify_font_color() -> None:
 
 @pytest.mark.asyncio
 async def test_coder_modify_text() -> None:
-    case_dir = Path(__file__).parent / "cases" / "modify_text"
+    case_dir = Path(__file__).parent / "cases" / "coder_evals" / "modify_text"
 
     messages, store = load_case(case_dir)
     agent_response = await run_coder_agent(messages=messages, filestore=store)
@@ -127,7 +127,7 @@ async def test_coder_modify_text() -> None:
 
 @pytest.mark.asyncio
 async def test_coder_modify_text_style_behavior() -> None:
-    case_dir = Path(__file__).parent / "cases" / "modify_text_style_behavior"
+    case_dir = Path(__file__).parent / "cases" / "coder_evals" / "modify_text_style_behavior"
 
     messages, store = load_case(case_dir)
     agent_response = await run_coder_agent(messages=messages, filestore=store)
@@ -137,7 +137,7 @@ async def test_coder_modify_text_style_behavior() -> None:
 
 @pytest.mark.asyncio
 async def test_coder_add_navbar() -> None:
-    case_dir = Path(__file__).parent / "cases" / "add_navbar"
+    case_dir = Path(__file__).parent / "cases" / "coder_evals" / "add_navbar"
 
     agent_response, store = await run_case(case_dir)
 
