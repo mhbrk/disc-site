@@ -86,6 +86,9 @@ Always make changes with the best practices in mind
 13. Make sure to update sitemap.xml for any visible content changes.
 14. A production ready website must have robots.txt file.
 </html_best_practices>
+<third_party_libraries>
+When using third party libraries, do not make up integrity hashes. Only use integrity checsk if provided by the user.
+</third_party_libraries>
 </static_website_best_practices>
 "#
 

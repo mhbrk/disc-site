@@ -96,6 +96,16 @@ async def test_coder_create_new_website() -> None:
 
 
 @pytest.mark.asyncio
+async def test_coder_create_new_website_with_bootstrap() -> None:
+    case_dir = Path(__file__).parent / "cases" / "create_hello_world_bootstrap"
+
+    messages, store = load_case(case_dir)
+    agent_response = await run_coder_agent(messages=messages, filestore=store)
+    combined_agent_response = combine_agent_response_with_files(agent_response, store)
+    await run_evals(case_dir, combined_agent_response)
+
+
+@pytest.mark.asyncio
 async def test_coder_modify_font_color() -> None:
     case_dir = Path(__file__).parent / "cases" / "modify_font_color"
 
