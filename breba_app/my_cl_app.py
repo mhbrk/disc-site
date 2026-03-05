@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+from pathlib import Path
 from typing import AsyncIterator
 
 import chainlit as cl
@@ -24,6 +25,7 @@ from breba_app.storage import has_cloud_storage, list_versions, get_active_versi
     read_all_files_in_memory, save_files, get_index_html_path
 from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
     landing_page_follow_up_questions
+from breba_app.tools.upload_files import process_file
 from breba_app.ui_bus import update_products_list, update_versions_list, update_follow_up_questions_list
 from breba_app.website import build_preview
 from controllers.deployment_controller import run_deployment
@@ -251,19 +253,24 @@ async def respond(message: Message):
     product_id = cl.user_session.get("product_id")
     user_name = cl.user_session.get("user").identifier
 
-    if len(message.elements) > 1:
-        await cl.Message(content="Multiple files are not supported. Please upload one file at a time.").send()
-        return
-    elif len(message.elements) == 1:
-        # This happens when we are uploading a file from the chat window
+    if len(message.elements) > 0:
         try:
-            blob_image_path = save_image_file_to_private(user_name, product_id, message.elements[0].name,
-                                                         message.elements[0].path,
-                                                         message.content)
-            message.content = f"Here is a newly uploaded file: {blob_image_path} \n {message.content}.\n\nDon't forget to ask if I would like to upload another file."
+            elements = list(message.elements or [])
 
-            await handle_user_message(user_name, product_id, message.content, coder_completed_callback=coder_completed,
-                                      stream_to_user_callback=ask_user_streaming)
+            uploaded_paths = await asyncio.gather(*(
+            process_file(user_name=user_name, product_id=product_id, file_path=Path(el.path), file_name=el.name,
+                         description=message.content) for el in elements))
+
+            if uploaded_paths:
+                files_block = "\n".join(f"- {p}" for p in uploaded_paths)
+                message.content = (f"Here are newly uploaded files:\n{files_block}\n\n"
+                                   f"{message.content}")
+                await handle_user_message(user_name, product_id, message.content,
+                                          coder_completed_callback=coder_completed,
+                                          stream_to_user_callback=ask_user_streaming)
+            else:
+                await cl.Message(
+                    content="Something went wrong uploading files. Please try again, or contact support.").send()
         except ValueError as e:
             await cl.Message(content=str(e)).send()
         except Exception as e:
