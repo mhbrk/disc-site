@@ -16,16 +16,13 @@ async def process_file(user_name: str, product_id: str, file_path: Path, file_na
     async with sem:
         # get dimensions in a thread (Pillow is blocking)
         width, height = await asyncio.to_thread(get_image_dimensions, file_path)
-
-        file_name_obj = Path(file_name)
-        # modify filename
-        new_name = f"{file_name_obj.stem}_{width}x{height}{file_name_obj.suffix}"
+        description = f"{description}. Image dimensions: {width}x{height}"
 
         blob_path = await asyncio.to_thread(
             save_image_file_to_private,
             user_name,
             product_id,
-            new_name,
+            file_name,
             file_path.as_posix(),
             description
         )
