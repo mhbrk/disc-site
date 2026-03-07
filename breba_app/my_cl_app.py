@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-from pathlib import Path
 from typing import AsyncIterator
 
 import chainlit as cl
@@ -20,17 +19,16 @@ from breba_app.filesystem import InMemoryFileStore, FileWrite
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product, create_or_update_product_for, create_blank_product_for, set_product_active
 from breba_app.models.user import User
-from breba_app.orchestrator import handle_user_message, save_state, OrchestratorState, start_product
+from breba_app.orchestrator import handle_user_message, save_state, OrchestratorState, start_product, handle_file_upload
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active, \
     read_all_files_in_memory, save_files, get_index_html_path
 from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
     landing_page_follow_up_questions
-from breba_app.tools.upload_files import process_file
 from breba_app.ui_bus import update_products_list, update_versions_list, update_follow_up_questions_list
 from breba_app.website import build_preview
 from controllers.deployment_controller import run_deployment
 from llm_utils import get_product_name
-from storage import save_image_file_to_private, get_public_url
+from storage import get_public_url
 
 PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
 
@@ -253,29 +251,13 @@ async def respond(message: Message):
     product_id = cl.user_session.get("product_id")
     user_name = cl.user_session.get("user").identifier
 
+    # TODO: Testcases: 1) When uploading files without a message, need to ask what do do with the file
+    #  2) when uploading files, but the message is contradictory, need to ask what is wrong (for example upload 4 files, but user says to add logo)
     if len(message.elements) > 0:
-        try:
-            elements = list(message.elements or [])
+        elements = list(message.elements or [])
+        file_tuples = [(el.path, el.name) for el in elements]
 
-            uploaded_paths = await asyncio.gather(*(
-            process_file(user_name=user_name, product_id=product_id, file_path=Path(el.path), file_name=el.name,
-                         description=message.content) for el in elements))
-
-            if uploaded_paths:
-                files_block = "\n".join(f"- {p}" for p in uploaded_paths)
-                message.content = (f"Here are newly uploaded files:\n{files_block}\n\n"
-                                   f"{message.content}")
-                await handle_user_message(user_name, product_id, message.content,
-                                          coder_completed_callback=coder_completed,
-                                          stream_to_user_callback=ask_user_streaming)
-            else:
-                await cl.Message(
-                    content="Something went wrong uploading files. Please try again, or contact support.").send()
-        except ValueError as e:
-            await cl.Message(content=str(e)).send()
-        except Exception as e:
-            await cl.Message(
-                content="Something went wrong while uploading the file. Try again later, or contact support.").send()
+        await handle_file_upload(user_name, product_id, file_tuples, message.content, coder_completed, ask_user_streaming)
     else:
         # TODO: need some error handling here similar to the above or better
         await handle_user_message(user_name, product_id, message.content, coder_completed_callback=coder_completed,
