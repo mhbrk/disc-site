@@ -1,0 +1,15 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "List full path of files that were uploaded."
+    }
+  ],
+  "evals": [
+    {
+      "question": "Were https://example.com/file2.jpeg and https://example.com/file1.jpeg uploaded?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    }
+  ]
+}

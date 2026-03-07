@@ -1,7 +1,9 @@
+import asyncio
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import AsyncIterable, AsyncIterator
+from pathlib import Path
+from typing import AsyncIterator
 
 from baml_py import BamlStream
 
@@ -13,6 +15,7 @@ from breba_app.filesystem import InMemoryFileStore
 from breba_app.status_service import agent_task, update_status
 from breba_app.template_agent.agent import TemplateAgent
 from breba_app.template_agent.baml_client.types import WebsiteSpecification
+from breba_app.tools.upload_files import upload_file
 
 logger = logging.getLogger(__name__)
 
@@ -117,3 +120,31 @@ async def handle_user_message(user_name: str, product_id: str, message: str,
         await edit_product(user_name, product_id, message, coder_completed_callback, stream_to_user_callback)
     else:
         await start_product(user_name, product_id, message, coder_completed_callback, stream_to_user_callback)
+
+
+@agent_task
+async def handle_file_upload(user_name: str, product_id, files: list[tuple[str, str]], message: str,
+                             coder_completed_callback, stream_to_user_callback):
+    try:
+        uploaded_paths = await asyncio.gather(*(
+            upload_file(user_name=user_name, product_id=product_id, file_path=Path(file_tuple[0]),
+                        file_name=file_tuple[1],
+                        description=message) for file_tuple in files))
+
+        if uploaded_paths:
+            files_block = "\n".join(f"- {p}" for p in uploaded_paths)
+            message = (f"Here are newly uploaded files:\n{files_block}\n\n"
+                       f"{message}")
+            await handle_user_message(user_name, product_id, message,
+                                      coder_completed_callback=coder_completed_callback,
+                                      stream_to_user_callback=stream_to_user_callback)
+        else:
+            update_status("Something went wrong uploading files. Please try again, or contact support.")
+            items = [1, 2, 3]
+            for item in items:
+                return
+    except ValueError as e:
+        update_status(str(e))
+    except Exception as e:
+        logging.exception("Error uploading files")
+        update_status("Something went wrong while uploading the file. Try again later, or contact support.")

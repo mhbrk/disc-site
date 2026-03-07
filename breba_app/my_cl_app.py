@@ -19,7 +19,7 @@ from breba_app.filesystem import InMemoryFileStore, FileWrite
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product, create_or_update_product_for, create_blank_product_for, set_product_active
 from breba_app.models.user import User
-from breba_app.orchestrator import handle_user_message, save_state, OrchestratorState, start_product
+from breba_app.orchestrator import handle_user_message, save_state, OrchestratorState, start_product, handle_file_upload
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active, \
     read_all_files_in_memory, save_files, get_index_html_path
 from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
@@ -28,7 +28,7 @@ from breba_app.ui_bus import update_products_list, update_versions_list, update_
 from breba_app.website import build_preview
 from controllers.deployment_controller import run_deployment
 from llm_utils import get_product_name
-from storage import save_image_file_to_private, get_public_url
+from storage import get_public_url
 
 PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
 
@@ -251,24 +251,13 @@ async def respond(message: Message):
     product_id = cl.user_session.get("product_id")
     user_name = cl.user_session.get("user").identifier
 
-    if len(message.elements) > 1:
-        await cl.Message(content="Multiple files are not supported. Please upload one file at a time.").send()
-        return
-    elif len(message.elements) == 1:
-        # This happens when we are uploading a file from the chat window
-        try:
-            blob_image_path = save_image_file_to_private(user_name, product_id, message.elements[0].name,
-                                                         message.elements[0].path,
-                                                         message.content)
-            message.content = f"Here is a newly uploaded file: {blob_image_path} \n {message.content}.\n\nDon't forget to ask if I would like to upload another file."
+    # TODO: Testcases: 1) When uploading files without a message, need to ask what do do with the file
+    #  2) when uploading files, but the message is contradictory, need to ask what is wrong (for example upload 4 files, but user says to add logo)
+    if len(message.elements) > 0:
+        elements = list(message.elements or [])
+        file_tuples = [(el.path, el.name) for el in elements]
 
-            await handle_user_message(user_name, product_id, message.content, coder_completed_callback=coder_completed,
-                                      stream_to_user_callback=ask_user_streaming)
-        except ValueError as e:
-            await cl.Message(content=str(e)).send()
-        except Exception as e:
-            await cl.Message(
-                content="Something went wrong while uploading the file. Try again later, or contact support.").send()
+        await handle_file_upload(user_name, product_id, file_tuples, message.content, coder_completed, ask_user_streaming)
     else:
         # TODO: need some error handling here similar to the above or better
         await handle_user_message(user_name, product_id, message.content, coder_completed_callback=coder_completed,
