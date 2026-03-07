@@ -16,7 +16,7 @@ def get_image_dimensions(path: Path):
     with Image.open(path) as img:
         return img.width, img.height
 
-async def process_file(user_name: str, product_id: str, file_path: Path, file_name: str, description: str):
+async def upload_file(user_name: str, product_id: str, file_path: Path, file_name: str, description: str):
     async with sem:
         try:
             # get dimensions in a thread (Pillow is blocking)

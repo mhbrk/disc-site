@@ -15,7 +15,7 @@ from breba_app.filesystem import InMemoryFileStore
 from breba_app.status_service import agent_task, update_status
 from breba_app.template_agent.agent import TemplateAgent
 from breba_app.template_agent.baml_client.types import WebsiteSpecification
-from breba_app.tools.upload_files import process_file
+from breba_app.tools.upload_files import upload_file
 
 logger = logging.getLogger(__name__)
 
@@ -127,9 +127,9 @@ async def handle_file_upload(user_name: str, product_id, files: list[tuple[str, 
                              coder_completed_callback, stream_to_user_callback):
     try:
         uploaded_paths = await asyncio.gather(*(
-            process_file(user_name=user_name, product_id=product_id, file_path=Path(file_tuple[0]),
-                         file_name=file_tuple[1],
-                         description=message) for file_tuple in files))
+            upload_file(user_name=user_name, product_id=product_id, file_path=Path(file_tuple[0]),
+                        file_name=file_tuple[1],
+                        description=message) for file_tuple in files))
 
         if uploaded_paths:
             files_block = "\n".join(f"- {p}" for p in uploaded_paths)
