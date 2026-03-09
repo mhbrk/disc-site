@@ -202,8 +202,11 @@ async def window_message(message: str | dict):
         await cl.send_window_message({"method": "reload_product"})
     elif method == "rename_product":
         body = message.get("body", {})
-        await rename_product(user_name, body.get("productId"), body.get("newName"))
-        await cl.send_window_message({"method": "reload_product"})
+        product_id_to_rename = body.get("productId")
+        new_name = body.get("newName")
+        await rename_product(user_name, product_id_to_rename, new_name)
+        if product_id == product_id_to_rename:
+            cl.user_session.set("product_name", new_name)
     elif method == "select_version":
         await set_version_active(user_name, product_id, message.get("body"))
         await cl.send_window_message({"method": "reload_product"})
