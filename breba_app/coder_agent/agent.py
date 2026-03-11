@@ -123,6 +123,8 @@ async def read_files_to_edit(*, original_context: list[LLMMessage], filestore: F
 
     return file_contents or NO_FILES_TO_MODIFY_MSG, seen_files
 
+async def generate_executive_summary(*, messages: list[LLMMessage], executive_summary: str) -> str:
+    return await b.CoderNotes(messages, executive_summary)
 
 async def run_coder_agent(*, messages: list[LLMMessage], filestore: FileStore) -> LLMMessage:
     """

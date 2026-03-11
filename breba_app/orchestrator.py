@@ -7,7 +7,7 @@ from typing import AsyncIterator
 
 from baml_py import BamlStream
 
-from breba_app.coder_agent.agent import stream_user_response_or_coder, run_coder_agent
+from breba_app.coder_agent.agent import stream_user_response_or_coder, run_coder_agent, generate_executive_summary
 from breba_app.coder_agent.baml_client.stream_types import Coder as CoderStream, ResponseToUser as ResponseToUserStream
 from breba_app.coder_agent.baml_client.types import LLMMessage, Coder, ResponseToUser
 from breba_app.config import INDEX_FILE_NAME
@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OrchestratorState:
     messages: list[LLMMessage]
+    executive_summary: str
     filestore: InMemoryFileStore
 
 
@@ -30,6 +31,7 @@ class OrchestratorState:
 _state_store: dict[tuple[str, str], OrchestratorState] = defaultdict(
     lambda: OrchestratorState(
         messages=[],
+        executive_summary="",
         filestore=InMemoryFileStore()
     )
 )
@@ -77,6 +79,9 @@ async def edit_product(user_name: str, product_id: str, message: str,
 
     final_response = await baml_stream_and_collect_user_response(response, stream_to_user_callback)
     if isinstance(final_response, Coder):
+        executive_summary = await generate_executive_summary(messages=orchestrator_state.messages,
+                                                             executive_summary=orchestrator_state.executive_summary)
+        # TODO: store executive summary
         coder_response = await run_coder_agent(messages=orchestrator_state.messages, filestore=file_store)
         orchestrator_state.messages.append(LLMMessage(role="assistant", content=coder_response.content))
         await coder_completed_callback(user_name, product_id, file_store)
@@ -105,6 +110,9 @@ async def start_product(user_name: str, product_id: str, message: str,
         orchestrator_state.messages.append(
             LLMMessage(role="user", content="Let's use this specification to build the website"))
         update_status("Coder is writing the code...")
+        executive_summary = await generate_executive_summary(messages=orchestrator_state.messages,
+                                                             executive_summary=orchestrator_state.executive_summary)
+        # TODO: store executive summary, but also extract this method
         coder_response = await run_coder_agent(messages=orchestrator_state.messages, filestore=file_store)
         orchestrator_state.messages.append(LLMMessage(role="assistant", content=coder_response.content))
         await coder_completed_callback(user_name, product_id, file_store)

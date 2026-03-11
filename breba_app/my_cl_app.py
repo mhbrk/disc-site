@@ -70,7 +70,8 @@ async def populate_from_cloud_storage(user_name: str, session_id: str):
     in_memory_store, _ = await asyncio.gather(read_all_files_in_memory(user_name, session_id),
                                               ui_bus.init_product_preview(index_path))
 
-    save_state(user_name, session_id, OrchestratorState(messages=[], filestore=in_memory_store))
+    # TODO: Need to load executive summary from mongo db
+    save_state(user_name, session_id, OrchestratorState(messages=[], executive_summary="", filestore=in_memory_store))
 
     spec = ""
     if in_memory_store.file_exists(SPEC_FILE_NAME):
