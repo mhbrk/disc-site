@@ -11,6 +11,9 @@ from breba_app.coder_agent.agent import stream_user_response_or_coder, run_coder
 from breba_app.coder_agent.baml_client.stream_types import Coder as CoderStream, ResponseToUser as ResponseToUserStream
 from breba_app.coder_agent.baml_client.types import LLMMessage, Coder, ResponseToUser
 from breba_app.config import INDEX_FILE_NAME
+from breba_app.events import event_bus
+from breba_app.events.before_handoff_to_coder import BeforeHandoffToCoder
+from breba_app.events.bus import Consumer, HandleContext
 from breba_app.filesystem import InMemoryFileStore
 from breba_app.status_service import agent_task, update_status
 from breba_app.template_agent.agent import TemplateAgent
@@ -35,6 +38,20 @@ _state_store: dict[tuple[str, str], OrchestratorState] = defaultdict(
         filestore=InMemoryFileStore()
     )
 )
+
+
+class ExecutiveSummaryGenerationConsumer(Consumer):
+    def __init__(self):
+        self.id = f"executive_summary_generator_consumer"
+        super().__init__()
+
+    async def handle(self, ctx: HandleContext, event: BeforeHandoffToCoder) -> None:
+        executive_summary = await generate_executive_summary(messages=event.messages,
+                                                             executive_summary=event.executive_summary)
+        # TODO: emit update of executive summary
+
+
+event_bus.subscribe(BeforeHandoffToCoder, ExecutiveSummaryGenerationConsumer())
 
 
 def load_state(user_name: str, product_id: str) -> OrchestratorState:
@@ -79,9 +96,9 @@ async def edit_product(user_name: str, product_id: str, message: str,
 
     final_response = await baml_stream_and_collect_user_response(response, stream_to_user_callback)
     if isinstance(final_response, Coder):
-        executive_summary = await generate_executive_summary(messages=orchestrator_state.messages,
-                                                             executive_summary=orchestrator_state.executive_summary)
-        # TODO: store executive summary
+        await event_bus.emit(
+            BeforeHandoffToCoder(user_name=user_name, product_id=product_id, messages=orchestrator_state.messages,
+                                 executive_summary=orchestrator_state.executive_summary))
         coder_response = await run_coder_agent(messages=orchestrator_state.messages, filestore=file_store)
         orchestrator_state.messages.append(LLMMessage(role="assistant", content=coder_response.content))
         await coder_completed_callback(user_name, product_id, file_store)
@@ -110,9 +127,10 @@ async def start_product(user_name: str, product_id: str, message: str,
         orchestrator_state.messages.append(
             LLMMessage(role="user", content="Let's use this specification to build the website"))
         update_status("Coder is writing the code...")
-        executive_summary = await generate_executive_summary(messages=orchestrator_state.messages,
-                                                             executive_summary=orchestrator_state.executive_summary)
-        # TODO: store executive summary, but also extract this method
+        await event_bus.emit(
+            BeforeHandoffToCoder(user_name=user_name, product_id=product_id, messages=orchestrator_state.messages,
+                                 executive_summary=orchestrator_state.executive_summary)
+        )
         coder_response = await run_coder_agent(messages=orchestrator_state.messages, filestore=file_store)
         orchestrator_state.messages.append(LLMMessage(role="assistant", content=coder_response.content))
         await coder_completed_callback(user_name, product_id, file_store)
