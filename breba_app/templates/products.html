@@ -94,11 +94,11 @@
             <div class="action-container">
                 <button type="button" class="action-btn" aria-expanded="false">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                        class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                         class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
                         <path d="M9.5 13a1.5 1.5 0 1 1-3 0
                      1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0
                      1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0
-                     1.5 1.5 0 0 1 3 0" />
+                     1.5 1.5 0 0 1 3 0"/>
                     </svg>
                 </button>
             </div>
@@ -106,6 +106,9 @@
     </div>
 </template>
 
+<template id="product-rename-template">
+    <input type="text" class="form-control form-control-sm w-100 p-0 m-0 border-primary shadow-none">
+</template>
 
 <div id="products-list" class="row row-cols-1 g-3"></div>
 
@@ -114,6 +117,7 @@
     const spinner = create_product_button.querySelector(".spinner-border");
     const productsList = document.getElementById("products-list");
     const menuTemplate = document.getElementById("product-menu-template");
+    const renameTemplate = document.getElementById("product-rename-template");
 
     let openMenu = null; // currently open menu element
 
@@ -150,7 +154,10 @@
 
     function updateProductName(product_id, new_name) {
         const cardNode = document.querySelector(`.product-card[data-product-id="${product_id}"]`);
+        if (!cardNode) return;
+
         cardNode.querySelector(".product-name").textContent = new_name;
+        cardNode.dataset.productName = new_name;
     }
 
     function closeMenu() {
@@ -158,6 +165,73 @@
             openMenu.remove();
             openMenu = null;
         }
+    }
+
+    function startRenameProduct(productId, fallbackName, chat) {
+        const card = document.querySelector(`.product-card[data-product-id="${productId}"]`);
+        if (!card) return;
+
+        const nameEl = card.querySelector(".product-name");
+        if (!nameEl || nameEl.querySelector("input")) return;
+
+        const currentName = card.dataset.productName || fallbackName || "";
+
+        const inputEl = renameTemplate.content.firstElementChild.cloneNode(true);
+        inputEl.value = currentName;
+
+        inputEl.addEventListener("click", e => e.stopPropagation());
+
+        nameEl.textContent = "";
+        nameEl.appendChild(inputEl);
+
+        inputEl.focus();
+        inputEl.select();
+
+        let finished = false;
+
+        function finish(newName) {
+            if (finished) return;
+            finished = true;
+
+            nameEl.textContent = newName;
+            card.dataset.productName = newName;
+        }
+
+        function submitRename() {
+            const newName = inputEl.value.trim();
+
+            if (!newName || newName === currentName) {
+                finish(currentName);
+                return;
+            }
+
+            if (chat) {
+                chat.contentWindow.postMessage({
+                    method: "rename_product",
+                    body: {productId, newName}
+                }, "*");
+            }
+
+            finish(newName);
+        }
+
+        function cancelRename() {
+            finish(currentName);
+        }
+
+        inputEl.addEventListener("blur", submitRename);
+
+        inputEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                e.stopPropagation();
+                submitRename();
+            } else if (e.key === "Escape") {
+                e.preventDefault();
+                e.stopPropagation();
+                cancelRename();
+            }
+        });
     }
 
     // Handle products list updates
@@ -268,64 +342,7 @@
                     }
                 } else if (action === "rename") {
                     closeMenu();
-                    const card = document.querySelector(`.product-card[data-product-id="${productId}"]`);
-                    if (card) {
-                        const nameEl = card.querySelector('.product-name');
-                        if (nameEl && !nameEl.querySelector('input')) {
-                            const currentName = card.dataset.productName || productName;
-
-                            const inputEl = document.createElement('input');
-                            inputEl.type = 'text';
-                            inputEl.value = currentName;
-                            inputEl.className = 'form-control form-control-sm border-primary shadow-none';
-                            inputEl.style.padding = '0.1rem 0.25rem';
-                            inputEl.style.margin = '-0.1rem -0.25rem';
-                            inputEl.style.fontSize = 'inherit';
-                            inputEl.style.fontWeight = 'inherit';
-                            inputEl.style.width = '100%';
-
-                            inputEl.addEventListener('click', e => e.stopPropagation());
-
-                            nameEl.textContent = '';
-                            nameEl.appendChild(inputEl);
-                            inputEl.focus();
-                            inputEl.select();
-
-                            let isDone = false;
-                            const handleRename = () => {
-                                if (isDone) return;
-                                isDone = true;
-                                const newName = inputEl.value.trim();
-                                if (newName && newName !== currentName) {
-                                    if (chat) {
-                                        chat.contentWindow.postMessage({
-                                            method: "rename_product",
-                                            body: { productId, newName }
-                                        }, '*');
-                                    }
-                                    nameEl.textContent = newName;
-                                    card.dataset.productName = newName;
-                                } else {
-                                    nameEl.textContent = currentName;
-                                }
-                            };
-
-                            inputEl.addEventListener('blur', handleRename);
-                            inputEl.addEventListener('keydown', (e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleRename();
-                                } else if (e.key === 'Escape') {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (isDone) return;
-                                    isDone = true;
-                                    nameEl.textContent = currentName;
-                                }
-                            });
-                        }
-                    }
+                    startRenameProduct(productId, productName, chat);
                     return;
                 }
 
