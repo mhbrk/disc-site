@@ -11,8 +11,8 @@ from chainlit import Message
 
 import breba_app.ui_bus as ui_bus
 from auth import verify_password
+from breba_app.controllers.product_controller import delete_product, rename_product
 from breba_app.config import SPEC_FILE_NAME, INDEX_FILE_NAME
-from breba_app.controllers.product_controller import delete_product
 from breba_app.events.bus import HandleContext, Consumer, event_bus
 from breba_app.events.coder_completed import CoderCompleted
 from breba_app.filesystem import InMemoryFileStore, FileWrite
@@ -233,6 +233,13 @@ async def window_message(message: str | dict):
     elif method == "delete_product":
         await delete_product(user_name, message.get("body"))
         await cl.send_window_message({"method": "reload_product"})
+    elif method == "rename_product":
+        body = message.get("body", {})
+        product_id_to_rename = body.get("productId")
+        new_name = body.get("newName")
+        await rename_product(user_name, product_id_to_rename, new_name)
+        if product_id == product_id_to_rename:
+            cl.user_session.set("product_name", new_name)
     elif method == "select_version":
         version = int(message.get("body"))
         await set_version_active(user_name, product_id, version)
