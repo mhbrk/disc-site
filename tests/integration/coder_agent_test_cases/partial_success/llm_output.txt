@@ -1,0 +1,27 @@
+index.html
+```
+<<<<<<< SEARCH
+    <main>
+        <h1>Hello World</h1>
+        <p>Welcome to this minimalist site.</p>
+        <button id="cta-button">Get Started</button>
+    </main>
+=======
+    <main>
+        <h1>Hello World</h1>
+        <p>Welcome to this minimalist site. Enjoy the partial success demo.</p>
+        <button id="cta-button">Explore</button>
+    </main>
+>>>>>>> REPLACE
+
+index.html
+```
+<<<<<<< SEARCH
+    <footer>
+        <p>Copyright</p>
+    </footer>
+=======
+    <footer>
+        <p>New footer content</p>
+    </footer>
+>>>>>>> REPLACE

@@ -9,20 +9,14 @@ import posixpath
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Iterable, List, Dict, Any
+from typing import Iterable, Any
 
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 
+from breba_app.filesystem.models import FileWrite
+
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class FileWrite:
-    """A single file write operation for batch_write."""
-    path: str
-    content: bytes | str
-    content_type: str | None = None
 
 
 @dataclass
@@ -106,7 +100,7 @@ class VersionedR2FileSystem:
             raise NotFound(f"Version {version} does not exist")
         self._put_text(self._latest_key(), str(version))
 
-    def list_files(self, version: int | None = None, prefix: str = "", absolute: bool = False) -> List[str]:
+    def list_files(self, version: int | None = None, prefix: str = "", absolute: bool = False) -> list[str]:
         """List all logical file paths in the given version."""
         v = self.get_version() if version is None else version
         manifest = self._get_manifest(v)
@@ -124,7 +118,7 @@ class VersionedR2FileSystem:
         except (NotFound, ClientError):
             return False
 
-    async def read_file(self, path: str, *, version: int | None = None) -> bytes:
+    async def read_file(self, path: str, *, version: int | None = None) -> FileWrite:
         """Read file bytes from the given version."""
         sanitized_path = _sanitize_path(path)
 
@@ -141,7 +135,7 @@ class VersionedR2FileSystem:
                 key = self._prefix + "/" + sanitized_path
             try:
                 obj = self._s3.get_object(Bucket=self._bucket, Key=key)
-                return obj["Body"].read()
+                return FileWrite(sanitized_path, obj["Body"].read(), obj.get("ContentType"))
             except (ClientError, self._s3.exceptions.NoSuchKey):
                 raise NotFound(f"Object for {sanitized_path} not found (key={key})")
 
@@ -149,7 +143,7 @@ class VersionedR2FileSystem:
 
     async def read_text(self, path: str, *, version: int | None = None, encoding: str = "utf-8") -> str:
         """Read file content as text."""
-        return (await self.read_file(path, version=version)).decode(encoding)
+        return (await self.read_file(path, version=version)).content.decode(encoding)
 
     def write_file(self, path: str, content: bytes | str, *, content_type: str | None = None) -> int:
         """Write a single file and create a new version."""
@@ -183,7 +177,6 @@ class VersionedR2FileSystem:
             manifest["created_at"] = datetime.now(timezone.utc).isoformat()
 
         return manifest
-
 
     def batch_write(self, files: Iterable[FileWrite], version: int | None = None) -> int:
         """Atomically write a batch of files and create one new version."""
@@ -256,7 +249,7 @@ class VersionedR2FileSystem:
     def _get_next_version(self) -> int:
         return max(self.list_versions()) + 1
 
-    def _get_manifest(self, version: int) -> Dict[str, Any]:
+    def _get_manifest(self, version: int) -> dict[str, Any]:
         try:
             obj = self._s3.get_object(Bucket=self._bucket, Key=self._manifest_key(version))
             return json.loads(obj["Body"].read().decode("utf-8"))
@@ -279,7 +272,7 @@ class VersionedR2FileSystem:
             Bucket=self._bucket, Key=key, Body=text.encode("utf-8"), ContentType="text/plain"
         )
 
-    def _put_json(self, key: str, obj: Dict[str, Any]) -> None:
+    def _put_json(self, key: str, obj: dict[str, Any]) -> None:
         self._s3.put_object(
             Bucket=self._bucket,
             Key=key,

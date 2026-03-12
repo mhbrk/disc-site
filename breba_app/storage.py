@@ -12,7 +12,9 @@ import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
 
-from breba_app.filesystem.versioned_r2 import VersionedR2FileSystem, FileWrite
+from breba_app.config import INDEX_FILE_NAME
+from breba_app.filesystem import InMemoryFileStore, FileWrite, FileStore
+from breba_app.filesystem.versioned_r2 import VersionedR2FileSystem
 
 load_dotenv()
 
@@ -45,6 +47,90 @@ class FileMetadata(TypedDict):
 
 DirTreeValue = Union[FileMetadata, "DirTree"]
 DirTree = dict[str, DirTreeValue]
+
+
+class PreviewFileStore(FileStore):
+    """
+    Write-only FileStore that uploads preview artifacts to a public S3/R2 bucket.
+
+    - Bucket is provided (e.g. s3.Bucket(PUBLIC_BUCKET_NAME))
+    - Keys are written under: {session_id}/{path}
+    - write_text() is non-blocking: it schedules an upload.
+    - Call await flush() to ensure all writes finished (and raise if any failed).
+    """
+
+    def __init__(self, *, product_id: str, bucket=None):
+        self._bucket = bucket or public_s3_bucket
+        self._product_id = product_id.strip("/")
+
+        self._pending: set[asyncio.Task] = set()
+        self._errors: list[BaseException] = []
+
+    def read_text(self, path: str) -> str:
+        raise NotImplementedError("PreviewFileStore is write-only.")
+
+    def list_files(self) -> list[str]:
+        raise NotImplementedError("PreviewFileStore is write-only.")
+
+    def file_exists(self, path: str) -> bool:
+        raise NotImplementedError("PreviewFileStore is write-only.")
+
+    def write_text(self, path: str, content: str) -> None:
+        """
+        Schedule an async upload of UTF-8 text.
+        """
+        content_type, encoding = mimetypes.guess_type(path)
+        key = self._make_key(path)
+        body = content.encode("utf-8")
+
+        task = asyncio.create_task(
+            self._put_object(
+                key=key,
+                body=body,
+                content_type=content_type,
+            )
+        )
+        self._track(task)
+
+    def _make_key(self, path: str) -> str:
+        path = path.lstrip("/")
+        return f"{self._product_id}/{path}" if path else f"{self._product_id}/"
+
+    def _track(self, task: asyncio.Task) -> None:
+        self._pending.add(task)
+
+        def _done(t: asyncio.Task) -> None:
+            self._pending.discard(t)
+            try:
+                t.result()
+            except BaseException as e:
+                self._errors.append(e)
+
+        task.add_done_callback(_done)
+
+    async def _put_object(self, *, key: str, body: bytes, content_type: str | None) -> None:
+        """
+        boto3 is sync; run it in a thread.
+        """
+
+        def _sync_put() -> None:
+            kwargs = {"Key": key, "Body": body}
+            if content_type:
+                kwargs["ContentType"] = content_type
+            self._bucket.put_object(**kwargs)
+
+        await asyncio.to_thread(_sync_put)
+
+    async def flush(self) -> None:
+        """
+        Wait for all scheduled uploads to complete. Raises if any failed.
+        """
+        if self._pending:
+            await asyncio.gather(*list(self._pending), return_exceptions=True)
+
+        if self._errors:
+            # Raise the first error; you can log/inspect the rest if needed.
+            raise self._errors[0]
 
 
 def public_file_url(user_name: str, session_id: str, file_name: str) -> str:
@@ -206,7 +292,7 @@ async def save_index_html(user_name: str, session_id: str, html: str) -> None:
     await save_file_versioned(user_name, session_id, "index.html", data, "text/html")
 
 
-async def save_files(user_name: str, session_id: str, files: list[tuple[str, bytes, str]], version: int | None = None):
+async def save_files(user_name: str, session_id: str, files: list[FileWrite], version: int | None = None):
     """
     Save files to user's namespace
     :param user_name: Used to find user namespace
@@ -215,13 +301,31 @@ async def save_files(user_name: str, session_id: str, files: list[tuple[str, byt
     :param version: version to save files to, if not specified, a new version will be created
     :return: The new version number
     """
-    files_writes = [FileWrite(name, content, type) for name, content, type in files]
     filesystem = VersionedR2FileSystem(
         bucket_name=USERS_BUCKET_NAME,
         root_prefix=f"{user_name}/{session_id}",
         s3_client=s3_client,
     )
-    return await asyncio.to_thread(filesystem.batch_write, files_writes, version)
+    return await asyncio.to_thread(filesystem.batch_write, files, version)
+
+
+async def read_all_files_in_memory(user_name: str, session_id: str, version: int | None = None):
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+
+    file_paths = filesystem.list_files(version)
+
+    async def read_one(file_path: str) -> tuple[str, FileWrite]:
+        return file_path, await filesystem.read_file(file_path, version=version)
+
+    path_file_pairs = await asyncio.gather(
+        *(read_one(path) for path in file_paths)
+    )
+
+    return InMemoryFileStore(dict(path_file_pairs))
 
 
 async def read_spec_text(user_name: str, session_id: str) -> str | None:
@@ -231,6 +335,10 @@ async def read_spec_text(user_name: str, session_id: str) -> str | None:
         s3_client=s3_client,
     )
     return await filesystem.read_text("spec.txt")
+
+
+def get_index_html_path(product_id: str) -> str:
+    return f"{get_public_url(product_id)}/index.html"
 
 
 async def read_index_html(user_name: str, session_id: str) -> str:
@@ -376,6 +484,25 @@ async def upload_site(user_name: str, session_id: str, site_name: str):
     return get_public_url(site_name)
 
 
+async def upload_preview(user_name: str, session_id: str, file: FileWrite):
+    """
+    Uploads site to google cloud
+    Example: upload_site("/Users/yason/breba/disc-site/sites/test-site", "test-site")
+    :param user_name: username
+    :param session_id: session id used for locating site files
+    :return: public url of deployed site
+    """
+    filesystem = VersionedR2FileSystem(
+        bucket_name=USERS_BUCKET_NAME,
+        root_prefix=f"{user_name}/{session_id}",
+        s3_client=s3_client,
+    )
+
+    # TODO: public_s3_bucket.write(file)
+
+    return get_public_url(session_id)
+
+
 async def delete_uploaded_sites(site_names: list[str]):
     keys = []
     # Collect all the files for all the sites
@@ -408,7 +535,7 @@ async def has_cloud_storage(user_name: str, session_id: str):
         root_prefix=f"{user_name}/{session_id}",
         s3_client=s3_client,
     )
-    return filesystem.file_exists("spec.txt")
+    return filesystem.file_exists(INDEX_FILE_NAME)
 
 
 async def delete_product_files(user_name: str, session_id: str) -> int:

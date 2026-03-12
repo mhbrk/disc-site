@@ -1,0 +1,32 @@
+index.html
+```
+<<<<<<< SEARCH
+    <main>
+        <h1>Hello World</h1>
+        <p>Welcome to this minimalist site.</p>
+        <button id="cta-button">Get Started</button>
+    </main>
+=======
+    <main>
+        <h1>Hello World</h1>
+        <p>Welcome to this minimalist site for curious builders.</p>
+        <button id="cta-button">Explore the FAQ</button>
+    </main>
+    <section>
+        <h2>What you'll find</h2>
+        <p>Simple answers to common questions plus a friendly call to action.</p>
+    </section>
+>>>>>>> REPLACE
+
+faq.md
+```
+<<<<<<< SEARCH
+=======
+# Frequently Asked Questions
+
+## What is this site?
+A tiny demo built by the coder agent to prove it can create and edit in one go.
+
+## How do I get started?
+Read the short answers here, then jump back to the main page and click the call-to-action button.
+>>>>>>> REPLACE

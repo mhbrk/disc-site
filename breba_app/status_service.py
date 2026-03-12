@@ -1,17 +1,42 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
+from functools import wraps
+from typing import Callable, Awaitable, TypeVar
 
 import chainlit as cl
+from chainlit.context import ChainlitContextException
+from chainlit.message import MessageBase
 
 from breba_app.ui_bus import signal_task_started, signal_task_completed
 
 DONE = "Done"
 
+logger = logging.getLogger(__name__)
+
+
+class NullMessage(MessageBase):
+
+    def __init__(self):
+        self.content = "NullMessage::NOOP"
+
+    async def stream_token(self, token: str, is_sequence=False):
+        logger.info(f"NullMessage::Stream token: {token}")
+
+    async def send(self):
+        logger.info("NullMessage::Send")
+
+
 
 class Task:
     def __init__(self):
-        self.msg = cl.Message(content="")
+        try:
+            message = cl.Message(content="")
+        except ChainlitContextException:
+            message = NullMessage()
+
+        self.msg = message
         self.action_queue = asyncio.Queue()
         self._drain_lock = asyncio.Lock()
 
@@ -79,6 +104,7 @@ def task_started():
     _current_task.set(Task())
     asyncio.create_task(signal_task_started())
 
+
 async def task_completed():
     task = _current_task.get()
     if task is None:
@@ -93,7 +119,7 @@ async def task_completed():
 
 
 @asynccontextmanager
-async def agent_task():
+async def agent_task_context():
     """
     Use this context manager around any agent/task run.
     All update_status() calls inside will affect only this task's message.
@@ -108,3 +134,15 @@ async def agent_task():
     finally:
         await task_completed()
         _current_task.reset(parent_task)
+
+
+T = TypeVar("T")
+
+
+def agent_task(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+    @wraps(func)
+    async def wrapper(*args, **kwargs) -> T:
+        async with agent_task_context():
+            return await func(*args, **kwargs)
+
+    return wrapper

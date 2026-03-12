@@ -1,0 +1,15 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Add a new page called faq.html and add it to the navbar. Make sure the navbar is the same on both pages."
+    }
+  ],
+  "evals": [
+    {
+      "question": "The navbar is the same on both the index and faq pages?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    }
+  ]
+}

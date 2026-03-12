@@ -15,7 +15,7 @@ import typing_extensions
 from enum import Enum
 
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 import baml_py
@@ -49,10 +49,10 @@ class LLMMessage(BaseModel):
     content: str
 
 class Question(BaseModel):
-    question: str
+    question: str = Field(description='Question that requires the user to answer')
 
 class WebsiteSpecification(BaseModel):
-    spec: str
+    spec: str = Field(description='Full website specification')
 
 # #########################################################################
 # Generated type aliases (0)

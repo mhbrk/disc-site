@@ -1,0 +1,20 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Create a simple hello world site with a call to action button. Use Bootstrap 5.3.8 via CDN for core styling."
+    }
+  ],
+  "evals": [
+    {
+      "question": "Does the webpage use bootstrap css?",
+      "answer_options": "true, false",
+      "expected_answer": "true"
+    },
+    {
+      "question": "Does the webpage bootstrap css use integrity check?",
+      "answer_options": "true, false",
+      "expected_answer": "false"
+    }
+  ]
+}

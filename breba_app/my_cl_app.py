@@ -1,29 +1,52 @@
 import asyncio
+import json
+import logging
 from typing import AsyncIterator
 
 import chainlit as cl
+import httpx
 from beanie import SortDirection, PydanticObjectId
 from bson import DBRef
 from chainlit import Message
 
+import breba_app.ui_bus as ui_bus
 from auth import verify_password
 from breba_app.controllers.product_controller import delete_product, rename_product
+from breba_app.config import SPEC_FILE_NAME, INDEX_FILE_NAME
+from breba_app.controllers.product_controller import delete_product
+from breba_app.events.bus import HandleContext, Consumer, event_bus
+from breba_app.events.coder_completed import CoderCompleted
+from breba_app.filesystem import InMemoryFileStore, FileWrite
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product, create_or_update_product_for, create_blank_product_for, set_product_active
 from breba_app.models.user import User
-from breba_app.orchestrator import init_state, start_product_task
-from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active
+from breba_app.orchestrator import handle_user_message, save_state, OrchestratorState, start_product, handle_file_upload
+from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active, \
+    read_all_files_in_memory, save_files, get_index_html_path
 from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
     landing_page_follow_up_questions
-from breba_app.ui_bus import send_index_html_to_ui, send_specification_to_ui, send_index_html_chunk_to_ui, \
-    update_products_list, update_versions_list, update_follow_up_questions_list
+from breba_app.ui_bus import update_products_list, update_versions_list, update_follow_up_questions_list
+from breba_app.website import build_preview
 from controllers.deployment_controller import run_deployment
 from llm_utils import get_product_name
-from orchestrator import to_builder, to_generator
-from storage import save_image_file_to_private, read_spec_text, \
-    read_index_html, get_public_url
+from storage import get_public_url
 
 PRODUCT_NAME_PLACEHOLDER = "Unnamed Product"
+
+
+class ProductNameAssignmentConsumer(Consumer):
+    def __init__(self, user_name: str, product_id: str):
+        self.id = f"product_name_assignment_{user_name}_{product_id}"
+        super().__init__()
+
+    async def handle(self, ctx: HandleContext, event: CoderCompleted) -> None:
+        product_name = await get_product_name(event.filestore.read_text(INDEX_FILE_NAME))
+        product = await create_or_update_product_for(event.user_name, event.product_id, product_name)
+        cl.user_session.set("product_name", product.name)
+        await ui_bus.update_product_name(event.product_id, product.name)
+        # The first time
+        await ui_bus.init_product_preview(get_index_html_path(event.product_id))
+        await ctx.unsubscribe_self()
 
 
 async def ask_user_streaming(token_stream: AsyncIterator[str] | str):
@@ -44,46 +67,49 @@ async def ask_user_streaming(token_stream: AsyncIterator[str] | str):
 
 
 async def populate_from_cloud_storage(user_name: str, session_id: str):
-    spec, product = await asyncio.gather(
-        read_spec_text(user_name, session_id),
-        read_index_html(user_name, session_id),
-    )
+    index_path = get_index_html_path(session_id)
+    in_memory_store, _ = await asyncio.gather(read_all_files_in_memory(user_name, session_id),
+                                              ui_bus.init_product_preview(index_path))
+
+    save_state(user_name, session_id, OrchestratorState(messages=[], filestore=in_memory_store))
+
+    spec = ""
+    if in_memory_store.file_exists(SPEC_FILE_NAME):
+        spec = in_memory_store.read_text(SPEC_FILE_NAME)
 
     await asyncio.gather(
-        init_state(session_id, spec, product),
-        send_specification_to_ui(spec),
-        send_index_html_to_ui(product)
+        ui_bus.send_specification_to_ui(spec)
     )
 
 
-
-async def builder_completed(payload: str):
+async def coder_completed(user_name: str, product_id: str, file_store: InMemoryFileStore):
     """
-    This is called when the builder agent is done with the specification
-    It's primary job is to send website specification to whoever need to see it.
-    It also updates user_session in case we just created a new product. (This may be bad design)
+    This is called when the coder agent is done.
+    It will update the UI with the updated files
+    It will also persist the files to the cloud storage
 
-    :param payload: website specification
-    :return: None
+    :param user_name: used to identify the session
+    :param product_id: used to identify the session
+    :param file_store the in memory file store provided by the coder agent
     """
-    product_id = cl.user_session.get("product_id")
-    user_name = cl.user_session.get("user").identifier
-    # TODO: this product creating and naming needs to have a declarative method not piggy back off builder completed
-    product_name = cl.user_session.get("product_name")
-    # The only time product_name is empty is when we are creating a new product
-    if not product_name or product_name == PRODUCT_NAME_PLACEHOLDER:
-        product_name = await get_product_name(payload)
-        product = await create_or_update_product_for(user_name, product_id, product_name)
-        cl.user_session.set("product_name", product.name)
+    spec = ""
+    if file_store.file_exists("spec.txt"):
+        spec = file_store.read_text("spec.txt")
 
-    await send_specification_to_ui(payload)
+    # First we persist the files and preview
+    files_to_save: list[FileWrite] = list(file_store.snapshot().values())
+    new_version, _ = await asyncio.gather(save_files(user_name, product_id, files_to_save),
+                                          build_preview(product_id, file_store))
 
+    _, _, versions = await asyncio.gather(
+        ui_bus.send_specification_to_ui(spec),
+        ui_bus.reload_product_preview(),
+        list_versions(user_name, product_id)
+    )
 
-async def process_generator_message(message: str):
-    if message == "__completed__":
-        await send_index_html_to_ui(message)
-    else:
-        await send_index_html_chunk_to_ui(message)
+    await update_versions_list(versions, new_version)
+    # TODO: This is just the first step. This entire callback should go away once event bus is work. That is the purpose of the event bus.
+    await event_bus.emit(CoderCompleted(user_name=user_name, product_id=product_id, filestore=file_store))
 
 
 async def update_deployments_list(product_id: PydanticObjectId):
@@ -132,15 +158,19 @@ async def main():
         has_storage = await has_cloud_storage(user_name, active_product.product_id)
         product_id = active_product.product_id
         cl.user_session.set("product_id", active_product.product_id)
-        # Newly created product don't hav e product_name until the first spec is generated
+        # Newly created product don't have product_name until the first spec is generated
         product_name = active_product.name
-        if product_name:
+
+        if not product_name or product_name == PRODUCT_NAME_PLACEHOLDER:
+            await event_bus.subscribe(CoderCompleted, ProductNameAssignmentConsumer(user_name, product_id))
+        elif product_name:
             cl.user_session.set("product_name", product_name)
 
         if has_storage:
             await cl.Message(
                 content=f"Welcome back, here is your last project: {product_name}.").send()
             await populate_from_cloud_storage(user_name, product_id)
+            await update_follow_up_questions_list(landing_page_follow_up_questions)
             return
         else:
             # We are starting a new project
@@ -149,7 +179,10 @@ async def main():
             return
     else:
         # When starting a new project for the first time, set the product_id to session_id
-        cl.user_session.set("product_id", cl.user_session.get("id"))
+        product_id = cl.user_session.get("id")
+        cl.user_session.set("product_id", product_id)
+        await asyncio.gather(create_blank_product_for(user_name, PRODUCT_NAME_PLACEHOLDER, True),
+                             event_bus.subscribe(CoderCompleted, ProductNameAssignmentConsumer(user_name, product_id)))
 
     await cl.Message(
         content="Hello, I'm here to assist you with building your website. We can build it together one step at a time,"
@@ -166,23 +199,24 @@ async def window_message(message: str | dict):
     user_name = cl.user_session.get("user").identifier
 
     if method == "to_builder":
-        await to_builder(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
-                         builder_completed,
-                         ask_user_streaming, process_generator_message)
+        await handle_user_message(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
+                                  coder_completed_callback=coder_completed,
+                                  stream_to_user_callback=ask_user_streaming)
     elif method == "to_generator":
-        await to_generator(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
-                           builder_completed, process_generator_message, ask_user_streaming)
+        await handle_user_message(user_name, product_id, message.get("body", "INVALID REQEUST, something went wrong"),
+                                  coder_completed_callback=coder_completed,
+                                  stream_to_user_callback=ask_user_streaming)
     elif method == "load_template":
-        await start_product_task(
+        await start_product(
             user_name, product_id,
             landing_page_instructions,
-            builder_completed,
-            ask_user_streaming, process_generator_message
+            coder_completed,
+            ask_user_streaming
         )
         await update_follow_up_questions_list(landing_page_follow_up_questions)
     elif method == "deploy":
         site_name = message.get("body")
-        # TODO: This needs to go awaay
+        # TODO: This needs to go away
         # TODO: optimize this. Product_id should come with the request from the forntend
         #  (in fact this is a bug that product is stored in session).
         product = await Product.find_one(Product.product_id == product_id)
@@ -208,7 +242,12 @@ async def window_message(message: str | dict):
         if product_id == product_id_to_rename:
             cl.user_session.set("product_name", new_name)
     elif method == "select_version":
-        await set_version_active(user_name, product_id, message.get("body"))
+        version = int(message.get("body"))
+        await set_version_active(user_name, product_id, version)
+        # After setting version, we need to rebuild preview
+        filestore = await read_all_files_in_memory(user_name, product_id, version)
+        await build_preview(product_id, filestore)
+        # To avoid race condition, we want to wait for the preview to build, before reloading product
         await cl.send_window_message({"method": "reload_product"})
     else:
         # TODO: remove this, it is replaced by the "ask_user" function callback
@@ -220,27 +259,17 @@ async def respond(message: Message):
     product_id = cl.user_session.get("product_id")
     user_name = cl.user_session.get("user").identifier
 
-    if len(message.elements) > 1:
-        await cl.Message(content="Multiple files are not supported. Please upload one file at a time.").send()
-        return
-    elif len(message.elements) == 1:
-        # This happens when we are uploading a file from the chat window
-        try:
-            blob_image_path = save_image_file_to_private(user_name, product_id, message.elements[0].name,
-                                                         message.elements[0].path,
-                                                         message.content)
-            message.content = f"Here is a newly uploaded file: {blob_image_path} \n {message.content}.\n\nDon't forget to ask if the I would like to upload another file."
-            await to_builder(user_name, product_id, message.content, builder_completed, ask_user_streaming,
-                             process_generator_message)
-        except ValueError as e:
-            await cl.Message(content=str(e)).send()
-        except Exception as e:
-            await cl.Message(
-                content="Something went wrong while uploading the file. Try again later, or contact support.").send()
+    # TODO: Testcases: 1) When uploading files without a message, need to ask what do do with the file
+    #  2) when uploading files, but the message is contradictory, need to ask what is wrong (for example upload 4 files, but user says to add logo)
+    if len(message.elements) > 0:
+        elements = list(message.elements or [])
+        file_tuples = [(el.path, el.name) for el in elements]
+
+        await handle_file_upload(user_name, product_id, file_tuples, message.content, coder_completed, ask_user_streaming)
     else:
         # TODO: need some error handling here similar to the above or better
-        await to_builder(user_name, product_id, message.content, builder_completed, ask_user_streaming,
-                         process_generator_message)
+        await handle_user_message(user_name, product_id, message.content, coder_completed_callback=coder_completed,
+                                  stream_to_user_callback=ask_user_streaming)
 
 
 @cl.password_auth_callback
@@ -253,3 +282,42 @@ async def auth_callback(username: str, password: str):
         )
     else:
         return None
+
+
+async def add_to_waitlist(email: str, comments: str):
+    url = (
+        "https://script.google.com/macros/s/"
+        "AKfycbwCbKjWjO4ZkDWzFCeh7zo7e1rnHu6OP-ydwlJVJRyp-AjGav1gaG_5N1yEzOArvklW/exec"
+    )
+
+    payload = {"email": email,
+               "comments": comments}
+
+    try:
+        http_client = httpx.AsyncClient(follow_redirects=True, timeout=8.0)
+        resp = await http_client.post(
+            url,
+            content=json.dumps(payload),  # body: JSON string
+            headers={
+                "Content-Type": "text/plain;charset=utf-8",
+            },
+        )
+        resp.raise_for_status()
+    except Exception:
+        logging.exception("Failed to send request to Apps Script")
+
+
+@cl.oauth_callback
+async def oauth_callback(
+        provider_id: str,
+        token: str,
+        raw_user_data: dict[str, str],
+        default_user: cl.User,
+) -> cl.User | None:
+    asyncio.create_task(
+        add_to_waitlist(
+            default_user.identifier,
+            f"Name: {raw_user_data.get("name")}, Given Name: {raw_user_data.get("given_name")}"
+        )
+    )
+    return default_user

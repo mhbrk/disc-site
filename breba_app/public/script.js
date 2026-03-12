@@ -103,7 +103,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typingEl && ghostEl) {
         const text = ghostEl.textContent.trim(); // plain text for typing
         typingEl.textContent = '';
-        typingEl.style.borderRight = '2px solid rgba(255,255,255,.9)';
 
         let i = 0;
         const step = () => {
@@ -166,13 +165,15 @@ if (document.getElementById('brebaWaitlistForm')) {
 
         try {
             const response = await fetch("https://script.google.com/macros/s/AKfycbwCbKjWjO4ZkDWzFCeh7zo7e1rnHu6OP-ydwlJVJRyp-AjGav1gaG_5N1yEzOArvklW/exec", {
+                redirect: "follow",
                 method: "POST",
-                mode: "no-cors",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "text/plain;charset=utf-8",
                 },
                 body: JSON.stringify(data)
             });
+            const text = await response.text();
+            if (!response.ok) throw new Error(text);
 
             form.reset();
             alertBox.className = "alert alert-success";
@@ -195,13 +196,6 @@ if (document.getElementById('brebaWaitlistForm')) {
 
         spinner.classList.add("d-none");
         submitText.textContent = "Submit";
-    });
-
-    // Build app button
-    document.getElementById("buildAppBtn").addEventListener("click", function () {
-        const idea = document.getElementById("buildAppInput").value; // get input value
-        const textarea = document.getElementById("comments");
-        textarea.value = idea; // put into textarea
     });
 
     // Modal focus
@@ -230,3 +224,27 @@ if (document.getElementById('brebaWaitlistForm')) {
         frame.src = '';
     });
 }
+
+document.querySelectorAll('a[href*="/chainlit/auth/oauth/"]').forEach((a) => {
+    a.addEventListener("click", () => {
+        const spinner = a.querySelector(".spinner-border");
+        const label = a.querySelector(".oauth-label");
+        const img = a.querySelector("img")
+        const i = a.querySelector("i")
+
+        let old_text = ""
+        if (spinner) spinner.classList.remove("d-none");
+        if (img) img.classList.add("d-none");
+        if (i) i.classList.add("d-none");
+        if (label) {
+            old_text = label.textContent;
+            label.textContent = "Loading…";
+        }
+        setTimeout(() => {
+            if (spinner) spinner.classList.add("d-none");
+            if (img) img.classList.remove("d-none");
+            if (i) i.classList.remove("d-none");
+            if (label) label.textContent = old_text;
+        }, 1000)
+    });
+});

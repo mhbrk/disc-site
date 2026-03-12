@@ -17,21 +17,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Breba — Build apps with collaborative AI agents</title>
-    <meta name="title" content="Breba — Build apps with collaborative AI agents">
+    <title>Build landing pages with collaborative AI agents</title>
+    <meta name="title" content="Build landing pages with collaborative AI agents">
 
     <!-- Search basics -->
     <meta name="description"
-          content="Describe what you need — Breba’s multi-agent system designs the UI, wires data, and deploys to a shareable URL. Start free, scale when you're ready.">
+          content="Describe your offer and Breba builds a high-converting landing page in minutes. AI agents design the layout, connect forms, and deploy to a shareable URL. Start free.">
     <meta name="author" content="Breba Inc.">
     <meta name="robots" content="index,follow,max-image-preview:large">
 
     <!-- Open Graph (Facebook, LinkedIn, etc.) -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://breba.app/">
-    <meta property="og:title" content="Breba — Build apps with collaborative AI agents">
+    <meta property="og:title" content="Build landing pages with collaborative AI agents">
     <meta property="og:description"
-          content="Describe what you need — Breba’s multi-agent system designs the UI, wires data, and deploys to a shareable URL. Start free, scale when you're ready.">
+          content="Describe your offer and Breba builds a high-converting landing page in minutes. AI agents design the layout, connect forms, and deploy to a shareable URL. Start free.">
     <meta property="og:image" content="https://breba.app/public/social_media.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -43,16 +43,16 @@
     <meta name="linkedin:title" content="Breba"/>
     <meta
         name="linkedin:description"
-        content="Describe what you need — Breba’s multi-agent system designs the UI, wires data, and deploys to a shareable URL. Start free, scale when you're ready."
+        content="Describe your offer and Breba builds a high-converting landing page in minutes. AI agents design the layout, connect forms, and deploy to a shareable URL. Start free."
     />
     <meta name="linkedin:image" content="https://breba.app/public/social_media.png"/>
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://breba.app/">
-    <meta property="twitter:title" content="Breba — Build apps with collaborative AI agents">
+    <meta property="twitter:title" content="Build landing pages with collaborative AI agents">
     <meta property="twitter:description"
-          content="Describe what you need — Breba’s multi-agent system designs the UI, wires data, and deploys to a shareable URL. Start free, scale when you're ready.">
+          content="Describe your offer and Breba builds a high-converting landing page in minutes. AI agents design the layout, connect forms, and deploy to a shareable URL. Start free.">
     <meta property="twitter:image" content="https://breba.app/public/social_media.png">
 
     <!-- Brand / PWA niceties -->
@@ -70,9 +70,16 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="https://breba.app/">
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
-    <link rel="apple-touch-icon" href="{{ asset('logo_light.png') }}">
+
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" sizes="any"/>
+    <link rel="icon shortcut" sizes="32x32" href="{{ asset('favicon-32x32.png') }}"/>
+    <link rel="icon shortcut" sizes="48x48" href="{{ asset('favicon-48x48.png') }}"/>
+    <link rel="icon shortcut" sizes="96x96" href="{{ asset('favicon-96x96.png') }}"/>
+    <link rel="icon shortcut" sizes="192x192" href="{{ asset('favicon-192x192.png') }}"/>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}"/>
+
+    <link rel="manifest" href="{{ asset('site.webmanifest') }}">
 
     <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -91,7 +98,7 @@
             "@type": "Organization",
             "name": "Breba Inc.",
             "url": "https://breba.app/",
-            "logo": "https://breba.app/public/logo_light.png",
+            "logo": "https://breba.app/public/favicon-192x192.png",
             "sameAs": [
                 "https://twitter.com/BrebaApps",
                 "https://www.youtube.com/@breba-apps",
@@ -104,10 +111,10 @@
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",
             "name": "Breba",
-            "applicationCategory": "DeveloperApplication",
+            "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
             "url": "https://breba.app/",
-            "description": "Breba uses collaborative AI agents to turn natural-language requests into working apps you can customize and deploy.",
+            "description": "Breba uses collaborative AI agents to turn natural-language requests into landing pages you can customize and publish.",
             "offers": {
                 "@type": "Offer",
                 "price": "0",
@@ -116,9 +123,9 @@
             },
             "featureList": [
                 "Multi-agent collaboration",
-                "Natural-language app creation",
+                "Natural-language landing page creation",
                 "Inline editing & customization",
-                "Instant deploy to shareable URL",
+                "Instant publish to shareable URL",
                 "Integrations & data connections"
             ],
             "publisher": {
@@ -156,13 +163,61 @@
 
             <!-- Right actions: stack on mobile, inline on desktop -->
             <div class="d-grid gap-2 d-md-inline-flex">
-                <button class="btn btn-primary join-waitlist-btn">Request Access</button>
+                <a class="btn btn-primary d-inline-flex align-items-center gap-2"
+                   href="/chainlit/auth/oauth/google">
+                    <span class="spinner-border spinner-border-sm d-none"
+                          role="status"
+                          aria-hidden="true"></span>
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                         alt=""
+                         width="18"
+                         height="18"
+                    >
+                    <span class="oauth-label">Sign in with Google</span>
+                </a>
                 <a id="loginLink" href="/login" class="btn btn-outline-breba">Login</a>
             </div>
         </div>
     </div>
 </nav>
 
+{% if login_success %}
+<div class="breba-global-overlay">
+    <div class="card bg-dark shadow-lg breba-login-card position-relative">
+        <!-- Top-right close (X) -->
+        <button
+            type="button"
+            class="btn-close position-absolute top-0 end-0 m-3"
+            aria-label="Close"
+            onclick="this.closest('.breba-global-overlay').remove()">
+        </button>
+
+        <div class="card-body text-center px-4 pt-4 pb-4">
+            <h5 class="card-title mb-3 fw-bold text-secondary">
+                Capacity reached
+            </h5>
+
+            <p class="mb-2 text-secondary">
+                Your registration went through perfectly, and we're so happy you're here.
+                Unfortunately, Breba reached capacity, and we are scaling up to meet the demand.
+                Keep an eye on your inbox; we'll let you know when a slot opens up for you.
+            </p>
+
+            <p class="mb-4 text-secondary">
+                Sorry for the inconvenience — hope to see you soon.
+            </p>
+
+            <!-- Centered Close button -->
+            <button
+                type="button"
+                class="btn btn-outline-primary px-4"
+                onclick="this.closest('.breba-global-overlay').remove()">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Hero Section -->
 <section class="hero" id="product">
@@ -185,15 +240,24 @@
 
                 <!-- ghost copy (keeps space; matches final markup) -->
                 <span id="heroGhost" class="invisible d-block" aria-hidden="true">
-                    Build apps using <span class="gradient-text">your own words</span>
+                    Build landing pages <span class="gradient-text">with your words</span>
                 </span>
             </h1>
-            <p class="hero-subtitle">Transform your ideas into fully-functional applications instantly. No coding
-                required, just describe what you want and watch it come to life.</p>
+            <p class="hero-subtitle">Transform your offer into a high-converting landing page in minutes. No coding
+                required — describe what you want and publish to a shareable URL</p>
             <div class="hero-actions">
-                <button class="btn-primary btn-large join-waitlist-btn">
-                    <span>Request Access</span>
-                </button>
+                <a class="btn btn-primary d-inline-flex align-items-center gap-2"
+                   href="/chainlit/auth/oauth/google">
+                    <span class="spinner-border spinner-border-sm d-none"
+                          role="status"
+                          aria-hidden="true"></span>
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                         alt=""
+                         width="18"
+                         height="18"
+                    >
+                    <span class="oauth-label">Sign in with Google</span>
+                </a>
                 <a href="#"
                    class="btn-secondary btn-large"
                    data-bs-toggle="modal"
@@ -212,15 +276,20 @@
                         <div class="card-icon">
                             <i class="fas fa-magic"></i>
                         </div>
-                        <h3>AI App Builder</h3>
+                        <h3>AI Landing Page Builder</h3>
                     </div>
                     <div class="card-content">
                         <div class="input-group">
-                            <input id="buildAppInput" type="text" placeholder="Describe your app idea..."
-                                   class="app-input">
-                            <button id="buildAppBtn" class="btn-primary btn-small join-waitlist-btn">
+                            <input id="buildAppInput" type="text" placeholder="Describe your landing page..."
+                                   class="app-input" tabindex="-1">
+                            <a id="buildAppBtn"
+                               class="btn btn-primary d-inline-flex align-items-center gap-2 btn-small"
+                               href="/chainlit/auth/oauth/google">
+                                <span class="spinner-border spinner-border-sm d-none"
+                                      role="status"
+                                      aria-hidden="true"></span>
                                 <i class="fas fa-arrow-right"></i>
-                            </button>
+                            </a>
                         </div>
                         <div class="suggestions">
                             <button class="suggestion-btn">Add logo</button>
@@ -238,7 +307,7 @@
                     <div class="card-content">
                         <div class="deployment-status">
                             <div class="app-url">
-                                <span>https://your-app.breba.site</span>
+                                <span>https://your-page.breba.site</span>
                             </div>
                         </div>
                     </div>
@@ -253,8 +322,8 @@
 <section class="features" id="features">
     <div class="container">
         <div class="section-header">
-            <h2>Your imagination is the only limitation</h2>
-            <p>Turn ideas into apps using your native language</p>
+            <h2>From idea to live landing page</h2>
+            <p>Describe what you want — Breba builds the page for you</p>
         </div>
 
         <div class="feature-grid">
@@ -263,11 +332,11 @@
                     <div class="progress-screen">
                         <div class="progress-item completed">
                             <i class="fas fa-check"></i>
-                            <span>Design interfaces visually</span>
+                            <span>Design sections visually</span>
                         </div>
                         <div class="progress-item completed">
                             <i class="fas fa-check"></i>
-                            <span>Automate workflows and logic</span>
+                            <span>Iterate on layout</span>
                         </div>
                         <div class="progress-item completed">
                             <i class="fas fa-check"></i>
@@ -276,10 +345,9 @@
                     </div>
                 </div>
                 <div class="feature-content">
-                    <h3>Make your app idea a reality</h3>
-                    <p> Work together with your dedicated AI agents like a team. Breba empowers you to turn your
-                        imagination into reality—no coding required. Focus on your
-                        vision, and let Breba handle the rest.</p>
+                    <h3>Turn your idea into a landing page</h3>
+                    <p>Work with AI agents that design, structure, and refine your landing page. Focus on your offer —
+                        Breba handles layout, content structure, and technical details.</p>
 
                 </div>
             </div>
@@ -318,15 +386,15 @@
                             <span>Deployment Complete!</span>
                         </div>
                         <div class="app-url">
-                            <span>https://your-app.breba.site</span>
+                            <span>https://your-page.breba.site</span>
                             <button class="btn-primary btn-small">Copy</button>
                         </div>
                     </div>
                 </div>
                 <div class="feature-content">
-                    <h3>Deploy to the web right away</h3>
-                    <p>Breba lets you deploy your app in about 2 seconds. Or ask your AI agent, and it will explain how
-                        to host your app with the provider of your choice.</p>
+                    <h3>Go live instantly</h3>
+                    <p>Publish your landing page in seconds to a shareable URL. Or export the files and host it wherever
+                        you prefer.</p>
                 </div>
             </div>
         </div>
@@ -342,23 +410,23 @@
                 <div class="benefits-list">
                     <div class="benefit-item">
                         <i class="fas fa-rocket"></i>
-                        <span>Quickly generate fully functional apps from your ideas</span>
+                        <span>Generate a complete landing page from a simple description</span>
                     </div>
                     <div class="benefit-item">
                         <i class="fas fa-magic"></i>
-                        <span>Produce highly personalized solutions</span>
+                        <span>Structured for clarity and conversion</span>
                     </div>
                     <div class="benefit-item">
                         <i class="fas fa-code"></i>
-                        <span>No coding or technical expertise required</span>
+                        <span>No coding or technical setup required</span>
                     </div>
                     <div class="benefit-item">
                         <i class="fas fa-cogs"></i>
-                        <span>Scalability through simplicity</span>
+                        <span>Fast iteration as your offer evolves</span>
                     </div>
                     <div class="benefit-item">
                         <i class="fas fa-shield-alt"></i>
-                        <span>You are in control, but we are here to help</span>
+                        <span>You stay in control — AI handles the heavy lifting</span>
                     </div>
                 </div>
             </div>
@@ -376,15 +444,15 @@
                     <div class="step-item">
                         <div class="step-number">2</div>
                         <div class="step-content">
-                            <h5>Breba generates your app</h5>
-                            <p>Our AI creates all the necessary components, pages, and functionality</p>
+                            <h5>Breba generates your landing page</h5>
+                            <p>Our AI creates the layout, sections, and key components you need</p>
                         </div>
                     </div>
                     <div class="step-item">
                         <div class="step-number">3</div>
                         <div class="step-content">
-                            <h5>Review, customize, and launch your app</h5>
-                            <p>Fine-tune your app and deploy it instantly</p>
+                            <h5>Review, refine, and publish your page</h5>
+                            <p>Fine-tune your page and deploy it instantly</p>
                         </div>
                     </div>
                 </div>
@@ -410,12 +478,21 @@
                 <ul class="pricing-features">
                     <li><i class="fas fa-check"></i>Free to try Breba</li>
                     <li><i class="fas fa-check"></i>No credit card required</li>
-                    <li><i class="fas fa-check"></i>Explore features & workflows</li>
+                    <li><i class="fas fa-check"></i>Explore features</li>
                 </ul>
                 <div class="d-flex justify-content-center">
-                    <button class="btn btn-primary join-waitlist-btn">
-                        Request Access
-                    </button>
+                    <a class="btn btn-primary d-inline-flex align-items-center gap-2"
+                       href="/chainlit/auth/oauth/google">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                             alt=""
+                             width="18"
+                             height="18"
+                        >
+                        <span class="spinner-border spinner-border-sm d-none"
+                              role="status"
+                              aria-hidden="true"></span>
+                        <span class="oauth-label">Sign in with Google</span>
+                    </a>
                 </div>
             </div>
 
@@ -457,9 +534,9 @@
                 </div>
                 <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne">
                     <div class="accordion-body px-0">
-                        <p>Breba is an AI-powered platform that lets you turn any idea into a fully-functional
-                            custom app,
-                            without the need for any coding experience.</p>
+                        <p>Breba is an AI-powered platform that helps you create and publish landing pages without
+                            coding. Describe what you want, and collaborative AI agents generate the page, connect key
+                            components (like forms and analytics), and deploy it to a shareable URL.</p>
                     </div>
                 </div>
             </div>
@@ -473,10 +550,8 @@
                 </div>
                 <div id="collapseTwo" class="accordion-collapse collapse px-0" aria-labelledby="headingTwo">
                     <div class="accordion-body px-0">
-                        <p>No. Our platform is designed to be easily accessible to non-technical users. Just
-                            describe your
-                            software needs in plain language, and our AI will handle the technical implementation.
-                        </p>
+                        <p>No. Breba is built for non-technical founders. Describe your landing page in plain language
+                            and the AI agents handle layout, structure, and the technical setup.</p>
                     </div>
                 </div>
             </div>
@@ -485,14 +560,14 @@
                 <div class="accordion-header" id="headingThree">
                     <button class="accordion-button collapsed px-0" type="button" data-bs-toggle="collapse"
                             data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                        <h5>What types of applications can I build with Breba?</h5>
+                        <h5>What can I build with Breba?</h5>
                     </button>
                 </div>
                 <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
                     <div class="accordion-body px-0">
-                        <p>Breba is focused on creating small websites at this time, but we plan to expand in
-                            the future.
-                        </p>
+                        <p>Right now, Breba is focused on landing pages: marketing pages, waitlists, lead-capture pages,
+                            and simple multi-section sites. Over time, we plan to expand into more complex website
+                            experiences.</p>
                     </div>
                 </div>
             </div>
@@ -509,8 +584,8 @@
                 <div id="collapsePricing" class="accordion-collapse collapse">
                     <div class="accordion-body px-0">
                         <p>
-                            Breba uses value-based pricing. You can explore, generate, and iterate
-                            freely. You are only charged when you choose to deploy an app.
+                            Breba uses value-based pricing. You can explore, generate, and iterate freely.
+                            You are only charged when you choose to deploy a landing page.
                             If you don’t deploy, you don’t pay.
                         </p>
                     </div>
@@ -533,7 +608,8 @@
             <div id="formAlert" class="alert d-none" role="alert"></div>
             <div class="modal-body w-100">
                 <div class="alert alert-success text-center fw-semibold mb-4" role="alert">
-                    🎉 Deploy your first website for free if you sign up now! <span class="badge bg-success">$50 Value</span>
+                    🎉 Deploy your first website for free if you sign up now! <span
+                    class="badge bg-success">$50 Value</span>
                 </div>
                 <form id="brebaWaitlistForm" class="w-100 px-2">
                     <div class="mb-4 text-start w-100">
@@ -592,7 +668,7 @@
                 <div class="footer-logo">
                     <a href="#product"><img src="{{ asset('logo_dark.png') }}" alt="Breba"></a>
                 </div>
-                <p>Breba is a multi-agent platform that empowers users to bring their ideas come to life in minutes.</p>
+                <p>Breba is a collaborative AI platform for building and publishing landing pages in minutes.</p>
             </div>
 
             <div class="footer-links">
