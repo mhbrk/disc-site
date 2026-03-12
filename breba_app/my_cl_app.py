@@ -13,7 +13,6 @@ import breba_app.ui_bus as ui_bus
 from auth import verify_password
 from breba_app.controllers.product_controller import delete_product, rename_product
 from breba_app.config import SPEC_FILE_NAME, INDEX_FILE_NAME
-from breba_app.controllers.product_controller import delete_product
 from breba_app.events.bus import HandleContext, Consumer, event_bus
 from breba_app.events.coder_completed import CoderCompleted
 from breba_app.filesystem import InMemoryFileStore, FileWrite
