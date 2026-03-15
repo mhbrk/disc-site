@@ -12,6 +12,7 @@ from .user import User
 class Product(Document):
     product_id: str = Field(default_factory=lambda: uuid4().hex)
     name: Optional[str] = None
+    executive_summary: Optional[str] = None
     user: Link[User]
     active: bool = False
     cost: float = 0
@@ -56,8 +57,7 @@ async def set_product_active(user_name: str, product_id: str):
     await product.update(Set({Product.active: True}))
 
 
-async def create_or_update_product_for(user_name: str, product_id: str | None = None,
-                                       product_name: str | None = None):
+async def create_or_update_product_for(user_name: str, product_id: str | None = None, product_name: str | None = None):
     user_obj = await User.find_one(User.username == user_name, fetch_links=False)
 
     # Clear all active products

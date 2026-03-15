@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
-from breba_app.coder_agent.baml_client.stream_types import LLMMessage
+from breba_app.coder_agent.baml_client.types import LLMMessage
 
 
 class BeforeHandoffToCoder(BaseModel):
@@ -12,4 +12,4 @@ class BeforeHandoffToCoder(BaseModel):
     user_name: str
     product_id: str
     messages: list[LLMMessage]
-    executive_summary: str
+    executive_summary: str | None
