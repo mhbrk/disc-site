@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Optional
+from typing import List
 from uuid import uuid4
 
 from beanie import Document, Link, BackLink
@@ -11,15 +11,15 @@ from .user import User
 
 class Product(Document):
     product_id: str = Field(default_factory=lambda: uuid4().hex)
-    name: Optional[str] = None
-    executive_summary: Optional[str] = None
+    name: str | None = None
+    executive_summary: str | None = None
     user: Link[User]
     active: bool = False
     cost: float = 0
     created_at: datetime.datetime = Field(default_factory=lambda: datetime.datetime.now(datetime.UTC))
 
     # Back-reference to deployments
-    deployments: Optional[List[BackLink["Deployment"]]] = Field(
+    deployments: List[BackLink["Deployment"]] | None = Field(
         default_factory=list,
         original_field="product"
     )
