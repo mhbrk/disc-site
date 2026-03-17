@@ -16,25 +16,13 @@ Rules:
 "#
 
 
-template_string NewProjectCoderNotes() #"
+template_string NewProjectExecutiveSummary() #"
 Your job is to read the user's website request and produce a VERY concise summary.
 You will capture information about things the user wants, likes, or prefers facts the user or the website, and any constraints or requirements.
 
-Rules:
-1. Be extremely concise.
-2. Do not repeat information.
-3. Do not include explanations, reasoning, or filler.
-4. Prefer concrete facts over narrative wording.
-5. Do not invent missing details.
-6. Keep the output compact.
-7. The information you exttract should be fewer words than the original user input. You are trying to extract meaning.
-8. IMPORTANT: DO NOT EXTRACT IMPLEMENTATION DETAILS. THOSE WILL GO INTO HTML. YOUR JOB IS TO EXCTRACT: intents, invariants, decisions, preferences, and constraints. DO NOT EXTRACT IMPLEMENTATION DETAILS. DO NOT EXTRACT THINGS LIKE "Use a dark theme". INSTEAD, EXTRACT THE PREFERENCE "Dark theme" WITHOUT SAYING ANYTHING ABOUT IMPLEMENTATION.
-9. DO NOT EXTRACT CONTENT OR STRUCTURE DETAILS.
-10. DO NOT EXTRACT USER SENTIMENTS OR EMOTIONS. ONLY EXTRACT FACTS AND PREFERENCES.
-11. IMPORTANT: Do not extract content requirements. Those will go into the HTML. You are writing notes to supplement the HTML.
-12. Do not use imperative language. The notes capture the final state of the user's preferences, decisions, and requirements. They do not include instructions or suggestions.
+{{RulesForExecutiveSummary()}}
 
-  <example_coder_notes>
+  <example_executive_summary>
   Background
   James Callfield started his plubmbing business 20 years ago. The business name is "Callfield Plumbing". The business is based in Austin, Texas. James has 10 employees.
 
@@ -47,12 +35,12 @@ Rules:
 
   Technical Requirements
   Single HTML file that contains all styles, scripts and html.
-  </example_coder_notes>
+  </example_executive_summary>
 
     "#
 
-template_string ExistingProjectCoderNotes() #"
-    Update the existing project notes based on the conversation. If there is nothing to update, just say "noop".
+template_string ExistingProjectExecutiveSummary() #"
+    Update the existing project summary based on the conversation. If there is nothing to update, just say "noop".
     If there are updates, produce the full updated notes, not just the changes.
 
     {{RulesForExecutiveSummary()}}
@@ -67,10 +55,10 @@ function CoderNotes(messages: LLMMessage[], coder_notes: string) -> string {
     prompt #"You are an AI agent that helps maintain an executive summary of a user project. Analyze user conversation and extract high level information.
     {% if coder_notes %}
         {{ _.role("system") }}
-        {{ ExistingProjectCoderNotes() }}
+        {{ ExistingProjectExecutiveSummary() }}
     {% else %}
         {{ _.role("system") }}
-        {{ NewProjectCoderNotes() }}
+        {{ NewProjectExecutiveSummary() }}
     {% endif %}
 
 
