@@ -33,9 +33,8 @@ class EditRequest:
 
 
 class ApplyEditsError(Exception):
-    def __init__(self, message, failed, passed, updated_edits, partial_content: str | None = None):
+    def __init__(self, message, failed, passed, updated_edits):
         super().__init__(message)
-        self.partial_content = partial_content
         self.failed = failed
         self.passed = passed
         self.updated_edits = updated_edits
@@ -464,11 +463,12 @@ def replace_most_similar_chunk(whole, part, replace):
 
 
 def do_replace(content, before_text, after_text):
+    # Don't strip whitespace from before_text or after_text because we want to preserve whitespace for comparison
     before_text = strip_quoted_wrapping(before_text)
     after_text = strip_quoted_wrapping(after_text)
 
-    if content is None:
-        return
+    if not content and before_text.strip():
+        raise ValueError(f"Content is empty, but we are attempting to find:\n{before_text}")
 
     if not before_text.strip():
         # append to existing file, or start a new file
@@ -548,11 +548,13 @@ def apply_edits_many(files: dict[str, str], edits: list[EditRequest], fence=DEFA
                     files[edit.path] = new_content
                     passed.append(edit)
                 else:
+                    logger.error(f"Failed to match {edit.search} in {content}")
                     error_message = default_failed_match_message(edit, content)
                     failed.append(error_message)
-
             except KeyError as e:
                 failed.append(f"File not found: {edit.path}")
+            except ValueError as e:
+                failed.append(f"{e}")
 
         else:
             # For new files or when appending we simply don't have a search block
