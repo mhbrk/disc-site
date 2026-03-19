@@ -19,7 +19,8 @@ from breba_app.filesystem import InMemoryFileStore, FileWrite
 from breba_app.models.deployment import Deployment
 from breba_app.models.product import Product, create_or_update_product_for, create_blank_product_for, set_product_active
 from breba_app.models.user import User
-from breba_app.orchestrator import handle_user_message, save_state, OrchestratorState, start_product, handle_file_upload
+from breba_app.orchestrator import handle_user_message, save_state, OrchestratorState, start_product, \
+    handle_file_upload, init_orchestrator
 from breba_app.storage import has_cloud_storage, list_versions, get_active_version, set_version_active, \
     read_all_files_in_memory, save_files, get_index_html_path
 from breba_app.template_agent.product_types.landing_page import landing_page_instructions, \
@@ -67,14 +68,14 @@ async def ask_user_streaming(token_stream: AsyncIterator[str] | str):
 
 async def populate_from_cloud_storage(user_name: str, session_id: str):
     index_path = get_index_html_path(session_id)
-    in_memory_store, _ = await asyncio.gather(read_all_files_in_memory(user_name, session_id),
-                                              ui_bus.init_product_preview(index_path))
+    state, _ = await asyncio.gather(init_orchestrator(user_name, session_id),
+                                    ui_bus.init_product_preview(index_path))
 
-    save_state(user_name, session_id, OrchestratorState(messages=[], filestore=in_memory_store))
+    filestore = state.filestore
 
     spec = ""
-    if in_memory_store.file_exists(SPEC_FILE_NAME):
-        spec = in_memory_store.read_text(SPEC_FILE_NAME)
+    if filestore.file_exists(SPEC_FILE_NAME):
+        spec = filestore.read_text(SPEC_FILE_NAME)
 
     await asyncio.gather(
         ui_bus.send_specification_to_ui(spec)
@@ -264,7 +265,8 @@ async def respond(message: Message):
         elements = list(message.elements or [])
         file_tuples = [(el.path, el.name) for el in elements]
 
-        await handle_file_upload(user_name, product_id, file_tuples, message.content, coder_completed, ask_user_streaming)
+        await handle_file_upload(user_name, product_id, file_tuples, message.content, coder_completed,
+                                 ask_user_streaming)
     else:
         # TODO: need some error handling here similar to the above or better
         await handle_user_message(user_name, product_id, message.content, coder_completed_callback=coder_completed,

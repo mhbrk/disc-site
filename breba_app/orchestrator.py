@@ -7,12 +7,18 @@ from typing import AsyncIterator
 
 from baml_py import BamlStream
 
-from breba_app.coder_agent.agent import stream_user_response_or_coder, run_coder_agent
+from breba_app.coder_agent.agent import stream_user_response_or_coder, run_coder_agent, generate_executive_summary
 from breba_app.coder_agent.baml_client.stream_types import Coder as CoderStream, ResponseToUser as ResponseToUserStream
 from breba_app.coder_agent.baml_client.types import LLMMessage, Coder, ResponseToUser
 from breba_app.config import INDEX_FILE_NAME
+from breba_app.controllers.product_controller import set_product_executive_summary
+from breba_app.events import event_bus
+from breba_app.events.before_handoff_to_coder import BeforeHandoffToCoder
+from breba_app.events.bus import Consumer, HandleContext
 from breba_app.filesystem import InMemoryFileStore
+from breba_app.models.product import Product
 from breba_app.status_service import agent_task, update_status
+from breba_app.storage import read_all_files_in_memory
 from breba_app.template_agent.agent import TemplateAgent
 from breba_app.template_agent.baml_client.types import WebsiteSpecification
 from breba_app.tools.upload_files import upload_file
@@ -23,6 +29,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OrchestratorState:
     messages: list[LLMMessage]
+    executive_summary: str
     filestore: InMemoryFileStore
 
 
@@ -30,9 +37,34 @@ class OrchestratorState:
 _state_store: dict[tuple[str, str], OrchestratorState] = defaultdict(
     lambda: OrchestratorState(
         messages=[],
+        executive_summary="",
         filestore=InMemoryFileStore()
     )
 )
+
+
+class ExecutiveSummaryGenerationConsumer(Consumer):
+    def __init__(self):
+        self.id = f"executive_summary_generator_consumer"
+        super().__init__()
+
+    async def handle(self, ctx: HandleContext, event: BeforeHandoffToCoder) -> None:
+        executive_summary = await generate_executive_summary(messages=event.messages,
+                                                             executive_summary=event.executive_summary)
+        if executive_summary and isinstance(executive_summary, str):
+            await set_product_executive_summary(event.user_name, event.product_id, executive_summary)
+        else:
+            logging.exception("Invalid executive summary: " + str(executive_summary))
+
+
+async def init_orchestrator(user_name: str, product_id: str) -> OrchestratorState:
+    filestore, product, _ = await asyncio.gather(read_all_files_in_memory(user_name, product_id),
+                                                 Product.find_one(Product.product_id == product_id),
+                                                 event_bus.subscribe(BeforeHandoffToCoder,
+                                                                     ExecutiveSummaryGenerationConsumer()))
+    state = OrchestratorState(messages=[], executive_summary=product.executive_summary, filestore=filestore)
+    save_state(user_name, product_id, state)
+    return state
 
 
 def load_state(user_name: str, product_id: str) -> OrchestratorState:
@@ -77,6 +109,9 @@ async def edit_product(user_name: str, product_id: str, message: str,
 
     final_response = await baml_stream_and_collect_user_response(response, stream_to_user_callback)
     if isinstance(final_response, Coder):
+        await event_bus.emit(
+            BeforeHandoffToCoder(user_name=user_name, product_id=product_id, messages=orchestrator_state.messages,
+                                 executive_summary=orchestrator_state.executive_summary))
         coder_response = await run_coder_agent(messages=orchestrator_state.messages, filestore=file_store)
         orchestrator_state.messages.append(LLMMessage(role="assistant", content=coder_response.content))
         await coder_completed_callback(user_name, product_id, file_store)
@@ -105,6 +140,10 @@ async def start_product(user_name: str, product_id: str, message: str,
         orchestrator_state.messages.append(
             LLMMessage(role="user", content="Let's use this specification to build the website"))
         update_status("Coder is writing the code...")
+        await event_bus.emit(
+            BeforeHandoffToCoder(user_name=user_name, product_id=product_id, messages=orchestrator_state.messages,
+                                 executive_summary=orchestrator_state.executive_summary)
+        )
         coder_response = await run_coder_agent(messages=orchestrator_state.messages, filestore=file_store)
         orchestrator_state.messages.append(LLMMessage(role="assistant", content=coder_response.content))
         await coder_completed_callback(user_name, product_id, file_store)

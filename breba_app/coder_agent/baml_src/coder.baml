@@ -56,10 +56,10 @@ IMPORTANT: We will use a search and replace algorithm, therefore the search and 
 "#
 // index.html is the main file, but you can create other files to keep with the best practices.
 template_string  SystemInfo() #"<system_info>
-    Keep in mind, this project is an html page that follows best practices. 
-    This project has all css, html and javascript in a single index.html file.
+    Keep in mind, this project is a website that follows best practices.
+    This project has all css, html and javascript in a single index.html file (unless user specifies otherwise).
     We are producing a production ready website that geared towards search engine discoverabilty and core web vitals.
-    You must make sure that all changes are clean and complete. 
+    You must make sure that all changes are clean and complete.
 </system_info>
 "#
 
@@ -87,7 +87,7 @@ Always make changes with the best practices in mind
 14. A production ready website must have robots.txt file.
 </html_best_practices>
 <third_party_libraries>
-When using third party libraries, do not make up integrity hashes. Only use integrity checsk if provided by the user.
+When using third party libraries, do not make up integrity hashes. Only use integrity checks if provided by the user.
 </third_party_libraries>
 </static_website_best_practices>
 "#
